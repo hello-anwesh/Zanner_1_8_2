@@ -1,0 +1,771 @@
+import { useState, useRef, useEffect, useCallback } from "react";
+import {
+    Pause, Play, X, Heart, Shuffle, Repeat, SkipForward, SkipBack,
+    Volume2, VolumeX, Music, Music2, AlertCircle
+} from "lucide-react";
+import {
+    SoundTrack,
+    loadSoundLibrary, toggleFavorite,
+    addToRecentlyPlayed, getFavorites, getRecentlyPlayed, getSoundsByCategory
+} from "../config/soundLibrary";
+import { eventBus } from "../services";
+import { musicController } from "../services/music/MusicController";
+import { PRESET_MIXES, loadCustomMixes } from "./frequency/frequencies";
+import { getFrequencyEngine } from "./frequency/FrequencyEngine";
+
+interface FloatingPlayerProps {
+    colors: {
+        accent: string;
+        text: string;
+        textMuted: string;
+    };
+}
+
+export function FloatingPlayer({ colors }: FloatingPlayerProps) {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [currentTrack, setCurrentTrack] = useState<SoundTrack | null>(null);
+    const [isMuted, setIsMuted] = useState(false);
+    const [volume, setVolume] = useState(0.5);
+    const [showLibrary, setShowLibrary] = useState(false);
+    const [activeCategory, setActiveCategory] = useState<string>("nature");
+    const [favorites, setFavorites] = useState<string[]>([]);
+    const [isShuffleOn, setIsShuffleOn] = useState(false);
+    const [isLoopOn, setIsLoopOn] = useState(true);
+    const [playlist, setPlaylist] = useState<SoundTrack[]>([]);
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
+
+    const audioRef = useRef<HTMLAudioElement>(null);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+
+    // Check if URL is direct audio (mp3, etc) vs YouTube embed
+    const isDirectAudio = (url: string) =>
+        url.match(/\.(mp3|wav|ogg|m4a|flac|aac)(\?.*)?$/i) ||
+        url.includes("archive.org/download") ||
+        url.includes("somafm.com") ||
+        url.includes("-mp3") ||
+        url.includes("-aac");
+
+    const getEmbedUrl = (url: string) => {
+        if (url.includes("youtube.com/watch?v=")) return url.replace("watch?v=", "embed/");
+        if (url.includes("youtu.be/")) return url.replace("youtu.be/", "www.youtube.com/embed/");
+        return url;
+    };
+
+    useEffect(() => {
+        setFavorites(loadSoundLibrary().favorites);
+    }, []);
+
+    // MusicController integration for timer pause/resume
+    const pausePlayback = useCallback(() => {
+        // Handle frequency mixes
+        if (currentTrack?.url.startsWith('frequency-mix://')) {
+            const engine = getFrequencyEngine();
+            engine.pause();
+        }
+
+        if (audioRef.current) {
+            audioRef.current.pause();
+        }
+        // For YouTube/SoundCloud iframes, we need to reload to stop playback
+        if (iframeRef.current && currentTrack && !isDirectAudio(currentTrack.url)) {
+            // Store current track to resume later
+            iframeRef.current.src = "";
+        }
+        setIsPlaying(false);
+    }, [currentTrack]);
+
+    const resumePlayback = useCallback(() => {
+        // Handle frequency mixes
+        if (currentTrack?.url.startsWith('frequency-mix://')) {
+            const engine = getFrequencyEngine();
+            engine.resumePlayback(volume);
+        }
+
+        if (audioRef.current) {
+            audioRef.current.play().catch(() => { });
+        }
+        // For YouTube/SoundCloud iframes, reload the embed
+        if (iframeRef.current && currentTrack && !isDirectAudio(currentTrack.url)) {
+            iframeRef.current.src = `${getEmbedUrl(currentTrack.url)}?autoplay=1&controls=0&loop=1&modestbranding=1&rel=0&enablejsapi=1${currentTrack.isPlaylist ? '&shuffle=1' : ''}`;
+        }
+        setIsPlaying(true);
+    }, [currentTrack, volume]);
+
+    useEffect(() => {
+        musicController.registerSoundLibrary(
+            pausePlayback,
+            resumePlayback,
+            () => isPlaying && !!currentTrack
+        );
+    }, [pausePlayback, resumePlayback, isPlaying, currentTrack]);
+
+    useEffect(() => {
+        if (audioRef.current && currentTrack && isDirectAudio(currentTrack.url)) {
+            audioRef.current.volume = volume;
+            audioRef.current.muted = isMuted;
+        }
+    }, [volume, isMuted, currentTrack]);
+    const getSounds = useCallback((): SoundTrack[] => {
+        if (activeCategory === "favorites") return getFavorites();
+        if (activeCategory === "recent") return getRecentlyPlayed();
+        if (activeCategory === "custom") return loadSoundLibrary().customSounds;
+
+        // For frequency category, add frequency mixes as special tracks
+        if (activeCategory === "frequency") {
+            const regularFreqTracks = getSoundsByCategory("frequency");
+            const customFreqMixes = loadCustomMixes();
+            const allMixes = [...PRESET_MIXES, ...customFreqMixes];
+
+            // Convert frequency mixes to SoundTrack format
+            const freqMixTracks: SoundTrack[] = allMixes.map(mix => ({
+                id: `freq-mix-${mix.id}`,
+                name: mix.name,
+                icon: mix.id.startsWith('custom-') ? "⭐" : "🔮",
+                url: `frequency-mix://${mix.id}`, // Special URL scheme
+                category: "frequency" as const,
+                duration: "Generated",
+                isCustom: mix.id.startsWith('custom-')
+            }));
+
+            return [...regularFreqTracks, ...freqMixTracks];
+        }
+
+        return getSoundsByCategory(activeCategory as any);
+    }, [activeCategory]);
+
+    // Play a track
+    const play = useCallback((track: SoundTrack) => {
+        setError(null);
+        setIsLoading(true);
+
+        // ALWAYS stop previous playback first to prevent overlap
+        const engine = getFrequencyEngine();
+        engine.stopAll(); // Stop any playing frequencies
+
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+        }
+        if (iframeRef.current) {
+            iframeRef.current.src = "";
+        }
+
+        // Check if this is a frequency mix
+        if (track.url.startsWith('frequency-mix://')) {
+            const mixId = track.url.replace('frequency-mix://', '');
+            const allMixes = [...PRESET_MIXES, ...loadCustomMixes()];
+            const mix = allMixes.find(m => m.id === mixId);
+
+            if (mix) {
+                // Get frequency engine and play the mix
+                mix.frequencies.forEach(f => engine.startFrequency(f.hz, f.volume));
+                setCurrentTrack(track);
+                setIsPlaying(true);
+                setIsLoading(false);
+                addToRecentlyPlayed(track.id);
+                setPlaylist(getSounds());
+                return;
+            }
+        }
+
+        // Regular audio/video playback
+        setCurrentTrack(track);
+        setIsPlaying(true);
+        addToRecentlyPlayed(track.id);
+        setPlaylist(getSounds());
+    }, [getSounds]);
+
+    // Listen for external play requests (e.g. from Coach)
+    useEffect(() => {
+        const handlePlayTrack = (event: any) => {
+            if (event.type === "PLAY_TRACK") {
+                const track: SoundTrack = {
+                    id: `external-${Date.now()}`,
+                    name: event.name,
+                    url: event.url,
+                    icon: "🎵",
+                    category: "custom", // Treat as custom/external
+                    isCustom: true
+                };
+                play(track);
+            }
+        };
+        const unsub = eventBus.on("PLAY_TRACK", handlePlayTrack);
+        return () => unsub();
+    }, [play]);
+
+    // Audio loaded successfully
+    const handleCanPlay = () => {
+        setIsLoading(false);
+        setError(null);
+    };
+
+    // Audio failed to load - DON'T auto-skip, show error instead
+    const handleError = () => {
+        setIsLoading(false);
+        setIsPlaying(false);
+        setError("Failed to load. Try another track or check your connection.");
+    };
+
+    // Navigation
+    const next = useCallback(() => {
+        if (!currentTrack || !playlist.length) return;
+        const i = playlist.findIndex(t => t.id === currentTrack.id);
+        const nextI = isShuffleOn ? Math.floor(Math.random() * playlist.length) : (i + 1) % playlist.length;
+        play(playlist[nextI]);
+    }, [currentTrack, playlist, isShuffleOn, play]);
+
+    const prev = useCallback(() => {
+        if (!currentTrack || !playlist.length) return;
+        const i = playlist.findIndex(t => t.id === currentTrack.id);
+        const iPrev = i === 0 ? playlist.length - 1 : i - 1;
+        play(playlist[iPrev]);
+    }, [currentTrack, playlist, play]);
+
+    // Toggle play/pause
+    const toggle = useCallback(() => {
+        if (!currentTrack) return;
+
+        // Handle frequency mixes
+        if (currentTrack.url.startsWith('frequency-mix://')) {
+            const engine = getFrequencyEngine();
+            if (isPlaying) {
+                engine.pause();
+                setIsPlaying(false);
+            } else {
+                engine.resumePlayback(volume);
+                setIsPlaying(true);
+            }
+            return;
+        }
+
+        // Handle direct audio (Archive.org MP3s)
+        if (isDirectAudio(currentTrack.url) && audioRef.current) {
+            if (isPlaying) {
+                audioRef.current.pause();
+                setIsPlaying(false);
+            } else {
+                audioRef.current.play().catch(handleError);
+                setIsPlaying(true);
+            }
+            return;
+        }
+
+        // Handle YouTube/SoundCloud iframes - stop/restart only
+        if (iframeRef.current) {
+            if (isPlaying) {
+                // Pause by clearing iframe
+                iframeRef.current.src = "";
+                setIsPlaying(false);
+            } else {
+                // Resume by reloading iframe
+                iframeRef.current.src = `${getEmbedUrl(currentTrack.url)}?autoplay=1&controls=0&loop=1&modestbranding=1&rel=0&enablejsapi=1${currentTrack.isPlaylist ? '&shuffle=1' : ''}`;
+                setIsPlaying(true);
+            }
+        }
+    }, [currentTrack, isPlaying, volume]);
+
+    // Stop playback
+    const stop = useCallback(() => {
+        // Stop frequency engine if playing frequency mix
+        if (currentTrack?.url.startsWith('frequency-mix://')) {
+            const engine = getFrequencyEngine();
+            engine.stopAll();
+        }
+        setCurrentTrack(null);
+        setIsPlaying(false);
+        setError(null);
+    }, [currentTrack]);
+
+    const sounds = getSounds();
+
+    // Category tabs - MAIN categories only
+    const tabs = [
+        { id: "favorites", label: "♥", name: "Likes" },
+        { id: "nature", label: "🌿", name: "Nature" },
+        { id: "ambient", label: "🌌", name: "Ambient" },
+        { id: "frequency", label: "🔮", name: "Hz" },
+        { id: "asmr", label: "💆", name: "ASMR" },
+        { id: "neurodivergent", label: "🌈", name: "ND" },
+        { id: "archive", label: "📀", name: "Archive" },
+        { id: "visuals", label: "🌀", name: "Visuals" },
+    ];
+
+    return (
+        <>
+            {/* === AUDIO PLAYER (Direct MP3s) === */}
+            {currentTrack && isDirectAudio(currentTrack.url) && (
+                <audio
+                    ref={audioRef}
+                    src={currentTrack.url}
+                    autoPlay
+                    loop={isLoopOn}
+                    muted={isMuted}
+                    onLoadedMetadata={(e) => {
+                        const audio = e.currentTarget;
+                        audio.volume = volume;
+                        audio.muted = isMuted;
+                        setDuration(audio.duration || 0);
+                        setCurrentTime(0);
+                    }}
+                    onTimeUpdate={(e) => {
+                        setCurrentTime(e.currentTarget.currentTime);
+                    }}
+                    onCanPlay={(e) => {
+                        const audio = e.currentTarget;
+                        // Ensure volume is set when playback starts
+                        audio.volume = volume;
+                        audio.muted = isMuted;
+                        handleCanPlay();
+                    }}
+                    onError={handleError}
+                    onEnded={() => !isLoopOn && next()}
+                    style={{ display: "none" }}
+                />
+            )}
+
+            {/* === YOUTUBE EMBED (Fallback for non-mp3) === */}
+            {currentTrack && !isDirectAudio(currentTrack.url) && (
+                <iframe
+                    ref={iframeRef}
+                    src={`${getEmbedUrl(currentTrack.url)}?autoplay=1&controls=0&loop=1&modestbranding=1&rel=0&enablejsapi=1${currentTrack.isPlaylist ? '&shuffle=1' : ''}`}
+                    allow="autoplay; encrypted-media"
+                    onLoad={() => { setIsLoading(false); setError(null); }}
+                    style={{
+                        width: 1,
+                        height: 1,
+                        position: "fixed",
+                        bottom: -100,
+                        left: -100,
+                        opacity: 0,
+                        pointerEvents: "none",
+                    }}
+                />
+            )}
+
+            {/* Main Container */}
+            <div className="fixed bottom-8 right-8 z-50">
+
+                {/* === TRIGGER BUTTON === */}
+                {!showLibrary && !currentTrack && (
+                    <button
+                        onClick={() => setShowLibrary(true)}
+                        className="w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110"
+                        style={{
+                            background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}99)`,
+                            boxShadow: `0 4px 24px ${colors.accent}60`,
+                        }}
+                    >
+                        <Music2 size={22} color="#000" />
+                    </button>
+                )}
+
+                {/* === MINI PLAYER === */}
+                {!showLibrary && currentTrack && (
+                    <div
+                        onClick={() => setShowLibrary(true)}
+                        className="flex items-center gap-4 p-3 pr-4 rounded-full cursor-pointer shadow-2xl"
+                        style={{
+                            background: "rgba(0,0,0,0.9)",
+                            backdropFilter: "blur(20px)",
+                            border: `1px solid ${error ? "#F43F5E40" : "rgba(255,255,255,0.08)"}`,
+                        }}
+                    >
+                        <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${isLoading ? "animate-pulse" : ""}`}
+                            style={{ background: error ? "#F43F5E20" : `${colors.accent}20` }}
+                        >
+                            {error ? <AlertCircle size={18} color="#F43F5E" /> : currentTrack.icon}
+                        </div>
+                        <span className="text-sm font-medium text-white max-w-32 truncate">
+                            {error ? "Error" : currentTrack.name}
+                        </span>
+                        <div className="flex gap-1">
+                            <button
+                                onClick={e => { e.stopPropagation(); toggle(); }}
+                                className="w-9 h-9 rounded-full flex items-center justify-center"
+                                style={{ background: colors.accent }}
+                            >
+                                {isPlaying ? <Pause size={16} color="#000" /> : <Play size={16} color="#000" />}
+                            </button>
+                            <button
+                                onClick={e => { e.stopPropagation(); stop(); }}
+                                className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10"
+                            >
+                                <X size={14} className="text-white/50" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* === LIBRARY PANEL === */}
+                {showLibrary && (
+                    <div
+                        className="w-[440px] rounded-3xl overflow-hidden shadow-2xl relative"
+                        style={{
+                            background: "linear-gradient(160deg, rgba(18,18,24,0.98) 0%, rgba(12,12,16,0.99) 100%)",
+                            backdropFilter: "blur(60px) saturate(180%)",
+                            border: "1px solid rgba(255,255,255,0.08)",
+                            maxHeight: "75vh",
+                            boxShadow: `0 32px 80px rgba(0,0,0,0.8), inset 0 0 80px rgba(${parseInt(colors.accent.slice(1, 3), 16)}, ${parseInt(colors.accent.slice(3, 5), 16)}, ${parseInt(colors.accent.slice(5, 7), 16)}, 0.04)`
+                        }}
+                    >
+                        {/* Ambient Glow */}
+                        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                            <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full blur-[100px]" style={{ background: `radial-gradient(circle, ${colors.accent}15 0%, transparent 70%)` }} />
+                        </div>
+
+                        {/* Header */}
+                        <div className="relative p-6 pb-5 flex items-center justify-between border-b" style={{ borderColor: "rgba(255,255,255,0.05)" }}>
+                            <div className="flex items-center gap-4">
+                                <div
+                                    className="p-3 rounded-2xl relative overflow-hidden"
+                                    style={{
+                                        background: `linear-gradient(135deg, ${colors.accent}20 0%, ${colors.accent}10 100%)`,
+                                        border: `1px solid ${colors.accent}30`
+                                    }}
+                                >
+                                    <Music size={20} style={{ color: colors.accent }} strokeWidth={2.5} />
+                                </div>
+                                <h2 className="text-xl font-bold tracking-tight text-white">Sound Library</h2>
+                            </div>
+                            <button
+                                onClick={() => setShowLibrary(false)}
+                                className="p-2.5 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95"
+                                style={{ background: "rgba(255,255,255,0.05)" }}
+                            >
+                                <X size={18} style={{ color: "rgba(255,255,255,0.5)" }} />
+                            </button>
+                        </div>
+
+                        {/* Error Banner */}
+                        {error && (
+                            <div className="mx-6 mt-4 p-4 rounded-2xl flex items-center gap-3 relative overflow-hidden"
+                                style={{
+                                    background: "linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(244, 63, 94, 0.08) 100%)",
+                                    border: "1px solid rgba(244, 63, 94, 0.25)",
+                                    backdropFilter: "blur(20px)"
+                                }}
+                            >
+                                <AlertCircle size={18} className="text-red-400 shrink-0" strokeWidth={2.5} />
+                                <p className="text-sm text-red-300 font-medium">{error}</p>
+                            </div>
+                        )}
+
+                        {/* Category Tabs */}
+                        <div className="relative px-6 pt-5 pb-4">
+                            <div className="flex gap-2.5 overflow-x-auto scrollbar-none pb-1">
+                                {tabs.map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveCategory(tab.id)}
+                                        className="relative px-5 py-3 rounded-2xl text-sm font-bold whitespace-nowrap transition-all duration-500 hover:scale-105"
+                                        style={
+                                            activeCategory === tab.id
+                                                ? {
+                                                    background: `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accent}E6 100%)`,
+                                                    color: "#000",
+                                                    boxShadow: `0 6px 24px ${colors.accent}50, 0 3px 12px ${colors.accent}35, inset 0 1px 0 rgba(255,255,255,0.4)`,
+                                                    transform: "scale(1.05)"
+                                                }
+                                                : {
+                                                    background: "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
+                                                    color: "rgba(255,255,255,0.5)",
+                                                    border: "1px solid rgba(255,255,255,0.06)"
+                                                }
+                                        }
+                                    >
+                                        {activeCategory === tab.id && <div className="absolute inset-0 bg-white/10 blur-sm rounded-2xl" />}
+                                        <span className="relative z-10">{tab.label} {tab.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Track List */}
+                        <div className="relative px-4 pb-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+                            {sounds.length === 0 ? (
+                                <div className="text-center py-16">
+                                    <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: `${colors.accent}15` }}>
+                                        <Music size={32} style={{ color: colors.accent }} opacity={0.5} />
+                                    </div>
+                                    <p className="text-white/30 text-sm font-medium">No tracks in this category</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {sounds.map(track => (
+                                        <div
+                                            key={track.id}
+                                            onClick={() => play(track)}
+                                            className={`group relative flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all duration-300 overflow-hidden ${currentTrack?.id === track.id
+                                                ? "scale-[1.02]"
+                                                : "hover:scale-[1.01]"
+                                                }`}
+                                            style={
+                                                currentTrack?.id === track.id
+                                                    ? {
+                                                        background: `linear-gradient(135deg, ${colors.accent}20 0%, ${colors.accent}10 100%)`,
+                                                        border: `1px solid ${colors.accent}40`,
+                                                        boxShadow: `0 4px 20px ${colors.accent}25, inset 0 1px 0 ${colors.accent}20`
+                                                    }
+                                                    : {
+                                                        background: "linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)",
+                                                        border: "1px solid rgba(255,255,255,0.04)"
+                                                    }
+                                            }
+                                        >
+                                            {/* Hover Glow */}
+                                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                                            {/* Icon */}
+                                            <div
+                                                className={`relative z-10 w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 transition-all duration-500 ${currentTrack?.id === track.id && isLoading ? "animate-pulse" : ""
+                                                    } group-hover:scale-110`}
+                                                style={{
+                                                    background: currentTrack?.id === track.id
+                                                        ? `linear-gradient(135deg, ${colors.accent}30 0%, ${colors.accent}20 100%)`
+                                                        : "rgba(255,255,255,0.05)",
+                                                    boxShadow: currentTrack?.id === track.id
+                                                        ? `0 4px 16px ${colors.accent}30, inset 0 1px 0 rgba(255,255,255,0.1)`
+                                                        : "inset 0 1px 0 rgba(255,255,255,0.05)"
+                                                }}
+                                            >
+                                                {track.icon}
+                                            </div>
+
+                                            {/* Info */}
+                                            <div className="relative z-10 flex-1 min-w-0">
+                                                <p className={`text-sm font-bold truncate mb-1 transition-colors ${currentTrack?.id === track.id ? "text-white" : "text-white/80 group-hover:text-white"
+                                                    }`}>
+                                                    {track.name}
+                                                </p>
+                                                <div className="flex items-center gap-2">
+                                                    {track.duration && (
+                                                        <span
+                                                            className="text-xs font-semibold px-2.5 py-1 rounded-lg"
+                                                            style={{
+                                                                background: currentTrack?.id === track.id
+                                                                    ? `${colors.accent}25`
+                                                                    : "rgba(255,255,255,0.06)",
+                                                                color: currentTrack?.id === track.id
+                                                                    ? colors.accent
+                                                                    : "rgba(255,255,255,0.4)"
+                                                            }}
+                                                        >
+                                                            {track.duration}
+                                                        </span>
+                                                    )}
+                                                    {track.isPlaylist && (
+                                                        <span
+                                                            className="text-xs font-semibold px-2.5 py-1 rounded-lg"
+                                                            style={{
+                                                                background: `${colors.accent}20`,
+                                                                color: colors.accent
+                                                            }}
+                                                        >
+                                                            SHUFFLE
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Playing Indicator */}
+                                            {currentTrack?.id === track.id && isPlaying && (
+                                                <div className="relative z-10 flex gap-1 items-end h-5" style={{ width: "20px" }}>
+                                                    {[1, 2, 3].map(i => (
+                                                        <div
+                                                            key={i}
+                                                            className="w-1 rounded-full animate-sound-wave"
+                                                            style={{
+                                                                background: colors.accent,
+                                                                animationDelay: `${i * 0.15}s`,
+                                                            }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* Favorite Button */}
+                                            <button
+                                                onClick={e => {
+                                                    e.stopPropagation();
+                                                    toggleFavorite(track.id);
+                                                    setFavorites(loadSoundLibrary().favorites);
+                                                }}
+                                                className="relative z-10 opacity-0 group-hover:opacity-100 p-2 rounded-full hover:bg-white/10 transition-all"
+                                            >
+                                                <Heart
+                                                    size={16}
+                                                    fill={favorites.includes(track.id) ? "#F43F5E" : "none"}
+                                                    color={favorites.includes(track.id) ? "#F43F5E" : "#666"}
+                                                />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Now Playing Bar */}
+                        {currentTrack && (
+                            <div
+                                className="p-5 border-t border-white/5"
+                                style={{ background: "rgba(0,0,0,0.4)" }}
+                            >
+                                {/* Progress Bar */}
+                                {!currentTrack.url.startsWith('frequency-mix://') && isDirectAudio(currentTrack.url) && duration > 0 && (
+                                    <div className="mb-3">
+                                        <div className="flex items-center gap-2 text-[10px] text-white/40 mb-1.5">
+                                            <span>{Math.floor(currentTime / 60)}:{String(Math.floor(currentTime % 60)).padStart(2, '0')}</span>
+                                            <div className="flex-1">
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max={duration || 0}
+                                                    step="0.1"
+                                                    value={currentTime}
+                                                    onChange={(e) => {
+                                                        const newTime = parseFloat(e.target.value);
+                                                        if (audioRef.current) {
+                                                            audioRef.current.currentTime = newTime;
+                                                            setCurrentTime(newTime);
+                                                        }
+                                                    }}
+                                                    className="w-full h-1 rounded-full appearance-none cursor-pointer"
+                                                    style={{
+                                                        background: `linear-gradient(to right, ${colors.accent} 0%, ${colors.accent} ${(currentTime / duration) * 100}%, rgba(255,255,255,0.1) ${(currentTime / duration) * 100}%, rgba(255,255,255,0.1) 100%)`
+                                                    }}
+                                                />
+                                            </div>
+                                            <span>{Math.floor(duration / 60)}:{String(Math.floor(duration % 60)).padStart(2, '0')}</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex items-center gap-4">
+                                    {/* Track Info */}
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        <div
+                                            className="w-11 h-11 rounded-xl flex items-center justify-center text-lg shrink-0"
+                                            style={{ background: error ? "#F43F5E20" : `${colors.accent}20` }}
+                                        >
+                                            {error ? <AlertCircle size={18} color="#F43F5E" /> : currentTrack.icon}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium text-white truncate">{currentTrack.name}</p>
+                                            <p className="text-[10px] text-white/40">
+                                                {error ? "Playback failed" : isLoading ? "Loading..." : "Now playing"}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Controls */}
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setIsShuffleOn(!isShuffleOn)}
+                                            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10"
+                                        >
+                                            <Shuffle size={14} color={isShuffleOn ? colors.accent : "#555"} />
+                                        </button>
+
+                                        <button
+                                            onClick={prev}
+                                            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10"
+                                        >
+                                            <SkipBack size={16} color="#aaa" />
+                                        </button>
+
+                                        <button
+                                            onClick={toggle}
+                                            className="w-12 h-12 rounded-full flex items-center justify-center"
+                                            style={{ background: colors.accent }}
+                                        >
+                                            {isPlaying ? <Pause size={20} color="#000" /> : <Play size={20} color="#000" />}
+                                        </button>
+
+                                        <button
+                                            onClick={next}
+                                            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10"
+                                        >
+                                            <SkipForward size={16} color="#aaa" />
+                                        </button>
+
+                                        <button
+                                            onClick={() => setIsLoopOn(!isLoopOn)}
+                                            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10"
+                                        >
+                                            <Repeat size={14} color={isLoopOn ? colors.accent : "#555"} />
+                                        </button>
+
+                                        {/* Volume Controls */}
+                                        <div className="flex items-center gap-2 relative">
+                                            <button
+                                                onClick={() => {
+                                                    setIsMuted(!isMuted);
+                                                    // Handle frequency mix volume
+                                                    if (currentTrack?.url.startsWith('frequency-mix://')) {
+                                                        const engine = getFrequencyEngine();
+                                                        engine.setMasterVolume(!isMuted ? 0 : volume);
+                                                    } else if (audioRef.current) {
+                                                        audioRef.current.muted = !isMuted;
+                                                    }
+                                                }}
+                                                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 shrink-0"
+                                                title={!isDirectAudio(currentTrack.url) && !currentTrack.url.startsWith('frequency-mix://') ? "Use system volume for YouTube tracks" : ""}
+                                            >
+                                                {isMuted ? <VolumeX size={14} color="#555" /> : <Volume2 size={14} color={colors.accent} />}
+                                            </button>
+
+                                            {/* Volume Slider */}
+                                            <div className="relative">
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="1"
+                                                    step="0.01"
+                                                    value={isMuted ? 0 : volume}
+                                                    onChange={(e) => {
+                                                        const newVolume = parseFloat(e.target.value);
+                                                        setVolume(newVolume);
+                                                        if (newVolume === 0) {
+                                                            setIsMuted(true);
+                                                        } else {
+                                                            setIsMuted(false);
+                                                        }
+
+                                                        // Handle frequency mix volume
+                                                        if (currentTrack?.url.startsWith('frequency-mix://')) {
+                                                            const engine = getFrequencyEngine();
+                                                            engine.setMasterVolume(newVolume);
+                                                        } else if (audioRef.current) {
+                                                            audioRef.current.volume = newVolume;
+                                                        }
+                                                    }}
+                                                    className="w-16 h-1 rounded-full appearance-none bg-white/10 cursor-pointer"
+                                                    style={{
+                                                        background: `linear-gradient(to right, ${colors.accent} 0%, ${colors.accent} ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.1) ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.1) 100%)`,
+                                                        opacity: !isDirectAudio(currentTrack.url) && !currentTrack.url.startsWith('frequency-mix://') ? 0.4 : 1
+                                                    }}
+                                                    title={!isDirectAudio(currentTrack.url) && !currentTrack.url.startsWith('frequency-mix://') ? "Volume control unavailable for YouTube. Use system volume." : ""}
+                                                />
+                                                {!isDirectAudio(currentTrack.url) && !currentTrack.url.startsWith('frequency-mix://') && (
+                                                    <div className="absolute -bottom-6 left-0 text-[8px] text-white/30 whitespace-nowrap">
+                                                        Use system volume
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div >
+                )
+                }
+            </div >
+        </>
+    );
+}

@@ -1,0 +1,12 @@
+{/* ========== PREMIUM SIDEBAR ========== */}
+<PremiumSidebar
+  collapsed={sidebarCollapsed}
+  view={view}
+  onViewChange={(v) => setView(v as any)}
+  accent={accent}
+  onFrequencyClick={() => setShowFrequencyGen(true)}
+  onCommandClick={() => setShowCommandCenter(true)}
+/>
+
+{/* ========== MAIN ========== */}
+<main className="flex-1 flex flex-col overflow-hidden relative">
