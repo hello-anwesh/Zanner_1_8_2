@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Brain, Image, MonitorSmartphone, Check, X,
-    Settings2, Zap, Cpu, Sparkles, Wand2,
+    Brain, Image, MonitorSmartphone, X,
+    Zap, Cpu, Sparkles, Wand2,
     Tablet, Play, Link2, Loader2, CheckCircle2, AlertCircle
 } from "lucide-react";
 import { aiService } from "../services/ai/AIService";
@@ -199,7 +199,7 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
                         ...(url && { baseUrl: url }),
                         model: "" // Will be set after model selection
                     }
-                }
+                } as any
             });
 
             // Test connection
@@ -265,11 +265,11 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
                         ...(baseUrl && { baseUrl }),
                         model: selectedModel
                     }
-                }
+                } as any
             };
 
             console.log("Calling aiService.updateConfig with:", JSON.stringify(configToSave, null, 2));
-            aiService.updateConfig(configToSave);
+            aiService.updateConfig(configToSave as any);
 
             // Verify what was saved
             const savedConfig = aiService.getConfig();
@@ -289,7 +289,6 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
     const ProviderCard = ({ provider }: { provider: IntegrationProvider }) => {
         const Icon = provider.icon;
         const isConnected = provider.status === "connected";
-        const [isEnabled, setIsEnabled] = useState(isConnected);
 
         return (
             <div

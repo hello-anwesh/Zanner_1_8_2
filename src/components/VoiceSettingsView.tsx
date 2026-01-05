@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Volume2, Play, Pause } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface VoiceSettings {
     enabled: boolean;
@@ -65,83 +66,120 @@ export const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({ accent }) 
     };
 
     return (
-        <div className="p-6 max-w-4xl mx-auto space-y-6 animate-fade-in">
-            {/* Small Badge Header */}
-            <span className="px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-white/[0.03] text-white/40 border border-white/[0.08] inline-block">
+        <div className="p-12 max-w-5xl mx-auto space-y-10" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+            {/* Header Badge */}
+            <span className="px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-wider bg-white/[0.08] text-white/60 border border-white/[0.15] inline-block">
                 Voice & TTS
             </span>
 
             {/* Main Toggle */}
-            <div className="card-premium p-5">
+            <motion.div
+                whileHover={{ scale: 1.01 }}
+                className="p-8 rounded-[28px]"
+                style={{
+                    background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    backdropFilter: "blur(30px)",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
+                }}
+            >
                 <div className="flex items-center justify-between">
                     <div>
-                        <h3 className="font-bold text-sm mb-0.5">Voice Notifications</h3>
-                        <p className="text-xs text-white/40">Audio announcements during sessions</p>
+                        <h3 className="font-black text-2xl mb-3 text-white leading-none">Voice Notifications</h3>
+                        <p className="text-base font-medium leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>Audio announcements during sessions</p>
                     </div>
                     <button
                         onClick={() => updateSetting('enabled', !settings.enabled)}
-                        className="relative w-14 h-7 rounded-full transition-all"
+                        className="relative w-16 h-9 rounded-full transition-all"
                         style={{
-                            background: settings.enabled ? accent : 'rgba(255,255,255,0.1)'
+                            background: settings.enabled ? `linear-gradient(135deg, ${accent} 0%, ${accent}DD 100%)` : 'rgba(255,255,255,0.12)',
+                            boxShadow: settings.enabled ? `0 6px 20px ${accent}60` : 'inset 0 2px 6px rgba(0,0,0,0.4)'
                         }}
                     >
                         <div
-                            className="absolute w-5 h-5 rounded-full bg-white top-1 transition-all"
+                            className="absolute w-7 h-7 rounded-full bg-white top-1 transition-all shadow-xl"
                             style={{
                                 left: settings.enabled ? '32px' : '4px'
                             }}
                         />
                     </button>
                 </div>
-            </div>
+            </motion.div>
 
             {settings.enabled && (
                 <>
-                    {/* Voice Selection - Clean Grid */}
-                    <div className="card-premium p-5">
-                        <h3 className="font-bold text-sm mb-4">Voice</h3>
-                        <div className="grid grid-cols-2 gap-2 mb-4">
+                    {/* Voice Selection */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-8 rounded-[28px]"
+                        style={{
+                            background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
+                            border: "1px solid rgba(255,255,255,0.12)",
+                            backdropFilter: "blur(30px)",
+                            boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
+                        }}
+                    >
+                        <h3 className="font-black text-2xl mb-8 text-white leading-none">Voice</h3>
+                        <div className="grid grid-cols-2 gap-5 mb-8">
                             {voices.map((voice) => (
-                                <button
+                                <motion.button
                                     key={voice.id}
+                                    whileHover={{ scale: 1.02, y: -2 }}
                                     onClick={() => updateSetting('voice', voice.id)}
-                                    className="p-3 rounded-lg text-left transition-all"
+                                    className="p-6 rounded-[20px] text-left transition-all"
                                     style={{
-                                        background: settings.voice === voice.id ? `${accent}15` : 'rgba(255,255,255,0.03)',
-                                        border: `1px solid ${settings.voice === voice.id ? accent + '40' : 'rgba(255,255,255,0.05)'}`
+                                        background: settings.voice === voice.id
+                                            ? `linear-gradient(135deg, ${accent}20 0%, ${accent}10 100%)`
+                                            : 'rgba(255,255,255,0.04)',
+                                        border: `1.5px solid ${settings.voice === voice.id ? accent + '60' : 'rgba(255,255,255,0.08)'}`,
+                                        boxShadow: settings.voice === voice.id ? `0 8px 24px ${accent}30` : 'none'
                                     }}
                                 >
-                                    <p className="font-bold text-xs">{voice.name}</p>
-                                    <p className="text-[10px] text-white/40">{voice.gender} • {voice.language}</p>
-                                </button>
+                                    <p className="font-bold text-lg mb-2 text-white">{voice.name}</p>
+                                    <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>{voice.gender} • {voice.language}</p>
+                                </motion.button>
                             ))}
                         </div>
 
                         {/* Test Button */}
-                        <button
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={testVoice}
                             disabled={testingVoice}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-bold text-xs transition-all"
+                            className="w-full flex items-center justify-center gap-3 px-6 py-5 rounded-[20px] font-bold text-base transition-all"
                             style={{
-                                background: `${accent}15`,
-                                border: `1px solid ${accent}30`,
+                                background: `linear-gradient(135deg, ${accent}25 0%, ${accent}15 100%)`,
+                                border: `1.5px solid ${accent}40`,
                                 color: accent
                             }}
                         >
-                            {testingVoice ? <Pause size={14} /> : <Play size={14} />}
+                            {testingVoice ? <Pause size={18} /> : <Play size={18} />}
                             {testingVoice ? 'Playing...' : 'Test Voice'}
-                        </button>
-                    </div>
+                        </motion.button>
+                    </motion.div>
 
-                    {/* Voice Controls - Compact Sliders */}
-                    <div className="card-premium p-5 space-y-4">
-                        <h3 className="font-bold text-sm mb-4">Controls</h3>
+                    {/* Voice Controls */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="p-8 rounded-[28px] space-y-8"
+                        style={{
+                            background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
+                            border: "1px solid rgba(255,255,255,0.12)",
+                            backdropFilter: "blur(30px)",
+                            boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
+                        }}
+                    >
+                        <h3 className="font-black text-2xl text-white leading-none">Controls</h3>
 
                         {/* Speed */}
                         <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="text-xs font-medium text-white/60">Speed</label>
-                                <span className="text-xs font-bold" style={{ color: accent }}>{settings.speed.toFixed(1)}x</span>
+                            <div className="flex items-center justify-between mb-4">
+                                <label className="text-base font-bold" style={{ color: "rgba(255,255,255,0.7)" }}>Speed</label>
+                                <span className="text-base font-black" style={{ color: accent }}>{settings.speed.toFixed(1)}x</span>
                             </div>
                             <input
                                 type="range"
@@ -150,18 +188,18 @@ export const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({ accent }) 
                                 step="0.1"
                                 value={settings.speed}
                                 onChange={(e) => updateSetting('speed', parseFloat(e.target.value))}
-                                className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+                                className="w-full h-2 rounded-full appearance-none cursor-pointer"
                                 style={{
-                                    background: `linear-gradient(to right, ${accent} 0%, ${accent} ${(settings.speed - 0.5) / 1.5 * 100}%, rgba(255,255,255,0.1) ${(settings.speed - 0.5) / 1.5 * 100}%, rgba(255,255,255,0.1) 100%)`
+                                    background: `linear-gradient(to right, ${accent} 0%, ${accent} ${(settings.speed - 0.5) / 1.5 * 100}%, rgba(255,255,255,0.12) ${(settings.speed - 0.5) / 1.5 * 100}%, rgba(255,255,255,0.12) 100%)`
                                 }}
                             />
                         </div>
 
                         {/* Pitch */}
                         <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="text-xs font-medium text-white/60">Pitch</label>
-                                <span className="text-xs font-bold" style={{ color: accent }}>{settings.pitch.toFixed(1)}</span>
+                            <div className="flex items-center justify-between mb-4">
+                                <label className="text-base font-bold" style={{ color: "rgba(255,255,255,0.7)" }}>Pitch</label>
+                                <span className="text-base font-black" style={{ color: accent }}>{settings.pitch.toFixed(1)}</span>
                             </div>
                             <input
                                 type="range"
@@ -170,21 +208,21 @@ export const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({ accent }) 
                                 step="0.1"
                                 value={settings.pitch}
                                 onChange={(e) => updateSetting('pitch', parseFloat(e.target.value))}
-                                className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+                                className="w-full h-2 rounded-full appearance-none cursor-pointer"
                                 style={{
-                                    background: `linear-gradient(to right, ${accent} 0%, ${accent} ${(settings.pitch - 0.5) / 1.5 * 100}%, rgba(255,255,255,0.1) ${(settings.pitch - 0.5) / 1.5 * 100}%, rgba(255,255,255,0.1) 100%)`
+                                    background: `linear-gradient(to right, ${accent} 0%, ${accent} ${(settings.pitch - 0.5) / 1.5 * 100}%, rgba(255,255,255,0.12) ${(settings.pitch - 0.5) / 1.5 * 100}%, rgba(255,255,255,0.12) 100%)`
                                 }}
                             />
                         </div>
 
                         {/* Volume */}
                         <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="text-xs font-medium text-white/60">Volume</label>
-                                <span className="text-xs font-bold" style={{ color: accent }}>{Math.round(settings.volume * 100)}%</span>
+                            <div className="flex items-center justify-between mb-4">
+                                <label className="text-base font-bold" style={{ color: "rgba(255,255,255,0.7)" }}>Volume</label>
+                                <span className="text-base font-black" style={{ color: accent }}>{Math.round(settings.volume * 100)}%</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Volume2 size={14} className="text-white/40" />
+                            <div className="flex items-center gap-4">
+                                <Volume2 size={20} className="text-white/50" />
                                 <input
                                     type="range"
                                     min="0"
@@ -192,19 +230,30 @@ export const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({ accent }) 
                                     step="0.05"
                                     value={settings.volume}
                                     onChange={(e) => updateSetting('volume', parseFloat(e.target.value))}
-                                    className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
+                                    className="flex-1 h-2 rounded-full appearance-none cursor-pointer"
                                     style={{
-                                        background: `linear-gradient(to right, ${accent} 0%, ${accent} ${settings.volume * 100}%, rgba(255,255,255,0.1) ${settings.volume * 100}%, rgba(255,255,255,0.1) 100%)`
+                                        background: `linear-gradient(to right, ${accent} 0%, ${accent} ${settings.volume * 100}%, rgba(255,255,255,0.12) ${settings.volume * 100}%, rgba(255,255,255,0.12) 100%)`
                                     }}
                                 />
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
 
-                    {/* Announcements - Compact List */}
-                    <div className="card-premium p-5">
-                        <h3 className="font-bold text-sm mb-3">Announcements</h3>
-                        <div className="space-y-2">
+                    {/* Announcements */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="p-8 rounded-[28px]"
+                        style={{
+                            background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
+                            border: "1px solid rgba(255,255,255,0.12)",
+                            backdropFilter: "blur(30px)",
+                            boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
+                        }}
+                    >
+                        <h3 className="font-black text-2xl mb-8 text-white leading-none">Announcements</h3>
+                        <div className="space-y-4">
                             {Object.entries({
                                 sessionStart: 'Session Start',
                                 sessionEnd: 'Session Complete',
@@ -212,32 +261,39 @@ export const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({ accent }) 
                                 breakEnd: 'Break Complete',
                                 milestone: 'Milestone Reached'
                             }).map(([key, label]) => (
-                                <div
+                                <motion.div
                                     key={key}
-                                    className="flex items-center justify-between p-2.5 rounded-lg"
-                                    style={{ background: 'rgba(255,255,255,0.02)' }}
+                                    whileHover={{ scale: 1.01, x: 4 }}
+                                    className="flex items-center justify-between p-5 rounded-[20px]"
+                                    style={{
+                                        background: 'rgba(255,255,255,0.04)',
+                                        border: '1px solid rgba(255,255,255,0.08)'
+                                    }}
                                 >
-                                    <span className="text-xs font-medium text-white/70">{label}</span>
+                                    <span className="text-base font-bold" style={{ color: "rgba(255,255,255,0.8)" }}>{label}</span>
                                     <button
                                         onClick={() => toggleAnnouncement(key as keyof VoiceSettings['announcements'])}
-                                        className="relative w-10 h-5 rounded-full transition-all"
+                                        className="relative w-14 h-8 rounded-full transition-all"
                                         style={{
                                             background: settings.announcements[key as keyof VoiceSettings['announcements']]
-                                                ? accent
-                                                : 'rgba(255,255,255,0.1)'
+                                                ? `linear-gradient(135deg, ${accent} 0%, ${accent}DD 100%)`
+                                                : 'rgba(255,255,255,0.12)',
+                                            boxShadow: settings.announcements[key as keyof VoiceSettings['announcements']]
+                                                ? `0 4px 16px ${accent}50`
+                                                : 'inset 0 2px 6px rgba(0,0,0,0.4)'
                                         }}
                                     >
                                         <div
-                                            className="absolute w-3.5 h-3.5 rounded-full bg-white top-0.5 transition-all"
+                                            className="absolute w-6 h-6 rounded-full bg-white top-1 transition-all shadow-lg"
                                             style={{
-                                                left: settings.announcements[key as keyof VoiceSettings['announcements']] ? '22px' : '2px'
+                                                left: settings.announcements[key as keyof VoiceSettings['announcements']] ? '28px' : '4px'
                                             }}
                                         />
                                     </button>
-                                </div>
+                                </motion.div>
                             ))}
                         </div>
-                    </div>
+                    </motion.div>
                 </>
             )}
         </div>

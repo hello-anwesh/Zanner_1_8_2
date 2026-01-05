@@ -29,3 +29,7 @@ export type {
 
 // Config Service
 export { configService } from "./config/ConfigService";
+
+// Database Service
+export { databaseService } from "./db/DatabaseService";
+export type { LoggedSession, SessionStatus } from "./db/types";

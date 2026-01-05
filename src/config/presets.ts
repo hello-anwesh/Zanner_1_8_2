@@ -174,6 +174,72 @@ export const TIMER_PRESETS: TimerPreset[] = [
         tip: "Experiment and find what works best for your unique work style and energy patterns.",
         color: "#64748B",
     },
+    // PSYCHEDELIC PRESETS
+    {
+        id: "dmt-trip",
+        name: "DMT Breakthrough",
+        icon: "👁️",
+        description: "Intense 15m spiritual dive - Gamma/963Hz",
+        focus: 15,
+        shortBreak: 15, // Long integration
+        longBreak: 60,
+        sessionsBeforeLongBreak: 1,
+        bestFor: ["Deep Meditation", "Ego Dissolution", "Spiritual Insight"],
+        tip: "Usage: Eye mask required. Do not operate machinery. surrender to the experience.",
+        color: "#D946EF", // Fuchshia
+    },
+    {
+        id: "ayahuasca-journey",
+        name: "Ayahuasca Spirit",
+        icon: "🌿",
+        description: "Deep 45m earth connection - Theta/432Hz",
+        focus: 45,
+        shortBreak: 20,
+        longBreak: 60,
+        sessionsBeforeLongBreak: 1,
+        bestFor: ["Healing", "Emotional Release", "Nature Connection"],
+        tip: "Purging (emotional) may occur. Breathe deeply. Trust the medicine (frequency).",
+        color: "#166534", // Green
+    },
+    {
+        id: "lsd-micro",
+        name: "LSD Microdose",
+        icon: "💠",
+        description: "Sharp 50m creative focus - Alpha/Gamma",
+        focus: 50,
+        shortBreak: 10,
+        longBreak: 30,
+        sessionsBeforeLongBreak: 2,
+        bestFor: ["Programming", "Complex Problem Solving", "Creative Flow"],
+        tip: "Enhanced pattern recognition. Use for tasks requiring lateral thinking.",
+        color: "#0EA5E9", // Sky Blue
+    },
+    {
+        id: "mushroom-trip",
+        name: "Mushroom Trip",
+        icon: "🍄",
+        description: "Playful 30m creative exploration - Theta/Alpha",
+        focus: 30,
+        shortBreak: 10,
+        longBreak: 30,
+        sessionsBeforeLongBreak: 2,
+        bestFor: ["Brainstorming", "Art", "Idea Generation"],
+        tip: "Dissolves boundaries. Let your mind wander. Good for visual thinking.",
+        color: "#F43F5E", // Rose
+    },
+    {
+        id: "astral-gate",
+        name: "Astral Gate",
+        icon: "🌌",
+        description: "20m Out-of-body prep - Theta/Delta",
+        focus: 20,
+        shortBreak: 0,
+        longBreak: 60,
+        sessionsBeforeLongBreak: 1,
+        bestFor: ["Lucid Dreaming", "OBE Practice", "Deep Rest"],
+        tip: "Lie down. Do not move. Focus on the hypnagogic imagery.",
+        color: "#4F46E5", // Indigo
+    },
 ];
 
 // Get preset by ID

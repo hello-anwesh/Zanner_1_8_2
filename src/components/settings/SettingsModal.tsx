@@ -11,7 +11,7 @@ interface SettingsModalProps {
     onClose: () => void;
     accent: string;
     theme: string;
-    themes: Record<string, { accent: string; name: string }>;
+    themes: Record<string, any>;
     onThemeChange: (theme: string) => void;
 }
 

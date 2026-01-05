@@ -74,6 +74,9 @@ export const FREQUENCIES: FrequencyInfo[] = [
 export interface FrequencyMix {
     id: string;
     name: string;
+    description?: string;
+    experience?: string;
+    usage?: string;
     frequencies: { hz: number; volume: number }[];
     createdAt: number;
 }
@@ -83,6 +86,9 @@ export const PRESET_MIXES: FrequencyMix[] = [
     {
         id: "focus",
         name: "Deep Focus",
+        description: "Gamma & Beta waves for high-performance cognition.",
+        experience: "Heightened alertness, laser-sharp attention.",
+        usage: "Complex tasks, coding, studying.",
         frequencies: [
             { hz: 40, volume: 0.5 },
             { hz: 14, volume: 0.3 },
@@ -93,6 +99,9 @@ export const PRESET_MIXES: FrequencyMix[] = [
     {
         id: "sleep",
         name: "Deep Sleep",
+        description: "Delta waves to induce restorative sleep.",
+        experience: "Heavy eyelids, slowing of thoughts, deep relaxation.",
+        usage: "Insomnia, power naps, bedtime.",
         frequencies: [
             { hz: 2, volume: 0.6 },
             { hz: 174, volume: 0.3 },
@@ -103,6 +112,9 @@ export const PRESET_MIXES: FrequencyMix[] = [
     {
         id: "meditation",
         name: "Meditation",
+        description: "Theta & Alpha bridge for mindfulness.",
+        experience: "Mental clarity, calm detachment, inner peace.",
+        usage: "Meditation, yoga, stress relief.",
         frequencies: [
             { hz: 7.83, volume: 0.4 },
             { hz: 432, volume: 0.4 },
@@ -113,6 +125,9 @@ export const PRESET_MIXES: FrequencyMix[] = [
     {
         id: "healing",
         name: "Full Healing",
+        description: "Solfeggio repair frequencies.",
+        experience: "Sense of well-being, emotional release.",
+        usage: "Recovery, illness, emotional pain.",
         frequencies: [
             { hz: 528, volume: 0.4 },
             { hz: 396, volume: 0.3 },
@@ -123,6 +138,9 @@ export const PRESET_MIXES: FrequencyMix[] = [
     {
         id: "creativity",
         name: "Creative Flow",
+        description: "Theta waves to unlock subconscious.",
+        experience: "Flow state, ideation, lack of self-judgment.",
+        usage: "Art, writing, brainstorming.",
         frequencies: [
             { hz: 6, volume: 0.5 },
             { hz: 417, volume: 0.3 },
@@ -133,6 +151,9 @@ export const PRESET_MIXES: FrequencyMix[] = [
     {
         id: "golden-ratio",
         name: "Golden Ratio",
+        description: "Phi frequencies based on sacred geometry.",
+        experience: "Feeling of balance, alignment with nature.",
+        usage: "Design work, contemplation.",
         frequencies: [
             { hz: 1.618, volume: 0.4 },
             { hz: 161.8, volume: 0.5 },
@@ -144,6 +165,9 @@ export const PRESET_MIXES: FrequencyMix[] = [
     {
         id: "schumann",
         name: "Earth Resonance",
+        description: "7.83Hz Earth heartbeat.",
+        experience: "Groundedness, physical stability.",
+        usage: "Feeling scattered, anxiety, travel recovery.",
         frequencies: [
             { hz: 7.83, volume: 0.6 },
             { hz: 136.1, volume: 0.3 },
@@ -154,6 +178,9 @@ export const PRESET_MIXES: FrequencyMix[] = [
     {
         id: "energy",
         name: "Energy Boost",
+        description: "High Beta & Gamma for wakefulness.",
+        experience: "Adrenaline rush, wide-awake feeling.",
+        usage: "Morning grogginess, pre-workout.",
         frequencies: [
             { hz: 30, volume: 0.5 },
             { hz: 40, volume: 0.4 },
@@ -165,6 +192,9 @@ export const PRESET_MIXES: FrequencyMix[] = [
     {
         id: "anxiety",
         name: "Anxiety Relief",
+        description: "Root chakra & Alpha waves.",
+        experience: "Slowing heart rate, release of tension.",
+        usage: "Panic attacks, high stress.",
         frequencies: [
             { hz: 396, volume: 0.5 },
             { hz: 174, volume: 0.4 },
@@ -176,11 +206,332 @@ export const PRESET_MIXES: FrequencyMix[] = [
     {
         id: "spiritual",
         name: "Spiritual Awakening",
+        description: "High Solfeggio frequencies.",
+        experience: "Tingling in forehead (third eye), oneness.",
+        usage: "Deep prayer, spiritual connection.",
         frequencies: [
             { hz: 963, volume: 0.4 },
             { hz: 852, volume: 0.4 },
             { hz: 741, volume: 0.3 },
             { hz: 136.1, volume: 0.2 },
+        ],
+        createdAt: 0,
+    },
+
+    // === PSYCHEDELIC PRESETS (New) ===
+    {
+        id: "dmt-sim",
+        name: "DMT Breakthrough",
+        description: "Gamma pulse + Divine frequency simulation.",
+        experience: "Dissolution of ego, visual geometry behind closed eyes, time dilation.",
+        usage: "Deep meditation only. Use eye mask. 15-30 mins max.",
+        frequencies: [
+            { hz: 963, volume: 0.5 },
+            { hz: 40, volume: 0.4 },
+            { hz: 111, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "ayahuasca",
+        name: "Ayahuasca Spirit",
+        description: "Deep Theta + Earth + Repair.",
+        experience: "Emotional purge, connection to nature/ancestors, heavy body sensation.",
+        usage: "Processing trauma, deep emotional work.",
+        frequencies: [
+            { hz: 4, volume: 0.6 },
+            { hz: 136.1, volume: 0.4 },
+            { hz: 528, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "lsd-clarity",
+        name: "LSD Microdose",
+        description: "Golden Ratio + Gamma Focus.",
+        experience: "Hyper-definition, pattern recognition, connected thoughts.",
+        usage: "Creative problem solving, complex systems thinking.",
+        frequencies: [
+            { hz: 144, volume: 0.4 },
+            { hz: 432, volume: 0.4 },
+            { hz: 40, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "psilocybin",
+        name: "Mushroom Trip",
+        description: "Alpha/Theta bridge + Detox.",
+        experience: "Visual breathing, emotional warmth, child-like wonder.",
+        usage: "Nature walks (with headphones), creative visualization.",
+        frequencies: [
+            { hz: 7.83, volume: 0.5 },
+            { hz: 10, volume: 0.4 },
+            { hz: 741, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "astral-gate",
+        name: "Astral Gate",
+        description: "Theta/Delta border + Pineal activation.",
+        experience: "Vibrational state, sensation of floating/leaving body.",
+        usage: "WBTB (Wake Back To Bed) method, lucid dreaming induction.",
+        frequencies: [
+            { hz: 6.3, volume: 0.6 },
+            { hz: 963, volume: 0.3 },
+            { hz: 852, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+
+    // === SPECIFIC USE CASES ===
+    {
+        id: "headache",
+        name: "Headache Relief",
+        description: "Low Delta + Pain relief Solfeggio.",
+        experience: "Softening of tension behind eyes/neck.",
+        usage: "Migraines, tension headaches.",
+        frequencies: [
+            { hz: 144, volume: 0.5 },
+            { hz: 1.2, volume: 0.4 },
+            { hz: 174, volume: 0.4 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "fibonacci",
+        name: "Fibonacci Spiral",
+        description: "Mathematical sequence frequencies.",
+        experience: "Order out of chaos, mental alignment.",
+        usage: "Mathematics, coding, restoring logical flow.",
+        frequencies: [
+            { hz: 144, volume: 0.3 },
+            { hz: 233, volume: 0.3 },
+            { hz: 377, volume: 0.3 },
+            { hz: 610, volume: 0.2 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "lucid-dream",
+        name: "Lucid Dreaming",
+        description: "40Hz Gamma bursts within Theta.",
+        experience: "Waking awareness inside dream state.",
+        usage: "Listen while falling asleep or during naps.",
+        frequencies: [
+            { hz: 4, volume: 0.5 },
+            { hz: 40, volume: 0.3 },
+            { hz: 6, volume: 0.4 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "study-aid",
+        name: "Study Accelerator",
+        description: "Mid-Beta + Alpha for memory.",
+        experience: "Easy retention, lack of distraction.",
+        usage: "Reading, memorizing facts.",
+        frequencies: [
+            { hz: 14, volume: 0.5 },
+            { hz: 40, volume: 0.3 },
+            { hz: 10, volume: 0.4 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "deep-relax",
+        name: "Zero Gravity",
+        description: "Low Delta + DNA Repair.",
+        experience: "Weightlessness, deep muscle release.",
+        usage: "Post-workout, ending a stressful day.",
+        frequencies: [
+            { hz: 2.5, volume: 0.6 },
+            { hz: 528, volume: 0.3 },
+            { hz: 7.83, volume: 0.2 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "immune",
+        name: "Immunity Boost",
+        description: "Schumann + Cell Genesis.",
+        experience: "Warmth in chest/gut area.",
+        usage: "Feeling sick, recovery mode.",
+        frequencies: [
+            { hz: 7.83, volume: 0.5 },
+            { hz: 432, volume: 0.4 },
+            { hz: 111, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "third-eye",
+        name: "Third Eye Open",
+        description: "Ajna Chakra Activation.",
+        experience: "Pressure between eyebrows, insight.",
+        usage: "Visualization, foresight.",
+        frequencies: [
+            { hz: 852, volume: 0.5 },
+            { hz: 963, volume: 0.4 },
+            { hz: 288, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "root-chakra",
+        name: "Root Cleanse",
+        description: "Muladhara Grounding.",
+        experience: "Safety, stability, physical connection.",
+        usage: "Fear, insecurity, financial stress.",
+        frequencies: [
+            { hz: 256, volume: 0.6 },
+            { hz: 396, volume: 0.4 },
+            { hz: 194.18, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "throat-chakra",
+        name: "Voice of Truth",
+        description: "Vishuddha Activation.",
+        experience: "Clearing of throat, desire to speak.",
+        usage: "Public speaking, difficult conversations.",
+        frequencies: [
+            { hz: 741, volume: 0.5 },
+            { hz: 192, volume: 0.4 },
+            { hz: 384, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "heart-chakra",
+        name: "Heart Resonance",
+        description: "Anahata Opening.",
+        experience: "Emotional expansion, empathy, love.",
+        usage: "Relationship issues, self-love.",
+        frequencies: [
+            { hz: 639, volume: 0.5 },
+            { hz: 528, volume: 0.4 },
+            { hz: 136.1, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "solar-plexus",
+        name: "Inner Power",
+        description: "Manipura Confidence.",
+        experience: "Gut confidence, willpower boost.",
+        usage: "Procrastination, low self-esteem.",
+        frequencies: [
+            { hz: 528, volume: 0.5 },
+            { hz: 417, volume: 0.4 },
+            { hz: 126.22, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "sacral-chakra",
+        name: "Sacral Flow",
+        description: "Svadhisthana Passion.",
+        experience: "Creative sexual energy, fluidity.",
+        usage: "Creative blocks, low libido.",
+        frequencies: [
+            { hz: 417, volume: 0.5 },
+            { hz: 288, volume: 0.4 },
+            { hz: 210.42, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "crown-chakra",
+        name: "Crown Divine",
+        description: "Sahasrara Connection.",
+        experience: "Pure knowing, blissful silence.",
+        usage: "Deep spiritual work.",
+        frequencies: [
+            { hz: 963, volume: 0.5 },
+            { hz: 480, volume: 0.4 },
+            { hz: 172.06, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "aura-cleanse",
+        name: "Aura Shield",
+        description: "Biofield restoration.",
+        experience: "Feeling lighter, 'clean' sensation.",
+        usage: "After being in crowds or negative environments.",
+        frequencies: [
+            { hz: 741, volume: 0.5 },
+            { hz: 432, volume: 0.4 },
+            { hz: 417, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "pineal",
+        name: "Pineal Activate",
+        description: "DMT production stimulation.",
+        experience: "Internal light, vivid imagery.",
+        usage: "Dark room meditation.",
+        frequencies: [
+            { hz: 936, volume: 0.5 },
+            { hz: 852, volume: 0.4 },
+            { hz: 963, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "dna-restore",
+        name: "Cellular Repair",
+        description: "Genomic restoration.",
+        experience: "Deep physical rest.",
+        usage: "Healing from injury.",
+        frequencies: [
+            { hz: 528, volume: 0.6 },
+            { hz: 111, volume: 0.4 },
+            { hz: 285, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "kundalini",
+        name: "Kundalini Rise",
+        description: "Spine energy ascent.",
+        experience: "Heat rising up spine, electric tingles.",
+        usage: "Advanced energy work.",
+        frequencies: [
+            { hz: 55, volume: 0.5 },
+            { hz: 72, volume: 0.4 },
+            { hz: 396, volume: 0.3 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "zen",
+        name: "Zen Silence",
+        description: "Monastic mind state.",
+        experience: "Empty mind, stillness.",
+        usage: "Zazen, silent sitting.",
+        frequencies: [
+            { hz: 5, volume: 0.6 },
+            { hz: 432, volume: 0.3 },
+            { hz: 1, volume: 0.2 },
+        ],
+        createdAt: 0,
+    },
+    {
+        id: "universal",
+        name: "God Mode",
+        description: "Total brain synchronization.",
+        experience: "Peak performance across all bands.",
+        usage: "When you need to be unstoppable.",
+        frequencies: [
+            { hz: 432, volume: 0.4 },
+            { hz: 963, volume: 0.4 },
+            { hz: 111, volume: 0.3 },
+            { hz: 40, volume: 0.1 },
         ],
         createdAt: 0,
     },

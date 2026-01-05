@@ -12,6 +12,7 @@ import { eventBus } from "../services";
 import { musicController } from "../services/music/MusicController";
 import { PRESET_MIXES, loadCustomMixes } from "./frequency/frequencies";
 import { getFrequencyEngine } from "./frequency/FrequencyEngine";
+import { spotifyService, SpotifyState } from "../services/spotify/SpotifyService";
 
 interface FloatingPlayerProps {
     colors: {
@@ -37,6 +38,9 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
 
+    // Spotify state
+    const [spotifyState, setSpotifyState] = useState<SpotifyState | null>(null);
+
     const audioRef = useRef<HTMLAudioElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -56,6 +60,14 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
 
     useEffect(() => {
         setFavorites(loadSoundLibrary().favorites);
+    }, []);
+
+    // Subscribe to Spotify state
+    useEffect(() => {
+        const unsub = spotifyService.subscribe((state) => {
+            setSpotifyState(state);
+        });
+        return () => unsub();
     }, []);
 
     // MusicController integration for timer pause/resume
@@ -127,7 +139,10 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
                 url: `frequency-mix://${mix.id}`, // Special URL scheme
                 category: "frequency" as const,
                 duration: "Generated",
-                isCustom: mix.id.startsWith('custom-')
+                isCustom: mix.id.startsWith('custom-'),
+                description: mix.description,
+                experience: mix.experience,
+                usage: mix.usage
             }));
 
             return [...regularFreqTracks, ...freqMixTracks];
@@ -284,6 +299,7 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
 
     // Category tabs - MAIN categories only
     const tabs = [
+        { id: "spotify", label: "🎧", name: "Spotify" },
         { id: "favorites", label: "♥", name: "Likes" },
         { id: "nature", label: "🌿", name: "Nature" },
         { id: "ambient", label: "🌌", name: "Ambient" },
@@ -327,12 +343,13 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
                 />
             )}
 
-            {/* === YOUTUBE EMBED (Fallback for non-mp3) === */}
-            {currentTrack && !isDirectAudio(currentTrack.url) && (
+            {/* === YOUTUBE EMBED (Hidden - audio only) === */}
+            {currentTrack && !isDirectAudio(currentTrack.url) && !currentTrack.url.startsWith('frequency-mix://') && (
                 <iframe
                     ref={iframeRef}
-                    src={`${getEmbedUrl(currentTrack.url)}?autoplay=1&controls=0&loop=1&modestbranding=1&rel=0&enablejsapi=1${currentTrack.isPlaylist ? '&shuffle=1' : ''}`}
-                    allow="autoplay; encrypted-media"
+                    src={`${getEmbedUrl(currentTrack.url)}?autoplay=1&controls=0&loop=1&modestbranding=1&rel=0&enablejsapi=1&origin=${window.location.origin}${currentTrack.isPlaylist ? '&shuffle=1' : ''}`}
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                    referrerPolicy="strict-origin-when-cross-origin"
                     onLoad={() => { setIsLoading(false); setError(null); }}
                     style={{
                         width: 1,
@@ -431,19 +448,19 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
                                     <Music size={20} style={{ color: colors.accent }} strokeWidth={2.5} />
                                 </div>
                                 <h2 className="text-xl font-bold tracking-tight text-white">Sound Library</h2>
+                                <button
+                                    onClick={() => setShowLibrary(false)}
+                                    className="p-2.5 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95"
+                                    style={{ background: "rgba(255,255,255,0.05)" }}
+                                >
+                                    <X size={18} style={{ color: "rgba(255,255,255,0.5)" }} />
+                                </button>
                             </div>
-                            <button
-                                onClick={() => setShowLibrary(false)}
-                                className="p-2.5 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95"
-                                style={{ background: "rgba(255,255,255,0.05)" }}
-                            >
-                                <X size={18} style={{ color: "rgba(255,255,255,0.5)" }} />
-                            </button>
                         </div>
 
                         {/* Error Banner */}
                         {error && (
-                            <div className="mx-6 mt-4 p-4 rounded-2xl flex items-center gap-3 relative overflow-hidden"
+                            <div className="mx-6 mt-6 p-4 rounded-2xl flex items-center gap-3 relative overflow-hidden"
                                 style={{
                                     background: "linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(244, 63, 94, 0.08) 100%)",
                                     border: "1px solid rgba(244, 63, 94, 0.25)",
@@ -456,8 +473,8 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
                         )}
 
                         {/* Category Tabs */}
-                        <div className="relative px-6 pt-5 pb-4">
-                            <div className="flex gap-2.5 overflow-x-auto scrollbar-none pb-1">
+                        <div className="px-6 py-6">
+                            <div className="flex gap-3 overflow-x-auto scrollbar-none">
                                 {tabs.map(tab => (
                                     <button
                                         key={tab.id}
@@ -486,8 +503,113 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
                         </div>
 
                         {/* Track List */}
-                        <div className="relative px-4 pb-4 max-h-[400px] overflow-y-auto custom-scrollbar">
-                            {sounds.length === 0 ? (
+                        <div className="relative px-6 pb-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+                            {/* Spotify Tab Content */}
+                            {activeCategory === "spotify" ? (
+                                <div className="space-y-4 py-2">
+                                    {spotifyState?.is_running ? (
+                                        <>
+                                            {/* Now Playing Card */}
+                                            {spotifyState.track ? (
+                                                <div
+                                                    className="p-5 rounded-2xl"
+                                                    style={{
+                                                        background: "linear-gradient(135deg, rgba(29, 185, 84, 0.15) 0%, rgba(29, 185, 84, 0.05) 100%)",
+                                                        border: "1px solid rgba(29, 185, 84, 0.3)"
+                                                    }}
+                                                >
+                                                    <p className="text-[10px] font-bold uppercase tracking-wider text-green-400/60 mb-3">NOW PLAYING</p>
+                                                    <div className="flex items-center gap-4">
+                                                        <div
+                                                            className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl shrink-0"
+                                                            style={{ background: "rgba(29, 185, 84, 0.2)" }}
+                                                        >
+                                                            🎧
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-bold text-white text-lg truncate">{spotifyState.track.name}</p>
+                                                            <p className="text-sm text-white/60 truncate">{spotifyState.track.artist}</p>
+                                                            <p className="text-xs text-white/40 truncate">{spotifyState.track.album}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Controls */}
+                                                    <div className="flex items-center justify-center gap-4 mt-5">
+                                                        <button
+                                                            onClick={() => spotifyService.previous()}
+                                                            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-all"
+                                                        >
+                                                            <SkipBack size={18} color="#fff" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => spotifyService.toggle()}
+                                                            className="w-14 h-14 rounded-full flex items-center justify-center transition-all hover:scale-105"
+                                                            style={{ background: "#1DB954" }}
+                                                        >
+                                                            {spotifyState.is_playing ? <Pause size={24} color="#000" /> : <Play size={24} color="#000" />}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => spotifyService.next()}
+                                                            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-all"
+                                                        >
+                                                            <SkipForward size={18} color="#fff" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-8">
+                                                    <p className="text-white/50">Spotify is running but nothing is playing</p>
+                                                    <button
+                                                        onClick={() => spotifyService.play()}
+                                                        className="mt-4 px-6 py-3 rounded-xl font-bold"
+                                                        style={{ background: "#1DB954", color: "#000" }}
+                                                    >
+                                                        ▶ Play
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* Volume Slider */}
+                                            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                                                <div className="flex items-center gap-3">
+                                                    <Volume2 size={16} color="#1DB954" />
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max="100"
+                                                        value={spotifyState.volume}
+                                                        onChange={(e) => spotifyService.setVolume(parseInt(e.target.value))}
+                                                        className="flex-1 h-2 rounded-full appearance-none cursor-pointer"
+                                                        style={{
+                                                            background: `linear-gradient(to right, #1DB954 0%, #1DB954 ${spotifyState.volume}%, rgba(255,255,255,0.1) ${spotifyState.volume}%, rgba(255,255,255,0.1) 100%)`
+                                                        }}
+                                                    />
+                                                    <span className="text-xs text-white/40 w-8 text-right">{spotifyState.volume}%</span>
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="text-center py-12">
+                                            <div
+                                                className="w-20 h-20 rounded-2xl mx-auto mb-4 flex items-center justify-center"
+                                                style={{ background: "rgba(29, 185, 84, 0.1)" }}
+                                            >
+                                                <svg width="40" height="40" viewBox="0 0 24 24" fill="#1DB954">
+                                                    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+                                                </svg>
+                                            </div>
+                                            <p className="text-white/40 text-sm mb-4">Spotify is not running</p>
+                                            <button
+                                                onClick={() => spotifyService.open()}
+                                                className="px-6 py-3 rounded-xl font-bold transition-all hover:scale-105"
+                                                style={{ background: "#1DB954", color: "#000" }}
+                                            >
+                                                Open Spotify
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : sounds.length === 0 ? (
                                 <div className="text-center py-16">
                                     <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: `${colors.accent}15` }}>
                                         <Music size={32} style={{ color: colors.accent }} opacity={0.5} />
@@ -500,6 +622,7 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
                                         <div
                                             key={track.id}
                                             onClick={() => play(track)}
+                                            title={track.description || track.experience || track.name}
                                             className={`group relative flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all duration-300 overflow-hidden ${currentTrack?.id === track.id
                                                 ? "scale-[1.02]"
                                                 : "hover:scale-[1.01]"
@@ -538,10 +661,15 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
 
                                             {/* Info */}
                                             <div className="relative z-10 flex-1 min-w-0">
-                                                <p className={`text-sm font-bold truncate mb-1 transition-colors ${currentTrack?.id === track.id ? "text-white" : "text-white/80 group-hover:text-white"
+                                                <p className={`text-sm font-bold truncate transition-colors ${currentTrack?.id === track.id ? "text-white" : "text-white/80 group-hover:text-white"
                                                     }`}>
                                                     {track.name}
                                                 </p>
+                                                {track.description && (
+                                                    <p className="text-[10px] text-white/40 truncate mb-1">
+                                                        {track.description}
+                                                    </p>
+                                                )}
                                                 <div className="flex items-center gap-2">
                                                     {track.duration && (
                                                         <span

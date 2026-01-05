@@ -1,9 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { Brain, Send, Zap, Coffee, Music, X, TrendingUp } from "lucide-react";
+import { Send, X, Sparkles, Heart, Zap, Loader, TrendingUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { coachService } from "../services/ai/CoachService";
-import { musicSelectionService } from "../services/music/MusicSelectionService";
-import { accountabilityService } from "../services/accountability/AccountabilityService";
 
 interface Message {
     id: string;
@@ -21,26 +19,16 @@ interface ZennerCoachProps {
 }
 
 export function ZennerCoach({
-    accent,
     sessionsToday,
     isRunning,
     timeLeft,
-    onClose,
-    onMusicSelect
+    onClose
 }: ZennerCoachProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
-    const [showCommitmentPrompt, setShowCommitmentPrompt] = useState(false);
-    const [dailyTarget, setDailyTarget] = useState("");
     const messagesEndRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const accountability = accountabilityService.getTodayAccountability();
-        if (accountability.status === "no-commitment" && sessionsToday === 0) {
-            setShowCommitmentPrompt(true);
-        }
-    }, [sessionsToday]);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const context = {
@@ -52,12 +40,10 @@ export function ZennerCoach({
         };
 
         coachService.getSessionStartMessage(context).then(msg => {
-            const accountabilityMsg = accountabilityService.getAccountabilityMessage();
-
             setMessages([{
                 id: "welcome",
                 role: "coach",
-                content: `${msg}\n\n${accountabilityMsg}`
+                content: msg
             }]);
         });
     }, []);
@@ -66,364 +52,369 @@ export function ZennerCoach({
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    const addCoachMessage = (content: string) => {
-        setMessages(prev => [...prev, {
-            id: Date.now().toString(),
-            role: "coach",
-            content
-        }]);
-    };
-
-    const handleSetCommitment = () => {
-        const target = parseInt(dailyTarget);
-        if (target > 0) {
-            accountabilityService.setDailyCommitment(target, []);
-            addCoachMessage(`${target} sessions locked in. No excuses.`);
-            setShowCommitmentPrompt(false);
-            setDailyTarget("");
-        }
-    };
-
-    const handleQuickAction = async (action: "motivate" | "break" | "music" | "accountability") => {
-        const context = {
-            sessionsToday,
-            currentSession: sessionsToday + 1,
-            isRunning,
-            timeLeft,
-            timeOfDay: new Date().toLocaleTimeString()
-        };
-
-        setIsTyping(true);
-
-        try {
-            let response = "";
-
-            switch (action) {
-                case "motivate":
-                    response = await coachService.getMotivation(context);
-                    break;
-                case "break":
-                    const breakDuration = 5;
-                    response = await coachService.suggestBreak(breakDuration);
-                    break;
-                case "music":
-                    const hour = new Date().getHours();
-                    const timeOfDay = hour < 12 ? "morning" : hour < 17 ? "afternoon" : hour < 21 ? "evening" : "night";
-                    const energyLevel = sessionsToday < 2 ? "high" : sessionsToday < 5 ? "medium" : "low";
-
-                    const musicContext = {
-                        timeOfDay,
-                        energyLevel,
-                        sessionNumber: sessionsToday + 1,
-                        sessionDuration: 25
-                    };
-
-                    const { track, reason } = await musicSelectionService.getRecommendationWithReason(musicContext);
-                    response = `🎵 ${track.name}\n\n${reason}`;
-
-                    if (onMusicSelect) {
-                        setTimeout(() => {
-                            onMusicSelect(track.url, track.name);
-                        }, 1000);
-                    }
-                    break;
-                case "accountability":
-                    const accountability = accountabilityService.getTodayAccountability();
-                    const streak = accountabilityService.getStreakInfo();
-
-                    if (accountability.status === "no-commitment") {
-                        response = "Set your target first.";
-                        setShowCommitmentPrompt(true);
-                    } else {
-                        response = `${accountability.completed}/${accountability.committed} done\n\n${streak.current} day streak\nScore: ${accountability.score}%`;
-                    }
-                    break;
-            }
-
-            setTimeout(() => {
-                addCoachMessage(response);
-                setIsTyping(false);
-            }, 600);
-        } catch {
-            addCoachMessage("Connection issues. Try again.");
-            setIsTyping(false);
-        }
-    };
-
     const handleSend = async () => {
-        if (!input.trim()) return;
+        if (!input.trim() || isTyping) return;
 
-        const userMsg = input;
+        const userMessage = input.trim();
+        setInput("");
+
         setMessages(prev => [...prev, {
             id: Date.now().toString(),
             role: "user",
-            content: userMsg
+            content: userMessage
         }]);
-        setInput("");
+
         setIsTyping(true);
 
-        const context = {
-            sessionsToday,
-            currentSession: sessionsToday + 1,
-            isRunning,
-            timeLeft,
-            timeOfDay: new Date().toLocaleTimeString()
-        };
-
         try {
-            const response = await coachService.chat(userMsg, context);
-            setTimeout(() => {
-                addCoachMessage(response.message);
-                setIsTyping(false);
-            }, 800);
-        } catch {
-            addCoachMessage("I hear you. Let's work through this.");
+            const context = {
+                sessionsToday,
+                currentSession: sessionsToday + 1,
+                isRunning,
+                timeLeft,
+                timeOfDay: new Date().toLocaleTimeString()
+            };
+
+            const response = await coachService.chat(userMessage, context);
+
+            setMessages(prev => [...prev, {
+                id: Date.now().toString() + "-coach",
+                role: "coach",
+                content: response.message
+            }]);
+        } catch (error) {
+            setMessages(prev => [...prev, {
+                id: Date.now().toString() + "-error",
+                role: "coach",
+                content: "I apologize, Sir. I'm having trouble connecting. Please try again."
+            }]);
+        } finally {
             setIsTyping(false);
         }
     };
 
-    const getStatusText = () => {
-        const accountability = accountabilityService.getTodayAccountability();
-
-        if (accountability.status === "ahead") return "Crushing it";
-        if (accountability.status === "behind") return "Behind";
-        if (accountability.status === "on-track") return "On track";
-
-        if (sessionsToday === 0) return "Let's go";
-        if (sessionsToday >= 8) return "Beast mode";
-        if (sessionsToday >= 4) return "Locked in";
-        return "Building";
-    };
-
-    const accountability = accountabilityService.getTodayAccountability();
-
     return (
         <motion.div
-            initial={{ x: 100, opacity: 0 }}
+            initial={{ x: "100%", opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 100, opacity: 0 }}
-            transition={{ type: "spring", damping: 20, stiffness: 100 }}
-            className="fixed right-6 top-6 bottom-6 w-80 flex flex-col"
-            style={{ zIndex: 100 }}
+            exit={{ x: "100%", opacity: 0 }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className="fixed right-0 top-0 bottom-0 w-[600px] z-[60] flex flex-col"
         >
+            {/* Ultra Premium Glass Background */}
             <div
-                className="flex-1 rounded-3xl overflow-hidden flex flex-col"
+                className="absolute inset-0 backdrop-blur-[60px]"
                 style={{
-                    background: "rgba(6, 6, 8, 0.85)",
-                    backdropFilter: "blur(80px)",
-                    border: "1px solid rgba(255, 255, 255, 0.03)",
-                    boxShadow: `0 40px 100px rgba(0, 0, 0, 0.7)`
+                    background: "linear-gradient(165deg, rgba(20,20,28,0.96) 0%, rgba(14,14,20,0.98) 100%)",
+                    boxShadow: "-40px 0 120px rgba(0,0,0,0.8)"
                 }}
-            >
-                {/* Ultra Clean Header */}
-                <div className="px-6 py-4 flex items-center justify-between border-b border-white/[0.02]">
-                    <div className="flex items-center gap-2">
-                        <motion.div
-                            whileHover={{ rotate: 360 }}
-                            transition={{ duration: 0.5 }}
-                            className="w-7 h-7 rounded-xl flex items-center justify-center"
-                            style={{
-                                background: `${accent}15`,
-                                border: `1px solid ${accent}20`
-                            }}
-                        >
-                            <Brain size={14} style={{ color: accent }} strokeWidth={2.5} />
-                        </motion.div>
-                        <div>
-                            <h3 className="text-xs font-black text-white tracking-tight">Coach</h3>
-                            <p className="text-[8px] font-medium text-white/30 tracking-wider">{getStatusText()}</p>
-                        </div>
-                    </div>
-                    {onClose && (
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={onClose}
-                            className="p-1 rounded-lg hover:bg-white/5"
-                        >
-                            <X size={12} className="text-white/30" />
-                        </motion.button>
-                    )}
-                </div>
+            />
 
-                {/* Compact Session Display */}
-                <div className="px-6 py-3">
+            {/* Floating Ambient Glows */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-50">
+                <motion.div
+                    animate={{
+                        scale: [1, 1.3, 1],
+                        opacity: [0.2, 0.4, 0.2]
+                    }}
+                    transition={{
+                        duration: 10,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                    }}
+                    className="absolute -top-80 -right-80 w-[700px] h-[700px] rounded-full blur-[140px]"
+                    style={{
+                        background: "radial-gradient(circle, rgba(217, 70, 239, 0.3) 0%, transparent 70%)"
+                    }}
+                />
+                <motion.div
+                    animate={{
+                        scale: [1.3, 1, 1.3],
+                        opacity: [0.15, 0.35, 0.15]
+                    }}
+                    transition={{
+                        duration: 12,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 3
+                    }}
+                    className="absolute bottom-40 -right-60 w-[500px] h-[500px] rounded-full blur-[120px]"
+                    style={{
+                        background: "radial-gradient(circle, rgba(147, 51, 234, 0.25) 0%, transparent 70%)"
+                    }}
+                />
+            </div>
+
+            {/* Content Container */}
+            <div className="relative flex flex-col h-full">
+                {/* Ultra Spacious Header */}
+                <div className="px-12 py-10">
+                    <div className="flex items-start justify-between mb-10">
+                        <div className="flex items-center gap-6">
+                            <motion.div
+                                whileHover={{ scale: 1.08, rotate: 8 }}
+                                whileTap={{ scale: 0.92 }}
+                                className="relative w-20 h-20 rounded-[24px] flex items-center justify-center overflow-hidden cursor-pointer group"
+                                style={{
+                                    background: "linear-gradient(135deg, #D946EF 0%, #9333EA 100%)",
+                                    boxShadow: "0 16px 48px rgba(217, 70, 239, 0.4), 0 0 0 1px rgba(255,255,255,0.1)"
+                                }}
+                            >
+                                <div className="absolute inset-0 bg-white/20 blur-2xl group-hover:blur-3xl transition-all duration-700" />
+                                <Sparkles size={36} color="#FFF" strokeWidth={2.5} className="relative z-10" />
+
+                                <motion.div
+                                    animate={{ scale: [1, 1.3, 1] }}
+                                    transition={{ duration: 2.5, repeat: Infinity }}
+                                    className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-green-400"
+                                    style={{
+                                        boxShadow: "0 0 20px rgba(74, 222, 128, 1)"
+                                    }}
+                                />
+                            </motion.div>
+
+                            <div>
+                                <h3 className="text-4xl font-black tracking-tight text-white mb-2">Zeni</h3>
+                                <motion.p
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.3 }}
+                                    className="text-base font-semibold text-white/60 flex items-center gap-2.5"
+                                >
+                                    <motion.span
+                                        animate={{ opacity: [0.4, 1, 0.4] }}
+                                        transition={{ duration: 2.5, repeat: Infinity }}
+                                        className="w-2.5 h-2.5 rounded-full bg-green-400"
+                                    />
+                                    Online & Ready
+                                </motion.p>
+                            </div>
+                        </div>
+
+                        {onClose && (
+                            <motion.button
+                                whileHover={{ scale: 1.15, rotate: 90 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={onClose}
+                                className="p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-300"
+                            >
+                                <X size={22} className="text-white/70" />
+                            </motion.button>
+                        )}
+                    </div>
+
+                    {/* Beautiful Stats Card */}
                     <motion.div
-                        className="relative px-4 py-3 rounded-xl"
+                        whileHover={{ scale: 1.02, y: -4 }}
+                        transition={{ type: "spring", stiffness: 400 }}
+                        className="p-7 rounded-[28px] border cursor-pointer group"
                         style={{
-                            background: `${accent}08`,
-                            border: `1px solid ${accent}12`
+                            background: "linear-gradient(135deg, rgba(217, 70, 239, 0.1) 0%, rgba(147, 51, 234, 0.05) 100%)",
+                            borderColor: "rgba(217, 70, 239, 0.25)",
+                            boxShadow: "0 12px 40px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.05)"
                         }}
                     >
                         <div className="flex items-center justify-between">
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-2xl font-black" style={{ color: accent }}>{sessionsToday}</span>
-                                {accountability.status !== "no-commitment" && (
-                                    <span className="text-[10px] text-white/30">/ {accountability.committed}</span>
-                                )}
-                            </div>
-                            {accountability.status !== "no-commitment" && (
-                                <span className="text-[10px] font-bold" style={{ color: accountability.score >= 70 ? "#10b981" : "#ef4444" }}>
-                                    {accountability.score}%
-                                </span>
-                            )}
-                        </div>
-
-                        {accountability.status !== "no-commitment" && (
-                            <div className="mt-2 h-0.5 rounded-full bg-white/5 overflow-hidden">
+                            <div className="flex items-center gap-5">
                                 <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${(sessionsToday / accountability.committed) * 100}%` }}
-                                    className="h-full"
-                                    style={{ background: accent }}
-                                />
-                            </div>
-                        )}
-                    </motion.div>
-
-                    {/* Commitment Input - Compact */}
-                    <AnimatePresence>
-                        {showCommitmentPrompt && (
-                            <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="mt-2"
-                            >
-                                <div className="px-3 py-2 rounded-lg bg-white/[0.02] border border-white/5">
-                                    <p className="text-[10px] text-white/40 mb-1.5">Daily target?</p>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="number"
-                                            value={dailyTarget}
-                                            onChange={(e) => setDailyTarget(e.target.value)}
-                                            onKeyDown={(e) => e.key === "Enter" && handleSetCommitment()}
-                                            placeholder="6"
-                                            className="flex-1 px-2 py-1.5 rounded-md bg-white/5 border border-white/10 text-white text-xs outline-none"
-                                        />
-                                        <button
-                                            onClick={handleSetCommitment}
-                                            className="px-3 py-1.5 rounded-md text-[10px] font-bold"
-                                            style={{ background: accent, color: "#000" }}
-                                        >
-                                            Set
-                                        </button>
-                                    </div>
+                                    whileHover={{ rotate: 360 }}
+                                    transition={{ duration: 0.7 }}
+                                    className="w-16 h-16 rounded-[20px] bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center shadow-xl"
+                                >
+                                    <span className="text-3xl font-black">{sessionsToday}</span>
+                                </motion.div>
+                                <div>
+                                    <p className="text-xs text-white/60 font-bold uppercase tracking-[0.15em] mb-1.5">Sessions Today</p>
+                                    <p className="text-lg font-black text-white">{isRunning ? `⏱️ ${timeLeft}` : "Ready to Focus"}</p>
                                 </div>
+                            </div>
+                            <motion.div
+                                animate={{
+                                    scale: [1, 1.15, 1],
+                                }}
+                                transition={{ duration: 2.5, repeat: Infinity }}
+                            >
+                                <Heart size={28} className="text-pink-400" fill="rgba(244, 114, 182, 0.3)" />
                             </motion.div>
-                        )}
-                    </AnimatePresence>
+                        </div>
+                    </motion.div>
                 </div>
 
-                {/* Messages - Streamlined */}
-                <div className="flex-1 overflow-y-auto px-6 py-2 space-y-1.5 custom-scrollbar">
-                    <AnimatePresence>
-                        {messages.map((msg) => (
+                {/* Massive Spacious Messages Area */}
+                <div className="flex-1 overflow-y-auto px-12 py-6 space-y-8 custom-scrollbar">
+                    <AnimatePresence mode="popLayout">
+                        {messages.map((message, index) => (
                             <motion.div
-                                key={msg.id}
-                                initial={{ opacity: 0, y: 5 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                                key={message.id}
+                                initial={{ opacity: 0, y: 40, scale: 0.85 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.85 }}
+                                transition={{
+                                    type: "spring",
+                                    damping: 25,
+                                    stiffness: 300,
+                                    delay: index * 0.06
+                                }}
+                                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                             >
-                                <div
-                                    className="max-w-[85%] px-3 py-2 rounded-xl text-xs leading-relaxed whitespace-pre-wrap"
-                                    style={
-                                        msg.role === "user"
-                                            ? {
-                                                background: accent,
-                                                color: "#000",
-                                                fontWeight: 600
-                                            }
-                                            : {
-                                                background: "rgba(255, 255, 255, 0.03)",
-                                                color: "rgba(255, 255, 255, 0.85)",
-                                                border: "1px solid rgba(255, 255, 255, 0.03)"
-                                            }
-                                    }
-                                >
-                                    {msg.content}
-                                </div>
+                                {message.role === "coach" && (
+                                    <div className="flex items-start gap-5 max-w-[85%]">
+                                        <motion.div
+                                            whileHover={{ scale: 1.12, rotate: 12 }}
+                                            className="w-12 h-12 rounded-[18px] flex items-center justify-center flex-shrink-0 mt-1"
+                                            style={{
+                                                background: "linear-gradient(135deg, #D946EF 0%, #9333EA 100%)",
+                                                boxShadow: "0 8px 24px rgba(217, 70, 239, 0.35)"
+                                            }}
+                                        >
+                                            <Sparkles size={20} color="#FFF" strokeWidth={2.5} />
+                                        </motion.div>
+                                        <motion.div
+                                            whileHover={{ scale: 1.01, x: 6 }}
+                                            className="flex-1 px-7 py-6 rounded-[28px] rounded-tl-md relative overflow-hidden group cursor-pointer"
+                                            style={{
+                                                background: "linear-gradient(135deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.05) 100%)",
+                                                border: "1px solid rgba(255,255,255,0.15)",
+                                                backdropFilter: "blur(30px)",
+                                                boxShadow: "0 12px 48px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08)"
+                                            }}
+                                        >
+                                            <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500/8 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                                            <p className="text-white text-base leading-[1.8] font-medium break-words whitespace-pre-wrap relative z-10" style={{ wordBreak: "break-word", overflowWrap: "break-word" }}>
+                                                {message.content}
+                                            </p>
+                                        </motion.div>
+                                    </div>
+                                )}
+
+                                {message.role === "user" && (
+                                    <motion.div
+                                        whileHover={{ scale: 1.02, x: -6 }}
+                                        className="px-7 py-6 rounded-[28px] rounded-tr-md max-w-[85%] relative overflow-hidden cursor-pointer group"
+                                        style={{
+                                            background: "linear-gradient(135deg, #D946EF 0%, #9333EA 100%)",
+                                            boxShadow: "0 12px 40px rgba(217, 70, 239, 0.35), inset 0 1px 0 rgba(255,255,255,0.2)"
+                                        }}
+                                    >
+                                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
+                                        <p className="text-white text-base leading-[1.8] font-medium break-words whitespace-pre-wrap relative z-10" style={{ wordBreak: "break-word", overflowWrap: "break-word" }}>
+                                            {message.content}
+                                        </p>
+                                    </motion.div>
+                                )}
                             </motion.div>
                         ))}
-                        {isTyping && (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="flex justify-start"
-                            >
-                                <div className="px-3 py-2 rounded-xl bg-white/[0.02]">
-                                    <div className="flex gap-0.5">
-                                        {[0, 1, 2].map(i => (
-                                            <motion.div
-                                                key={i}
-                                                animate={{ opacity: [0.3, 1, 0.3] }}
-                                                transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                                                className="w-1 h-1 rounded-full bg-white/30"
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
                     </AnimatePresence>
+
+                    {isTyping && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="flex items-start gap-5"
+                        >
+                            <div
+                                className="w-12 h-12 rounded-[18px] flex items-center justify-center"
+                                style={{
+                                    background: "linear-gradient(135deg, #D946EF 0%, #9333EA 100%)"
+                                }}
+                            >
+                                <Sparkles size={20} color="#FFF" strokeWidth={2.5} />
+                            </div>
+                            <div
+                                className="px-7 py-6 rounded-[28px] rounded-tl-md flex items-center gap-3.5"
+                                style={{
+                                    background: "linear-gradient(135deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.05) 100%)",
+                                    border: "1px solid rgba(255,255,255,0.15)"
+                                }}
+                            >
+                                <Loader size={20} className="text-white/70 animate-spin" />
+                                <span className="text-white/70 text-base font-semibold">Zeni is thinking...</span>
+                            </div>
+                        </motion.div>
+                    )}
+
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Compact Actions */}
-                <div className="px-6 py-3 grid grid-cols-2 gap-1.5">
-                    {[
-                        { id: "motivate" as const, icon: Zap, label: "Push", color: accent },
-                        { id: "music" as const, icon: Music, label: "Music", color: "#8b5cf6" },
-                        { id: "break" as const, icon: Coffee, label: "Break", color: "#10b981" },
-                        { id: "accountability" as const, icon: TrendingUp, label: "Stats", color: "#f59e0b" }
-                    ].map((action) => (
-                        <motion.button
-                            key={action.id}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => handleQuickAction(action.id)}
-                            className="flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-[10px] font-bold"
-                            style={{
-                                background: `${action.color}10`,
-                                border: `1px solid ${action.color}15`,
-                                color: action.color
-                            }}
-                        >
-                            <action.icon size={11} strokeWidth={2.5} />
-                            {action.label}
-                        </motion.button>
-                    ))}
-                </div>
-
-                {/* Minimal Input */}
-                <div className="px-6 pb-5 pt-1">
-                    <div className="relative">
+                {/* Ultra Spacious Input Zone */}
+                <div className="px-12 py-10 border-t border-white/12">
+                    <div className="relative mb-6">
                         <input
+                            ref={inputRef}
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                            placeholder="Ask..."
-                            className="w-full px-3 py-2 pr-9 rounded-lg text-xs text-white placeholder-white/20 outline-none"
+                            placeholder="Message Zeni..."
+                            disabled={isTyping}
+                            className="w-full px-7 py-6 pr-20 rounded-[24px] text-white text-base font-medium outline-none transition-all duration-300 placeholder:text-white/35 focus:ring-2 focus:ring-fuchsia-500/40"
                             style={{
-                                background: "rgba(255, 255, 255, 0.02)",
-                                border: "1px solid rgba(255, 255, 255, 0.05)"
+                                background: "linear-gradient(135deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.06) 100%)",
+                                border: "1.5px solid rgba(255,255,255,0.18)",
+                                backdropFilter: "blur(30px)",
+                                boxShadow: "0 10px 40px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.12)"
                             }}
                         />
-                        <button
+                        <motion.button
+                            whileHover={{ scale: 1.15 }}
+                            whileTap={{ scale: 0.9 }}
                             onClick={handleSend}
-                            disabled={!input.trim()}
-                            className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md disabled:opacity-20"
+                            disabled={!input.trim() || isTyping}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-14 h-14 rounded-[18px] flex items-center justify-center transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
                             style={{
-                                background: input.trim() ? accent : "transparent",
-                                color: input.trim() ? "#000" : accent
+                                background: input.trim() && !isTyping
+                                    ? "linear-gradient(135deg, #D946EF 0%, #9333EA 100%)"
+                                    : "rgba(255,255,255,0.08)",
+                                boxShadow: input.trim() && !isTyping
+                                    ? "0 8px 24px rgba(217, 70, 239, 0.45)"
+                                    : "none"
                             }}
                         >
-                            <Send size={11} strokeWidth={2.5} />
-                        </button>
+                            <Send size={22} color="#FFF" strokeWidth={2.5} />
+                        </motion.button>
+                    </div>
+
+                    {/* Stylish Quick Actions */}
+                    <div className="flex gap-3.5">
+                        <QuickActionChip
+                            icon={Zap}
+                            label="Motivate Me"
+                            onClick={() => {
+                                setInput("I need motivation");
+                                setTimeout(() => inputRef.current?.focus(), 50);
+                            }}
+                        />
+                        <QuickActionChip
+                            icon={TrendingUp}
+                            label="My Progress"
+                            onClick={() => {
+                                setInput("Show me my progress");
+                                setTimeout(() => inputRef.current?.focus(), 50);
+                            }}
+                        />
                     </div>
                 </div>
             </div>
         </motion.div>
+    );
+}
+
+function QuickActionChip({ icon: Icon, label, onClick }: { icon: any; label: string; onClick: () => void }) {
+    return (
+        <motion.button
+            whileHover={{ scale: 1.06, y: -3 }}
+            whileTap={{ scale: 0.94 }}
+            onClick={onClick}
+            className="flex items-center gap-3 px-6 py-3.5 rounded-[18px] text-sm font-bold transition-all duration-300 hover:bg-white/12"
+            style={{
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                color: "rgba(255,255,255,0.85)"
+            }}
+        >
+            <Icon size={18} strokeWidth={2.5} />
+            {label}
+        </motion.button>
     );
 }

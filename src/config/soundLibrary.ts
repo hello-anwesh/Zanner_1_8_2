@@ -12,6 +12,9 @@ export interface SoundTrack {
     url: string;
     category: SoundCategory;
     duration?: string;
+    description?: string;
+    experience?: string;
+    usage?: string;
     isCustom?: boolean;
     isPlaylist?: boolean;
     createdAt?: number;

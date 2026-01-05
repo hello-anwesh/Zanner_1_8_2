@@ -179,4 +179,26 @@ export class GeminiProvider implements AIProvider {
             }
         }
     }
+
+    async embed(text: string): Promise<number[]> {
+        if (!this.apiKey) throw new Error("API key required");
+
+        const response = await fetch(
+            `${this.baseUrl}/models/text-embedding-004:embedContent?key=${this.apiKey}`,
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    content: { parts: [{ text }] }
+                }),
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Gemini embedding error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.embedding.values;
+    }
 }

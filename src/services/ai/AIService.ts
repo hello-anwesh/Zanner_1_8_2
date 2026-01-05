@@ -79,8 +79,8 @@ class AIService {
             // Merge each provider's config individually
             for (const [providerKey, providerConfig] of Object.entries(updates.providers)) {
                 if (providerConfig) {
-                    mergedProviders[providerKey as AIProviderType] = {
-                        ...mergedProviders[providerKey as AIProviderType],
+                    (mergedProviders as any)[providerKey] = {
+                        ...(mergedProviders as any)[providerKey],
                         ...providerConfig
                     };
                 }
@@ -280,6 +280,18 @@ class AIService {
 
     clearHistory(): void {
         this.conversationHistory = [];
+    }
+
+    async embed(text: string): Promise<number[]> {
+        const provider = this.getActiveProvider();
+        if (!provider) throw new Error("No active provider");
+
+        // Check if provider supports embeddings
+        if ('embed' in provider && typeof (provider as any).embed === 'function') {
+            return await (provider as any).embed(text);
+        }
+
+        throw new Error("Active provider does not support embeddings. Please enable Gemini.");
     }
 
     getHistory(): Message[] {

@@ -26,13 +26,14 @@ body,
   width: 100%;
   height: 100%;
   overflow: hidden;
+  background: transparent;
 }
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #050507;
+  background: transparent;
   color: #fafafa;
   font-size: 14px;
   line-height: 1.5;

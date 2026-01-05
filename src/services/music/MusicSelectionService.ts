@@ -1,4 +1,4 @@
-import { getAllSounds, SoundTrack, getSoundsByCategory } from "../../config/soundLibrary";
+import { getAllSounds, SoundTrack } from "../../config/soundLibrary";
 import { coachService } from "../ai/CoachService";
 
 /**
@@ -195,12 +195,13 @@ Example: "3 - Perfect binaural beats for late-night focus"`;
             });
 
             // Parse response
-            const match = response.match(/^(\d+)/);
+            const textResponse = typeof response === 'string' ? response : (response as any).text || (response as any).content || JSON.stringify(response);
+            const match = textResponse.match(/^(\d+)/);
             if (match) {
                 const index = parseInt(match[1]) - 1;
                 if (index >= 0 && index < candidates.length) {
                     const selectedTrack = candidates[index];
-                    const reason = response.split("-")[1]?.trim() || "AI-selected for optimal focus";
+                    const reason = textResponse.split("-")[1]?.trim() || "AI-selected for optimal focus";
                     return { track: selectedTrack, reason };
                 }
             }

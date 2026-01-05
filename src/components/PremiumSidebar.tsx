@@ -3,7 +3,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Settings2, Brain, Palette, Music, Clock, Mic,
-    User, Database, Activity, ChevronRight, Home, BarChart2, Waves, Terminal
+    User, Database, Activity, ChevronRight, Home, BarChart2, Waves
 } from 'lucide-react';
 
 interface PremiumSidebarProps {
@@ -13,10 +13,9 @@ interface PremiumSidebarProps {
     onViewChange: (view: string) => void;
     accent: string;
     onFrequencyClick: () => void;
-    onCommandClick: () => void;
 }
 
-const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, accent, onFrequencyClick, onCommandClick }: PremiumSidebarProps) => {
+const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, accent, onFrequencyClick }: PremiumSidebarProps) => {
     const [expandedSections, setExpandedSections] = React.useState({
         settings: false,
         ai: false
@@ -28,6 +27,7 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
 
     const mainItems = [
         { id: 'home', icon: Home, label: 'Timer', gradient: 'from-violet-500 to-purple-600' },
+        { id: 'zeni', icon: Brain, label: 'Zeni', gradient: 'from-fuchsia-500 to-pink-600' },
         { id: 'stats', icon: BarChart2, label: 'Analytics', gradient: 'from-cyan-500 to-blue-600' },
         { id: 'integrations', icon: Palette, label: 'Integrations', gradient: 'from-orange-500 to-red-600' }
     ];
@@ -134,16 +134,15 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
                 <div className="flex flex-col gap-2 mt-2">
                     {/* Single Buttons */}
                     <NavButton id="frequencies" icon={Waves} label="Frequencies" gradient="from-pink-500 to-rose-600" view={view} onClick={onFrequencyClick} collapsed={collapsed} accent={accent} />
-                    <NavButton id="command" icon={Terminal} label="Command" gradient="from-emerald-500 to-green-600" view={view} onClick={onCommandClick} collapsed={collapsed} accent={accent} badge />
                 </div>
             </nav>
 
-            {/* Founder Credits */}
+            {/* Subtle Credit */}
             {!collapsed && (
-                <div className="p-8 pb-10 text-center mt-6 border-t border-white/5 mx-6">
-                    <div className="text-[10px] font-bold tracking-[0.2em] text-white/30 uppercase mb-2">Architected by</div>
-                    <div className="text-sm font-bold text-white/60 tracking-wider">Anwesh Rath</div>
-                    <div className="text-[10px] text-white/30 font-medium tracking-wide mt-1">Founder &amp; Coder</div>
+                <div className="px-6 py-4 text-center opacity-40 hover:opacity-70 transition-opacity cursor-default">
+                    <span className="text-[10px] tracking-widest text-white/50 font-light italic">
+                        crafted with ☕ by <span className="font-medium not-italic">ar</span>
+                    </span>
                 </div>
             )}
         </motion.aside>
