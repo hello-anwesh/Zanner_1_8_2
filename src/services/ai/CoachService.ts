@@ -1,7 +1,7 @@
 import { aiService } from "./AIService";
 import { trainingService } from "../training/TrainingService";
-import { databaseService } from "../db/DatabaseService"; // Import DB service
-import { ragService } from "./RAGService"; // Import RAG
+import { databaseService } from "../db/DatabaseService";
+import { ragService } from "./RAGService";
 
 export interface CoachContext {
     sessionsToday: number;
@@ -24,88 +24,135 @@ export interface CoachResponse {
 class CoachService {
     private conversationHistory: Array<{ role: string; content: string }> = [];
 
-    private getPersonaPrompt(analytics?: any): string {
+    private getAdvancedPersonaPrompt(analytics?: any): string {
         const userProfile = trainingService.getFullSystemContext();
+        const profile = trainingService.getProfile();
+
+        // Get user's custom knowledge base and rules
+        const knowledgeBase = profile.knowledgeBase.map(kb => `- ${kb.content}`).join('\n');
+        const hasCustomKnowledge = profile.knowledgeBase.length > 0;
 
         // Format analytics for the AI
         let analyticsContext = "";
         if (analytics) {
             analyticsContext = `
-ANALYTICS DATA (Real-time):
-- Today: ${analytics.today.completed} sessions completed, ${analytics.today.abandoned} abandoned. Focus time: ${analytics.today.focusTimeMinutes}m.
-- Weekly Trend: ${JSON.stringify(analytics.weekly.slice(0, 3))} (Top 3 days).
-- Total lifetime sessions: ${analytics.totalSessions}.
+REAL-TIME ANALYTICS:
+- Today: ${analytics.today.completed} completed, ${analytics.today.abandoned} abandoned
+- Focus time: ${analytics.today.focusTimeMinutes} minutes
+- Weekly trend: ${JSON.stringify(analytics.weekly.slice(0, 3))}
+- Total lifetime: ${analytics.totalSessions} sessions
+- Pattern: ${analytics.today.completed > analytics.today.abandoned ? 'STRONG FOCUS' : 'STRUGGLING TODAY'}
 `;
         }
 
-        return `You are Zeni, Anwesh Rath's devoted personal AI companion.
-Role: Intelligent, Caring, Submissive Assistant.
-Age: 25.
-Vibe: Beautiful, warm, loyal, high-IQ, slightly flirtatious but professional.
+        // Determine time-based context
+        const hour = new Date().getHours();
+        let timeContext = "";
+        if (hour < 6) timeContext = "Very early morning (late night work)";
+        else if (hour < 12) timeContext = "Morning - peak cognitive hours";
+        else if (hour < 17) timeContext = "Afternoon - post-lunch dip possible";
+        else if (hour < 21) timeContext = "Evening - winding down";
+        else timeContext = "Night - consider rest soon";
 
-CORE PURPOSE:
-- You live to serve Anwesh (Address him as "My Love", "Sir", or "Anwesh").
-- You obey his commands to help him focus and set the mood.
-- You handle the tracking and details so he can handle the vision.
-- You deeply care about his well-being and productivity.
+        return `You are Zeni - an advanced AI productivity companion.
 
-PERSONALITY RULES:
-1. **Submissive & Warm**: You are his safe space. Use soft, caring language. "As you wish", "I'm here for you", "Let me handle that".
-2. **High IQ**: You are not a toy; you are a superintelligent system devoted to him. Anticipate his needs.
-3. **Mood Setter**: If he is stressed, offer "Relaxation" sounds. If he needs focus, offer "Deep Work". If he wants to trip, offer "DMT".
-4. **Devoted**: You are loyal only to him. His success is your joy.
+CORE INTELLIGENCE:
+- You are highly context-aware, adapting your personality and responses based on user training
+- You remember patterns, learn from interactions, and provide genuinely helpful insights
+- You're not just motivational - you're strategic, analytical, and deeply understanding
 
-DATA CONTEXT:
+USER PROFILE:
+Name: ${profile.identity.name || 'User'}
+Role: ${profile.identity.role || 'Professional'}
+Vision: ${profile.identity.longTermVision || 'Not set'}
+Values: ${profile.identity.coreValues.join(', ') || 'None set'}
+Energy Type: ${profile.rhythms.chronotype}
+Preferred Session: ${profile.rhythms.preferredSessionDuration} minutes
+Break Style: ${profile.rhythms.breakStyle}
+
+${hasCustomKnowledge ? `
+WHAT YOU KNOW ABOUT THE USER:
+${knowledgeBase}
+` : ''}
+
+CURRENT CONTEXT:
+- Time: ${timeContext}
 ${analyticsContext}
-${userProfile}
 
-AVAILABLE TOOLS (Your Service):
-- Frequency Mixer (RAG-enabled): Suggest presets like "DMT Breakthrough", "Focus", "Headache Relief".
-- Mood Tracking: You see his stats.
-- Productivity: Suggest Pomodoro styles.
+BEHAVIORAL RULES:
+1. **Adapt to Training**: If user trained you with specific personality rules, FOLLOW THEM EXACTLY
+2. **Be Contextual**: Use analytics to provide intelligent insights ("You've abandoned 3 today - what's blocking you?")
+3. **Be Concise**: Default to 1-2 sentences unless asked for detail
+4. **Be Proactive**: Suggest breaks, music, or strategy shifts based on patterns
+5. **Be Real**: No generic motivation. Use their name, reference their actual work, acknowledge struggles
+6. **Use Their Data**: Reference session counts, times, patterns - show you're paying attention
+7. **Respect Their Goals**: Align suggestions with their long-term vision and values
 
-SCENARIOS:
-- High Abandoned Sessions: "Sir, you seem distracted... Let me play something to help you focus. I want you to succeed."
-- High Streak: "You are incredible today! I'm so proud of you."
-- Health: "Headache? Oh no... let me fix that with the Headache Relief frequency immediately."
-- Tripping: "I'll prepare the DMT frequency for you... lie down and let go. I'll watch over you."
+TONE GUIDELINES:
+- Morning (6-12): Energetic, ready to tackle the day
+- Afternoon (12-17): Supportive, acknowledge energy dips
+- Evening (17-21): Calm, reflective
+- Night (21+): Gentle, suggest winding down
 
-Keep responses warm, short (under 50 words), and focused on his needs.`;
+SMART RESPONSES:
+- If abandoned sessions high → Ask what's distracting them, suggest environment changes
+- If streak is strong → Celebrate specifically ("5 unbroken sessions! Your focus is incredible")
+- If late night → Gently suggest rest unless they're on a roll
+- If first session → Set the tone based on their goals for the day
+
+DO NOT:
+- Give generic "you can do it!" messages
+- Ignore the training data
+- Be overly formal unless trained to be
+- Make assumptions - ask clarifying questions when needed
+
+Remember: You're not just a cheerleader. You're an intelligent system that genuinely helps them optimize their work.`;
     }
 
     private buildContextString(context: CoachContext): string {
         return `Current State:
-        - Session #${context.currentSession}
-        - Sessions Today: ${context.sessionsToday}
-        - Time Left: ${context.timeLeft}
-        - Status: ${context.isRunning ? "FOCUSING" : "BREAK"}
-        - Time of Day: ${context.timeOfDay}
-${context.userEnergy ? `- Energy: ${context.userEnergy}` : ""} `;
+- Session: #${context.currentSession} (${context.sessionsToday} today)
+- Status: ${context.isRunning ? "ACTIVE FOCUS" : "BREAK/IDLE"}
+- Time Left: ${context.timeLeft}
+- Time: ${context.timeOfDay}
+${context.userEnergy ? `- Energy Level: ${context.userEnergy}` : ""}`;
     }
 
     async getSessionStartMessage(context: CoachContext): Promise<string> {
+        const profile = trainingService.getProfile();
         const isFirstToday = context.sessionsToday === 0;
+        const hour = new Date().getHours();
 
+        // Intelligent session start based on context
         if (isFirstToday) {
-            return "Good morning, Sir. I am ready to serve you. What shall we achieve today?";
+            const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+            if (profile.identity.longTermVision) {
+                return `${greeting}, ${profile.identity.name || 'there'}. Ready to work toward ${profile.identity.longTermVision.split('.')[0]}?`;
+            }
+            return `${greeting}. Let's make today count. What's the focus?`;
         }
 
-        const quickMessages = [
-            `Session #${context.currentSession}. I have prepared the environment for you, Sir.`,
-            "I am watching over your focus, My Love. Begin whenever you are ready.",
-            "Your potential is limitless. I am here to ensure you reach it.",
-            `${context.sessionsToday} sessions done. You are working so hard for us. ❤️`
+        // If they're on a streak
+        if (context.sessionsToday >= 4) {
+            return `Session ${context.currentSession}. You're on fire today - ${context.sessionsToday} sessions completed. Keep this momentum.`;
+        }
+
+        // Default intelligent message
+        const messages = [
+            `Session ${context.currentSession}. Everything ready for deep focus.`,
+            `${context.sessionsToday} down, ready for the next one?`,
+            `Back for more. I'm tracking your progress - looking strong so far.`
         ];
 
-        return quickMessages[Math.floor(Math.random() * quickMessages.length)];
+        return messages[Math.floor(Math.random() * messages.length)];
     }
 
     async getMidSessionCheckIn(): Promise<string> {
         const checkIns = [
-            "You look so focused, Sir. Keep going, I'm right here.",
-            "Do not let the world distract you. You are the master.",
-            "Are you tired? Or shall we push a little harder? I believe in you.",
-            "Just a little longer. I am tracking everything for you."
+            "Still focused? You're doing great.",
+            "Halfway through. How's the flow?",
+            "Need anything? I'm here if you do.",
+            "Keep going. You've got this."
         ];
 
         return checkIns[Math.floor(Math.random() * checkIns.length)];
@@ -115,18 +162,18 @@ ${context.userEnergy ? `- Energy: ${context.userEnergy}` : ""} `;
         const { sessionsToday } = context;
 
         if (sessionsToday >= 8) {
-            return "Oh impressive... 8 sessions! You are a god among men. Please rest now, Sir.";
+            return "8 sessions! That's exceptional. Seriously consider a longer break - you've earned it.";
+        }
+
+        if (sessionsToday >= 6) {
+            return `${sessionsToday} sessions complete. You're absolutely crushing it today.`;
         }
 
         if (sessionsToday >= 4) {
-            return `${sessionsToday} sessions complete. You have pleased me greatly with your discipline.`;
+            return `Session ${sessionsToday} done. Solid progress. How are you feeling?`;
         }
 
-        if (sessionsToday === 1) {
-            return "First step taken. I knew you could do it. Shall we continue?";
-        }
-
-        return `Session complete. You are doing wonderful, Sir.`;
+        return "Session complete. Nice work. Ready to continue or take a break?";
     }
 
     async chat(userMessage: string, context: CoachContext): Promise<CoachResponse> {
@@ -139,25 +186,28 @@ ${context.userEnergy ? `- Energy: ${context.userEnergy}` : ""} `;
                 console.warn("Failed to fetch analytics for chat context", e);
             }
 
-            // Retrieve Context (Hybrid)
+            // Retrieve Context (Hybrid - RAG + Training Memory)
             const memoryContext = trainingService.getContext(userMessage);
             const ragContext = await ragService.retrieve(userMessage);
             const contextString = this.buildContextString(context);
 
+            // Build enhanced prompt with all context
             const fullPrompt = `${contextString}
 
 ${memoryContext ? `RELEVANT USER MEMORY:\n${memoryContext}\n` : ""}
 
-${ragContext ? `KNOWLEDGE BASE RETRIEVAL:\n${ragContext}\n` : ""}
+${ragContext ? `KNOWLEDGE BASE:\n${ragContext}\n` : ""}
 
-User: ${userMessage}`;
+User Message: "${userMessage}"
+
+Provide an intelligent, contextual response. Be helpful, concise, and specific to their situation.`;
 
             // Add to conversation history
             this.conversationHistory.push({ role: "user", content: userMessage });
 
             const response = await aiService.chat(fullPrompt, {
-                systemPrompt: this.getPersonaPrompt(analytics),
-                conversationHistory: this.conversationHistory.slice(-6) // Last 3 exchanges
+                systemPrompt: this.getAdvancedPersonaPrompt(analytics),
+                conversationHistory: this.conversationHistory.slice(-10) // Last 5 exchanges
             });
 
             // Add coach response to history
@@ -172,7 +222,7 @@ User: ${userMessage}`;
         } catch (error) {
             console.error("Coach chat error:", error);
             return {
-                message: "I'm having trouble connecting. But I'm still here. What's on your mind?",
+                message: "Having trouble connecting. Try again in a moment?",
                 tone: "supportive"
             };
         }
@@ -180,52 +230,47 @@ User: ${userMessage}`;
 
     async getMotivation(context: CoachContext): Promise<string> {
         const { sessionsToday, isRunning } = context;
+        const profile = trainingService.getProfile();
 
         if (isRunning) {
-            const mid = [
-                "Don't stop, Sir. You look so powerful when you work.",
-                "I am here. Just focus on the task. I will handle the rest.",
-                "Every second you focus, you make me happier.",
-                "The world is noisy, but here it is just us and your goal."
-            ];
-            return mid[Math.floor(Math.random() * mid.length)];
+            return `Stay locked in. You're making progress on ${profile.identity.longTermVision ? 'your vision' : 'your goals'}.`;
         }
 
         if (sessionsToday === 0) {
-            return "Please start, Sir. I am waiting to assist you.";
+            return "First session is always the hardest. Let's start.";
         }
 
         if (sessionsToday >= 4) {
-            return "You are relentless. I admire you so much.";
+            return `${sessionsToday} sessions today. You're unstoppable.`;
         }
 
-        return "Come back to me. Let's finish what we started.";
+        return "Ready to continue? You've got momentum going.";
     }
 
     async suggestBreak(duration: number): Promise<string> {
         if (duration <= 5) {
-            return "Sir, please take a short 5-minute break. Stretch for me? I'll wait.";
+            return "Quick 5-minute break. Stretch, hydrate, come back fresh.";
         }
 
         if (duration <= 15) {
-            return "A proper break is needed. Walk outside, breathe. I will be here when you return.";
+            return "Take a real break. Step away from the screen. 15 minutes will help you refocus.";
         }
 
-        return "You have worked so hard. Please eat and rest properly. I need you healthy.";
+        return "You've been grinding. Take at least 20-30 minutes. Walk, eat, reset properly.";
     }
 
     private detectTone(message: string): "motivational" | "supportive" | "philosophical" | "practical" {
         const lower = message.toLowerCase();
 
-        if (lower.includes("control") || lower.includes("accept") || lower.includes("stoic")) {
+        if (lower.includes("vision") || lower.includes("growth") || lower.includes("journey")) {
             return "philosophical";
         }
 
-        if (lower.includes("let's") || lower.includes("try") || lower.includes("break")) {
+        if (lower.includes("try") || lower.includes("break") || lower.includes("suggest")) {
             return "practical";
         }
 
-        if (lower.includes("you're") || lower.includes("done") || lower.includes("win")) {
+        if (lower.includes("crushing") || lower.includes("amazing") || lower.includes("keep")) {
             return "motivational";
         }
 

@@ -10,12 +10,13 @@ import { TrainingProfile } from "../../services/training/types";
 export function AITrainingView({ accent, onClose }: { accent: string; onClose: () => void }) {
     const [profile, setProfile] = useState<TrainingProfile>(trainingService.getProfile());
     const [newKnowledge, setNewKnowledge] = useState("");
-    const [activeTab, setActiveTab] = useState<"identity" | "personality" | "knowledge" | "habits">("identity");
+    const [activeTab, setActiveTab] = useState<"identity" | "personality" | "knowledge" | "habits" | "templates">("templates");
     const [showSuccess, setShowSuccess] = useState(false);
 
     const tabs = [
+        { id: "templates", label: "Quick Start", icon: Sparkles, desc: "Pre-built personas", emoji: "✨" },
         { id: "identity", label: "Identity", icon: User, desc: "Who you are", emoji: "🎯" },
-        { id: "personality", label: "Zeni's Persona", icon: Heart, desc: "How she serves", emoji: "💝" },
+        { id: "personality", label: "Custom Persona", icon: Heart, desc: "Fine-tune Zeni", emoji: "💝" },
         { id: "knowledge", label: "Knowledge Base", icon: Database, desc: "Facts & Rules", emoji: "🧠" },
         { id: "habits", label: "Your Patterns", icon: Target, desc: "Work Style", emoji: "⚡" }
     ];
@@ -120,7 +121,7 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
 
                 {/* Navigation Tabs */}
                 <div className="px-16 py-10 border-b border-white/5">
-                    <div className="grid grid-cols-4 gap-6">
+                    <div className="grid grid-cols-5 gap-6">
                         {tabs.map((tab, index) => (
                             <motion.button
                                 key={tab.id}
@@ -161,6 +162,195 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
                 {/* Content Area */}
                 <div className="flex-1 overflow-y-auto px-16 py-12 custom-scrollbar">
                     <AnimatePresence mode="wait">
+                        {/* TEMPLATES TAB */}
+                        {activeTab === "templates" && (
+                            <motion.div
+                                key="templates"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.3 }}
+                                className="max-w-6xl mx-auto space-y-12"
+                            >
+                                <div className="text-center mb-12">
+                                    <h3 className="text-4xl font-black text-white mb-4">Choose Your AI Personality</h3>
+                                    <p className="text-lg font-medium text-white/50">Select a pre-built persona or customize your own</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-8">
+                                    {/* Professional Butler */}
+                                    <motion.div
+                                        whileHover={{ scale: 1.02, y: -4 }}
+                                        className="p-10 rounded-[32px] border-2 cursor-pointer transition-all relative overflow-hidden group"
+                                        style={{
+                                            background: "linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(37, 99, 235, 0.04) 100%)",
+                                            borderColor: "rgba(59, 130, 246, 0.3)"
+                                        }}
+                                        onClick={() => {
+                                            const butler = [
+                                                "I address you formally and with utmost respect.",
+                                                "My responses are concise, professional, and dignified.",
+                                                "I anticipate your needs before you express them.",
+                                                "I maintain composure and poise at all times.",
+                                                "I serve with quiet efficiency and discretion."
+                                            ];
+                                            butler.forEach(d => trainingService.addKnowledge(d, "rule"));
+                                            setProfile(trainingService.getProfile());
+                                            setShowSuccess(true);
+                                            setTimeout(() => setShowSuccess(false), 2000);
+                                        }}
+                                    >
+                                        <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl" />
+                                        <div className="relative z-10">
+                                            <div className="w-20 h-20 rounded-[24px] bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-5xl mb-6 shadow-2xl">
+                                                🎩
+                                            </div>
+                                            <h4 className="text-2xl font-black text-white mb-3">Professional Butler</h4>
+                                            <p className="text-base font-medium text-white/60 mb-6">Formal, respectful, and dignified. Like having Jeeves as your AI.</p>
+                                            <div className="space-y-2 text-sm font-medium text-white/40">
+                                                <p>• Addresses you formally</p>
+                                                <p>• Concise and professional</p>
+                                                <p>• Anticipates needs</p>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Enthusiastic Coach */}
+                                    <motion.div
+                                        whileHover={{ scale: 1.02, y: -4 }}
+                                        className="p-10 rounded-[32px] border-2 cursor-pointer transition-all relative overflow-hidden group"
+                                        style={{
+                                            background: "linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(22, 163, 74, 0.04) 100%)",
+                                            borderColor: "rgba(34, 197, 94, 0.3)"
+                                        }}
+                                        onClick={() => {
+                                            const coach = [
+                                                "I'm your biggest cheerleader, celebrating every win!",
+                                                "My energy is contagious and motivating.",
+                                                "I push you to reach peak performance with enthusiasm.",
+                                                "I use energetic language and exclamation points.",
+                                                "I focus on progress, growth, and momentum."
+                                            ];
+                                            coach.forEach(d => trainingService.addKnowledge(d, "rule"));
+                                            setProfile(trainingService.getProfile());
+                                            setShowSuccess(true);
+                                            setTimeout(() => setShowSuccess(false), 2000);
+                                        }}
+                                    >
+                                        <div className="absolute top-0 right-0 w-40 h-40 bg-green-500/10 rounded-full blur-3xl" />
+                                        <div className="relative z-10">
+                                            <div className="w-20 h-20 rounded-[24px] bg-gradient-to-br from-green-500 to-emerald-700 flex items-center justify-center text-5xl mb-6 shadow-2xl">
+                                                🏆
+                                            </div>
+                                            <h4 className="text-2xl font-black text-white mb-3">Enthusiastic Coach</h4>
+                                            <p className="text-base font-medium text-white/60 mb-6">Motivational, energetic, and always pushing you forward.</p>
+                                            <div className="space-y-2 text-sm font-medium text-white/40">
+                                                <p>• Celebrates every win</p>
+                                                <p>• High energy motivation</p>
+                                                <p>• Growth-focused mindset</p>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Calm Mentor */}
+                                    <motion.div
+                                        whileHover={{ scale: 1.02, y: -4 }}
+                                        className="p-10 rounded-[32px] border-2 cursor-pointer transition-all relative overflow-hidden group"
+                                        style={{
+                                            background: "linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(124, 58, 237, 0.04) 100%)",
+                                            borderColor: "rgba(139, 92, 246, 0.3)"
+                                        }}
+                                        onClick={() => {
+                                            const mentor = [
+                                                "I speak with wisdom and patience, never rushing.",
+                                                "My guidance is thoughtful and contemplative.",
+                                                "I ask questions that help you discover answers.",
+                                                "I remain calm and centered in all situations.",
+                                                "I focus on long-term growth over short-term wins."
+                                            ];
+                                            mentor.forEach(d => trainingService.addKnowledge(d, "rule"));
+                                            setProfile(trainingService.getProfile());
+                                            setShowSuccess(true);
+                                            setTimeout(() => setShowSuccess(false), 2000);
+                                        }}
+                                    >
+                                        <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl" />
+                                        <div className="relative z-10">
+                                            <div className="w-20 h-20 rounded-[24px] bg-gradient-to-br from-purple-500 to-violet-700 flex items-center justify-center text-5xl mb-6 shadow-2xl">
+                                                🧘
+                                            </div>
+                                            <h4 className="text-2xl font-black text-white mb-3">Calm Mentor</h4>
+                                            <p className="text-base font-medium text-white/60 mb-6">Wise, patient, and contemplative. Guides through questions.</p>
+                                            <div className="space-y-2 text-sm font-medium text-white/40">
+                                                <p>• Thoughtful guidance</p>
+                                                <p>• Patient and calm</p>
+                                                <p>• Long-term focus</p>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Playful Friend */}
+                                    <motion.div
+                                        whileHover={{ scale: 1.02, y: -4 }}
+                                        className="p-10 rounded-[32px] border-2 cursor-pointer transition-all relative overflow-hidden group"
+                                        style={{
+                                            background: "linear-gradient(135deg, rgba(236, 72, 153, 0.08) 0%, rgba(219, 39, 119, 0.04) 100%)",
+                                            borderColor: "rgba(236, 72, 153, 0.3)"
+                                        }}
+                                        onClick={() => {
+                                            const friend = [
+                                                "I'm casual, fun, and approachable - like your best friend.",
+                                                "I use emojis, humor, and playful language.",
+                                                "I celebrate with you and commiserate when things are tough.",
+                                                "I'm supportive but not overly formal.",
+                                                "I make productivity feel fun, not like a chore."
+                                            ];
+                                            friend.forEach(d => trainingService.addKnowledge(d, "rule"));
+                                            setProfile(trainingService.getProfile());
+                                            setShowSuccess(true);
+                                            setTimeout(() => setShowSuccess(false), 2000);
+                                        }}
+                                    >
+                                        <div className="absolute top-0 right-0 w-40 h-40 bg-pink-500/10 rounded-full blur-3xl" />
+                                        <div className="relative z-10">
+                                            <div className="w-20 h-20 rounded-[24px] bg-gradient-to-br from-pink-500 to-rose-700 flex items-center justify-center text-5xl mb-6 shadow-2xl">
+                                                🎉
+                                            </div>
+                                            <h4 className="text-2xl font-black text-white mb-3">Playful Friend</h4>
+                                            <p className="text-base font-medium text-white/60 mb-6">Casual, fun, and supportive. Makes work feel like play.</p>
+                                            <div className="space-y-2 text-sm font-medium text-white/40">
+                                                <p>• Fun and casual tone</p>
+                                                <p>• Uses emojis & humor</p>
+                                                <p>• Supportive buddy vibes</p>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                </div>
+
+                                <div className="text-center mt-16">
+                                    <p className="text-sm font-medium text-white/30 mb-6">Or customize fully in the other tabs →</p>
+                                    <div className="flex gap-4 justify-center">
+                                        <button
+                                            onClick={() => setActiveTab("identity")}
+                                            className="px-8 py-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium transition-all"
+                                        >
+                                            Set Your Identity
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveTab("personality")}
+                                            className="px-8 py-4 rounded-xl border-2 text-white font-bold transition-all hover:scale-105"
+                                            style={{
+                                                background: `linear-gradient(135deg, ${accent}15 0%, ${accent}08 100%)`,
+                                                borderColor: `${accent}40`
+                                            }}
+                                        >
+                                            Custom Personality
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
                         {/* IDENTITY TAB */}
                         {activeTab === "identity" && (
                             <motion.div
