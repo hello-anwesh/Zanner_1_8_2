@@ -70,7 +70,7 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
     activeProvider: "gemini",
     systemPrompt: "You are Chronos, a helpful AI focus companion. Be supportive, concise, and practical. Help users stay focused and suggest productive break activities.",
     temperature: 0.7,
-    maxTokens: 500,
+    maxTokens: 1000,
     providers: {
         ollama: {
             enabled: false,

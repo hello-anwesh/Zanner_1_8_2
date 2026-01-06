@@ -196,13 +196,18 @@ class AIService {
     // Chat
     // ============================================================
 
-    async chat(userMessage: string, context?: Record<string, unknown>): Promise<string> {
+    async chat(userMessage: string, context?: Record<string, any>): Promise<string> {
         const provider = this.getActiveProvider();
         if (!provider) throw new Error("No active provider");
 
         // Build context-aware system message
         let systemPrompt = this.config.systemPrompt;
-        if (context) {
+
+        // precise override if provided in context
+        if (context && typeof context.systemPrompt === 'string') {
+            systemPrompt = context.systemPrompt;
+        } else if (context) {
+            // Append context if it's not an override
             systemPrompt += `\n\nCurrent context: ${JSON.stringify(context)}`;
         }
 
@@ -218,7 +223,7 @@ class AIService {
         try {
             const response = await provider.chat(messages, {
                 temperature: this.config.temperature,
-                maxTokens: this.config.maxTokens,
+                maxTokens: this.config.maxTokens || 1000, // Increased default
                 model: this.config.providers[this.config.activeProvider].model,
             });
 
@@ -238,14 +243,17 @@ class AIService {
         }
     }
 
-    async *streamChat(userMessage: string, context?: Record<string, unknown>): AsyncGenerator<string, void, unknown> {
+    async *streamChat(userMessage: string, context?: Record<string, any>): AsyncGenerator<string, void, unknown> {
         const provider = this.getActiveProvider();
         if (!provider || !provider.streamChat) {
             throw new Error("Streaming not supported");
         }
 
         let systemPrompt = this.config.systemPrompt;
-        if (context) {
+
+        if (context && typeof context.systemPrompt === 'string') {
+            systemPrompt = context.systemPrompt;
+        } else if (context) {
             systemPrompt += `\n\nCurrent context: ${JSON.stringify(context)}`;
         }
 
