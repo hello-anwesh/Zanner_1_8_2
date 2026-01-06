@@ -3,7 +3,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Settings2, Brain, Palette, Music, Clock, Mic,
-    User, Database, Activity, ChevronRight, Home, BarChart2, Waves
+    User, Database, Activity, ChevronRight, Home, BarChart2, Waves, Book
 } from 'lucide-react';
 
 interface PremiumSidebarProps {
@@ -30,7 +30,8 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
         { id: 'home', icon: Home, label: 'Timer', gradient: 'from-violet-500 to-purple-600' },
         { id: 'zeni', icon: Brain, label: 'Zeni', gradient: 'from-fuchsia-500 to-pink-600' },
         { id: 'stats', icon: BarChart2, label: 'Analytics', gradient: 'from-cyan-500 to-blue-600' },
-        { id: 'integrations', icon: Palette, label: 'Integrations', gradient: 'from-orange-500 to-red-600' }
+        { id: 'integrations', icon: Palette, label: 'Integrations', gradient: 'from-orange-500 to-red-600' },
+        { id: 'philosophy', icon: Book, label: 'Philosophy', gradient: 'from-emerald-500 to-teal-600' }
     ];
 
     const settingsItems = [

@@ -911,6 +911,11 @@ function App() {
                     <IntegrationsHub accent={accent} />
                   )}
 
+                  {/* PHILOSOPHY / ABOUT */}
+                  {view === "philosophy" && (
+                    <PhilosophyView accent={accent} />
+                  )}
+
                   {/* SETTINGS - THEME */}
                   {view === "settings-theme" && (
                     <div className="page-container animate-fade-in">
