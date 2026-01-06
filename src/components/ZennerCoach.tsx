@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, X, Sparkles, Zap, Loader, TrendingUp } from "lucide-react";
+import { Send, X, Sparkles, Zap, Loader, TrendingUp, Mic, MicOff, Paperclip } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { coachService } from "../services/ai/CoachService";
 
@@ -27,8 +27,53 @@ export function ZennerCoach({
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
+    const [isListening, setIsListening] = useState(false);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const recognitionRef = useRef<any>(null);
+
+    const toggleListening = () => {
+        if (isListening) {
+            recognitionRef.current?.stop();
+            setIsListening(false);
+        } else {
+            if ('webkitSpeechRecognition' in window) {
+                const recognition = new (window as any).webkitSpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = true;
+
+                recognition.onstart = () => setIsListening(true);
+                recognition.onend = () => setIsListening(false);
+                recognition.onerror = (e: any) => {
+                    console.error("Speech recognition error", e);
+                    setIsListening(false);
+                };
+
+                recognition.onresult = (event: any) => {
+                    let finalTranscript = '';
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            finalTranscript += event.results[i][0].transcript;
+                        }
+                    }
+
+                    if (finalTranscript) {
+                        setInput(prev => {
+                            const spacer = prev.length > 0 && !prev.endsWith(' ') ? ' ' : '';
+                            return prev + spacer + finalTranscript;
+                        });
+                    }
+                };
+
+                recognitionRef.current = recognition;
+                recognition.start();
+            } else {
+                alert("Voice input not supported in this environment");
+            }
+        }
+    };
 
     useEffect(() => {
         // 1. Try to load saved history
@@ -150,7 +195,13 @@ export function ZennerCoach({
                         <Sparkles size={16} color="#FFF" strokeWidth={2} />
                     </div>
                     <div>
-                        <h3 className="text-base font-semibold text-white">Zeni</h3>
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-base font-semibold text-white">Zeni</h3>
+                            <div className="px-1.5 py-0.5 rounded-full bg-green-500/10 border border-green-500/20 flex items-center gap-1" title="Chats are automatically saved">
+                                <div className="w-1 h-1 rounded-full bg-green-400"></div>
+                                <span className="text-[9px] font-medium text-green-400 tracking-wide uppercase">Autosave</span>
+                            </div>
+                        </div>
                         <p className="text-xs text-white/40">AI Coach</p>
                     </div>
                 </div>
@@ -319,33 +370,77 @@ export function ZennerCoach({
 
 
                 {/* Input - Premium Design */}
-                <div className="relative">
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                        placeholder="Ask Zeni anything..."
-                        disabled={isTyping}
-                        className="w-full px-5 py-4 pr-14 rounded-xl bg-white/5 border-2 border-white/10 text-base font-medium text-white placeholder:text-white/40 outline-none focus:border-fuchsia-500/50 focus:bg-white/8 transition-all disabled:opacity-50"
-                        style={{
-                            boxShadow: input.length > 0 ? '0 0 0 4px rgba(217, 70, 239, 0.1)' : 'none'
-                        }}
-                    />
+                <div className="relative flex items-end gap-2 bg-white/5 border border-white/10 rounded-2xl p-2 transition-all focus-within:border-fuchsia-500/50 focus-within:bg-white/8 focus-within:ring-4 focus-within:ring-fuchsia-500/10 hover:border-white/20">
+
+                    {/* Attachment Button */}
                     <button
-                        onClick={handleSend}
-                        disabled={!input.trim() || isTyping}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-lg bg-gradient-to-br from-fuchsia-500 to-purple-600 hover:from-fuchsia-600 hover:to-purple-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-fuchsia-500/50 hover:scale-105 active:scale-95"
+                        className="p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+                        title="Attach file (coming soon)"
+                        onClick={() => alert("File attachment coming soon!")}
                     >
-                        <Send size={18} color="#FFF" strokeWidth={2.5} />
+                        <Paperclip size={20} />
                     </button>
+
+                    <textarea
+                        ref={textareaRef}
+                        value={input}
+                        onChange={(e) => {
+                            setInput(e.target.value);
+                            // Auto-grow height
+                            e.target.style.height = 'auto';
+                            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSend();
+                            }
+                        }}
+                        onPaste={(e) => {
+                            const items = e.clipboardData.items;
+                            for (let i = 0; i < items.length; i++) {
+                                if (items[i].type.indexOf("image") !== -1) {
+                                    e.preventDefault();
+                                    alert("Image pasting support coming in the next update!");
+                                    return;
+                                }
+                            }
+                        }}
+                        placeholder={isListening ? "Listening..." : "Ask Zeni anything..."}
+                        disabled={isTyping}
+                        rows={1}
+                        className="flex-1 bg-transparent border-none outline-none text-base font-medium text-white placeholder:text-white/30 resize-none py-3 min-h-[48px] max-h-[120px] custom-scrollbar"
+                        style={{ height: 'auto' }}
+                    />
+
+                    <div className="flex items-center gap-1 pb-0.5">
+                        {/* Mic Button */}
+                        <button
+                            onClick={toggleListening}
+                            className={`p-3 rounded-xl transition-all duration-300 ${isListening
+                                ? 'bg-red-500/20 text-red-400 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.4)]'
+                                : 'text-white/40 hover:text-white hover:bg-white/10'
+                                }`}
+                            title={isListening ? "Stop listening" : "Start voice input"}
+                        >
+                            {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+                        </button>
+
+                        <button
+                            onClick={handleSend}
+                            disabled={!input.trim() || isTyping}
+                            className="p-3 rounded-xl bg-gradient-to-br from-fuchsia-500 to-purple-600 hover:from-fuchsia-600 hover:to-purple-700 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-fuchsia-500/50 hover:scale-105 active:scale-95"
+                        >
+                            <Send size={18} strokeWidth={2.5} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Hint Text */}
-                <p className="text-xs text-white/30 mt-3 text-center">
-                    Press <kbd className="px-2 py-0.5 rounded bg-white/10 text-white/50 font-mono">Enter</kbd> to send
-                </p>
+                <div className="flex justify-between items-center px-2 mt-3 text-xs text-white/30">
+                    <span>Markdown supported</span>
+                    <span>Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/50 font-mono text-[10px] mx-1">Enter</kbd> to send</span>
+                </div>
             </div>
         </div>
     );
