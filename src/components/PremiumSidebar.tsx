@@ -35,6 +35,7 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
     ];
 
     const settingsItems = [
+        { id: 'settings-ai', icon: Brain, label: 'AI', effect: 'glow' },
         { id: 'settings-theme', icon: Palette, label: 'Theme', effect: 'rotate' },
         { id: 'settings-spotify', icon: Music, label: 'Spotify', effect: 'bounce' },
         { id: 'settings-timer', icon: Clock, label: 'Timer', effect: 'rotate' },
@@ -113,7 +114,7 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
                 {/* Settings Expandable */}
                 <ExpandableSection
                     title="Settings"
-                    count={4}
+                    count={5}
                     icon={Settings2}
                     expanded={expandedSections.settings}
                     onToggle={() => toggleSection('settings')}
@@ -146,12 +147,28 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
                 </div>
             </nav>
 
-            {/* Subtle Credit */}
+
+            {/* Creator Credit - Prominent & Witty */}
             {!collapsed && (
-                <div className="px-6 py-4 text-center opacity-40 hover:opacity-70 transition-opacity cursor-default">
-                    <span className="text-[10px] tracking-widest text-white/50 font-light italic">
-                        crafted with ☕ by <span className="font-medium not-italic">ar</span>
-                    </span>
+                <div className="px-6 py-6 border-t border-white/5">
+                    <a
+                        href="https://anwe.sh"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block group"
+                    >
+                        <div className="text-center mb-2">
+                            <p className="text-xs font-bold text-white/40 uppercase tracking-widest mb-1 group-hover:text-white/60 transition-colors">
+                                Built by
+                            </p>
+                            <p className="text-lg font-black text-white group-hover:scale-105 transition-transform inline-block" style={{ fontFamily: "'Space Mono', monospace" }}>
+                                Anwesh Rath
+                            </p>
+                        </div>
+                        <p className="text-[10px] text-center text-white/30 italic group-hover:text-white/50 transition-colors">
+                            "Code, Coffee, Chaos" ☕✨
+                        </p>
+                    </a>
                 </div>
             )}
         </motion.aside>

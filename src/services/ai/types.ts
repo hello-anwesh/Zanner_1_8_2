@@ -67,13 +67,13 @@ export interface AIConfig {
 }
 
 export const DEFAULT_AI_CONFIG: AIConfig = {
-    activeProvider: "ollama",
+    activeProvider: "gemini",
     systemPrompt: "You are Chronos, a helpful AI focus companion. Be supportive, concise, and practical. Help users stay focused and suggest productive break activities.",
     temperature: 0.7,
     maxTokens: 500,
     providers: {
         ollama: {
-            enabled: true,
+            enabled: false,
             baseUrl: "http://localhost:11434",
         },
         openai: {
@@ -85,7 +85,8 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
             model: "claude-3-haiku-20240307",
         },
         gemini: {
-            enabled: false,
+            enabled: true,
+            apiKey: "AIzaSyA5q8sXegiMQgJJDr9Clxo7FZUxTqJycHU",
             model: "gemini-1.5-flash",
         },
     },

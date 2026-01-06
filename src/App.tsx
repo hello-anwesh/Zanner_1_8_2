@@ -43,6 +43,7 @@ import { SessionHistory } from "./components/SessionHistory";
 import { useAnalytics } from "./hooks/useAnalytics";
 import { metronomeService } from "./services/MetronomeService";
 import { PhilosophyView } from "./components/PhilosophyView";
+import { AISettingsView } from "./components/AISettingsView";
 
 
 
@@ -50,8 +51,8 @@ import { PhilosophyView } from "./components/PhilosophyView";
 // TYPES & CONSTANTS
 // ============================================================================
 
-type View = "home" | "stats" | "integrations" | "frequencies" |
-  "settings-theme" | "settings-spotify" | "settings-timer" | "settings-voice" |
+type View = "home" | "stats" | "integrations" | "frequencies" | "philosophy" |
+  "settings-ai" | "settings-theme" | "settings-spotify" | "settings-timer" | "settings-voice" |
   "ai-identity" | "ai-cognition" | "ai-rhythms" | "ai-training" |
   "voice-speech" | "voice-tts";
 type TimerMode = "focus" | "shortBreak" | "longBreak";
@@ -429,21 +430,25 @@ function App() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <p className="text-xs font-bold text-white/50 uppercase tracking-wider mb-3">Select Theme</p>
-                      <div className="grid grid-cols-4 gap-2">
-                        {themes.map((t) => (
+                      <div className="grid grid-cols-3 gap-3">
+                        {Object.entries(themes).map(([key, t]) => (
                           <button
-                            key={t.id}
+                            key={key}
                             onClick={() => {
-                              setTheme(t.id);
+                              setTheme(key as any);
                               setShowThemePicker(false);
                             }}
-                            className="w-full aspect-square rounded-lg border-2 transition-all hover:scale-110"
-                            style={{
-                              background: t.accent,
-                              borderColor: theme === t.id ? '#FFF' : 'transparent'
-                            }}
-                            title={t.name}
-                          />
+                            className="flex flex-col items-center gap-2 p-2 rounded-lg transition-all hover:bg-white/5"
+                          >
+                            <div
+                              className="w-full aspect-square rounded-lg border-2 transition-all hover:scale-110"
+                              style={{
+                                background: t.accent,
+                                borderColor: themeName === key ? '#FFF' : 'rgba(255,255,255,0.2)'
+                              }}
+                            />
+                            <span className="text-[10px] text-white/60 font-medium text-center">{t.name}</span>
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -914,6 +919,11 @@ function App() {
                   {/* PHILOSOPHY / ABOUT */}
                   {view === "philosophy" && (
                     <PhilosophyView accent={accent} />
+                  )}
+
+                  {/* SETTINGS - AI */}
+                  {view === "settings-ai" && (
+                    <AISettingsView accent={accent} />
                   )}
 
                   {/* SETTINGS - THEME */}

@@ -7,66 +7,70 @@ interface PhilosophyViewProps {
 
 export function PhilosophyView({ accent }: PhilosophyViewProps) {
     return (
-        <div className="p-12 max-w-6xl mx-auto space-y-12" style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
-            {/* Header */}
-            <div className="text-center mb-16">
+        <div className="p-16 max-w-7xl mx-auto space-y-24" style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
+            {/* Header - Massive breathing space */}
+            <div className="text-center mb-24">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="inline-block mb-8"
+                    className="inline-block"
                 >
                     <div
-                        className="w-24 h-24 rounded-3xl mx-auto flex items-center justify-center mb-6"
+                        className="w-32 h-32 rounded-[32px] mx-auto flex items-center justify-center mb-12"
                         style={{
-                            background: `linear-gradient(135deg, ${accent}20 0%, ${accent}10 100%)`,
-                            border: `2px solid ${accent}40`
+                            background: `linear-gradient(135deg, ${accent}15 0%, ${accent}05 100%)`,
+                            border: `2px solid ${accent}30`
                         }}
                     >
-                        <Book size={48} style={{ color: accent }} strokeWidth={2} />
+                        <Book size={64} style={{ color: accent }} strokeWidth={1.5} />
                     </div>
-                    <h1 className="text-6xl font-black text-white mb-4 tracking-tight">Zenner V2.0.1</h1>
-                    <p className="text-xl font-medium text-white/60 mb-6">Focus. Flow. Freedom.</p>
-                    <div className="flex items-center justify-center gap-3 text-base text-white/50">
+                    <h1 className="text-8xl font-black text-white mb-8 tracking-tight leading-none">
+                        Zenner V2.0.1
+                    </h1>
+                    <p className="text-3xl font-medium text-white/50 mb-12 tracking-wide">
+                        Focus. Flow. Freedom.
+                    </p>
+                    <div className="flex items-center justify-center gap-4 text-lg text-white/40">
                         <span>Created by</span>
                         <a
                             href="https://anwe.sh"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-bold hover:text-white transition-colors flex items-center gap-2"
+                            className="font-bold text-xl hover:text-white transition-colors flex items-center gap-3"
                             style={{ color: accent }}
                         >
                             Anwesh Rath
-                            <ExternalLink size={16} />
+                            <ExternalLink size={20} />
                         </a>
                     </div>
                 </motion.div>
             </div>
 
-            {/* Philosophy Sections */}
-            <div className="space-y-16">
+            {/* Philosophy Sections - Ultra spacious */}
+            <div className="space-y-32">
                 {/* English Philosophy */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
                 >
-                    <h2 className="text-3xl font-black text-white mb-8 flex items-center gap-4">
-                        <span className="text-4xl">🧘</span>
+                    <h2 className="text-5xl font-black text-white mb-16 flex items-center gap-6">
+                        <span className="text-6xl">🧘</span>
                         The Philosophy
                     </h2>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                         {/* Solo Deep Work */}
                         <PhilosophyCard
                             icon={Target}
                             title="Solo Deep Work"
                             accent={accent}
                         >
-                            <p className="text-white/70 leading-relaxed mb-4">
+                            <p className="text-lg text-white/60 leading-relaxed mb-6">
                                 True focus happens alone. No distractions, no interruptions - just you and your work.
                                 Zenner creates a sacred space for deep, uninterrupted flow states.
                             </p>
-                            <p className="text-white/70 leading-relaxed">
+                            <p className="text-lg text-white/60 leading-relaxed">
                                 When you're alone with your thoughts and your purpose, magic happens. This is where
                                 breakthroughs occur, problems get solved, and great work emerges.
                             </p>
@@ -78,11 +82,11 @@ export function PhilosophyView({ accent }: PhilosophyViewProps) {
                             title="Sonic Frequencies"
                             accent={accent}
                         >
-                            <p className="text-white/70 leading-relaxed mb-4">
+                            <p className="text-lg text-white/60 leading-relaxed mb-6">
                                 Sound shapes consciousness. Binaural beats, isochronic tones, and Schumann resonance
                                 (7.83Hz) can induce specific mental states - focus, relaxation, creativity.
                             </p>
-                            <p className="text-white/70 leading-relaxed">
+                            <p className="text-lg text-white/60 leading-relaxed">
                                 Zenner harnesses the power of frequency to optimize your brain state. Whether you need
                                 deep focus (40Hz gamma), relaxation (10Hz alpha), or healing (528Hz), the right
                                 frequency amplifies your intention.
@@ -95,11 +99,11 @@ export function PhilosophyView({ accent }: PhilosophyViewProps) {
                             title="AI Accountability Partner"
                             accent={accent}
                         >
-                            <p className="text-white/70 leading-relaxed mb-4">
+                            <p className="text-lg text-white/60 leading-relaxed mb-6">
                                 You need someone who knows your goals, tracks your progress, and holds you accountable.
                                 But not just anyone - someone intelligent, available 24/7, and solely devoted to your success.
                             </p>
-                            <p className="text-white/70 leading-relaxed">
+                            <p className="text-lg text-white/60 leading-relaxed">
                                 Zeni is that partner. She knows your patterns, understands your struggles, celebrates your
                                 wins, and gently pushes you when you need it. An AI that truly cares about your growth.
                             </p>
@@ -111,11 +115,11 @@ export function PhilosophyView({ accent }: PhilosophyViewProps) {
                             title="Systems Over Willpower"
                             accent={accent}
                         >
-                            <p className="text-white/70 leading-relaxed mb-4">
+                            <p className="text-lg text-white/60 leading-relaxed mb-6">
                                 Motivation fades. Willpower depletes. But systems compound. Zenner isn't about forcing yourself
                                 to work - it's about creating an environment where deep work becomes effortless.
                             </p>
-                            <p className="text-white/70 leading-relaxed">
+                            <p className="text-lg text-white/60 leading-relaxed">
                                 Track sessions, build streaks, analyze patterns, optimize timing. When the system is right,
                                 productivity isn't a battle - it's a natural flow.
                             </p>
@@ -123,28 +127,28 @@ export function PhilosophyView({ accent }: PhilosophyViewProps) {
                     </div>
                 </motion.div>
 
-                {/* Hindi Philosophy */}
+                {/* Hindi Philosophy - Extra spacious */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="p-10 rounded-3xl"
+                    className="p-16 rounded-[40px]"
                     style={{
                         background: 'rgba(255,255,255,0.02)',
-                        border: '1px solid rgba(255,255,255,0.08)'
+                        border: '1px solid rgba(255,255,255,0.06)'
                     }}
                 >
-                    <h2 className="text-3xl font-black text-white mb-8 flex items-center gap-4">
-                        <span className="text-4xl">🇮🇳</span>
+                    <h2 className="text-5xl font-black text-white mb-16 flex items-center gap-6">
+                        <span className="text-6xl">🇮🇳</span>
                         दर्शन (Philosophy in Hindi)
                     </h2>
 
-                    <div className="space-y-8 text-white/70 leading-relaxed text-lg">
+                    <div className="space-y-16 text-white/60 leading-relaxed text-xl">
                         <div>
-                            <h3 className="text-2xl font-bold text-white mb-4" style={{ color: accent }}>
+                            <h3 className="text-3xl font-bold text-white mb-8" style={{ color: accent }}>
                                 एकांत में गहन कार्य
                             </h3>
-                            <p className="mb-3">
+                            <p className="mb-6">
                                 सच्चा फोकस तब आता है जब आप अकेले होते हैं। बिना किसी विकर्षण के, बिना रुकावट के -
                                 सिर्फ आप और आपका काम। जब आप अपने विचारों और उद्देश्य के साथ अकेले होते हैं,
                                 तभी असली जादू होता है।
@@ -155,10 +159,10 @@ export function PhilosophyView({ accent }: PhilosophyViewProps) {
                         </div>
 
                         <div>
-                            <h3 className="text-2xl font-bold text-white mb-4" style={{ color: accent }}>
+                            <h3 className="text-3xl font-bold text-white mb-8" style={{ color: accent }}>
                                 ध्वनि आवृत्तियाँ (Sonic Frequencies)
                             </h3>
-                            <p className="mb-3">
+                            <p className="mb-6">
                                 ध्वनि चेतना को आकार देती है। Binaural beats, Schumann resonance (7.83Hz), और
                                 isochronic tones विशेष मानसिक अवस्थाओं को प्रेरित कर सकते हैं।
                             </p>
@@ -169,10 +173,10 @@ export function PhilosophyView({ accent }: PhilosophyViewProps) {
                         </div>
 
                         <div>
-                            <h3 className="text-2xl font-bold text-white mb-4" style={{ color: accent }}>
+                            <h3 className="text-3xl font-bold text-white mb-8" style={{ color: accent }}>
                                 AI जवाबदेही साथी
                             </h3>
-                            <p className="mb-3">
+                            <p className="mb-6">
                                 आपको किसी ऐसे की ज़रूरत है जो आपके लक्ष्यों को जानता हो, आपकी प्रगति को track करे,
                                 और आपको जवाबदेह बनाए। पर सिर्फ कोई नहीं - कोई बुद्धिमान, 24/7 उपलब्ध, और केवल
                                 आपकी सफलता के लिए समर्पित।
@@ -184,10 +188,10 @@ export function PhilosophyView({ accent }: PhilosophyViewProps) {
                         </div>
 
                         <div>
-                            <h3 className="text-2xl font-bold text-white mb-4" style={{ color: accent }}>
+                            <h3 className="text-3xl font-bold text-white mb-8" style={{ color: accent }}>
                                 इच्छाशक्ति से ज़्यादा, सिस्टम
                             </h3>
-                            <p className="mb-3">
+                            <p className="mb-6">
                                 प्रेरणा फीकी पड़ जाती है। इच्छाशक्ति समाप्त हो जाती है। लेकिन systems compound होते हैं।
                                 Zenner आपको खुद को काम करने के लिए मजबूर करने के बारे में नहीं है।
                             </p>
@@ -200,61 +204,73 @@ export function PhilosophyView({ accent }: PhilosophyViewProps) {
                     </div>
                 </motion.div>
 
-                {/* Core Principles */}
+                {/* Core Principles - Huge spacing */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                 >
-                    <h2 className="text-3xl font-black text-white mb-8 flex items-center gap-4">
-                        <Heart size={32} style={{ color: accent }} />
+                    <h2 className="text-5xl font-black text-white mb-16 flex items-center gap-6">
+                        <Heart size={48} style={{ color: accent }} />
                         Core Principles
                     </h2>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                         <PrincipleCard accent={accent} number="1">
-                            <p className="font-bold text-white mb-2">Quality Over Quantity</p>
-                            <p className="text-sm text-white/60">One hour of deep focus beats 8 hours of distracted work</p>
+                            <p className="font-bold text-white mb-4 text-xl">Quality Over Quantity</p>
+                            <p className="text-base text-white/50 leading-relaxed">
+                                One hour of deep focus beats 8 hours of distracted work
+                            </p>
                         </PrincipleCard>
 
                         <PrincipleCard accent={accent} number="2">
-                            <p className="font-bold text-white mb-2">Track, Analyze, Optimize</p>
-                            <p className="text-sm text-white/60">What gets measured gets improved</p>
+                            <p className="font-bold text-white mb-4 text-xl">Track, Analyze, Optimize</p>
+                            <p className="text-base text-white/50 leading-relaxed">
+                                What gets measured gets improved
+                            </p>
                         </PrincipleCard>
 
                         <PrincipleCard accent={accent} number="3">
-                            <p className="font-bold text-white mb-2">Rest is Productive</p>
-                            <p className="text-sm text-white/60">Recovery is part of the system, not a break from it</p>
+                            <p className="font-bold text-white mb-4 text-xl">Rest is Productive</p>
+                            <p className="text-base text-white/50 leading-relaxed">
+                                Recovery is part of the system, not a break from it
+                            </p>
                         </PrincipleCard>
 
                         <PrincipleCard accent={accent} number="4">
-                            <p className="font-bold text-white mb-2">Context Switching Kills</p>
-                            <p className="text-sm text-white/60">Single-task deep work {'>'}Multi-task shallow work</p>
+                            <p className="font-bold text-white mb-4 text-xl">Context Switching Kills</p>
+                            <p className="text-base text-white/50 leading-relaxed">
+                                Single-task deep work {'>'}  Multi-task shallow work
+                            </p>
                         </PrincipleCard>
 
                         <PrincipleCard accent={accent} number="5">
-                            <p className="font-bold text-white mb-2">Environment Matters</p>
-                            <p className="text-sm text-white/60">Sound, visuals, and ambiance shape your focus</p>
+                            <p className="font-bold text-white mb-4 text-xl">Environment Matters</p>
+                            <p className="text-base text-white/50 leading-relaxed">
+                                Sound, visuals, and ambiance shape your focus
+                            </p>
                         </PrincipleCard>
 
                         <PrincipleCard accent={accent} number="6">
-                            <p className="font-bold text-white mb-2">AI as Partner, Not Tool</p>
-                            <p className="text-sm text-white/60">Zeni knows you, guides you, grows with you</p>
+                            <p className="font-bold text-white mb-4 text-xl">AI as Partner, Not Tool</p>
+                            <p className="text-base text-white/50 leading-relaxed">
+                                Zeni knows you, guides you, grows with you
+                            </p>
                         </PrincipleCard>
                     </div>
                 </motion.div>
 
-                {/* Version Info */}
+                {/* Version Info - Spacious footer */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4 }}
-                    className="text-center pt-8 border-t border-white/10"
+                    className="text-center pt-16 border-t border-white/5"
                 >
-                    <p className="text-sm text-white/40 mb-2">
+                    <p className="text-base text-white/30 mb-4">
                         Zenner V2.0.1 • Built with React, Tauri, TypeScript
                     </p>
-                    <p className="text-sm text-white/40">
+                    <p className="text-base text-white/30">
                         © 2026 <a href="https://anwe.sh" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" style={{ color: accent }}>Anwesh Rath</a> • All rights reserved
                     </p>
                 </motion.div>
@@ -266,26 +282,26 @@ export function PhilosophyView({ accent }: PhilosophyViewProps) {
 function PhilosophyCard({ icon: Icon, title, children, accent }: any) {
     return (
         <motion.div
-            whileHover={{ y: -4 }}
-            className="p-8 rounded-2xl"
+            whileHover={{ y: -6 }}
+            className="p-12 rounded-3xl"
             style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.08)'
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.06)'
             }}
         >
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center gap-6 mb-10">
                 <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center"
                     style={{
-                        background: `${accent}15`,
-                        border: `1px solid ${accent}30`
+                        background: `${accent}10`,
+                        border: `1px solid ${accent}25`
                     }}
                 >
-                    <Icon size={24} style={{ color: accent }} strokeWidth={2} />
+                    <Icon size={32} style={{ color: accent }} strokeWidth={1.5} />
                 </div>
-                <h3 className="text-xl font-bold text-white">{title}</h3>
+                <h3 className="text-2xl font-bold text-white">{title}</h3>
             </div>
-            <div className="text-base">
+            <div className="text-lg">
                 {children}
             </div>
         </motion.div>
@@ -295,15 +311,15 @@ function PhilosophyCard({ icon: Icon, title, children, accent }: any) {
 function PrincipleCard({ number, children, accent }: any) {
     return (
         <motion.div
-            whileHover={{ scale: 1.03 }}
-            className="p-6 rounded-xl relative overflow-hidden"
+            whileHover={{ scale: 1.03, y: -4 }}
+            className="p-10 rounded-2xl relative overflow-hidden"
             style={{
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.06)'
+                background: 'rgba(255,255,255,0.015)',
+                border: '1px solid rgba(255,255,255,0.04)'
             }}
         >
             <div
-                className="absolute top-0 right-0 text-8xl font-black opacity-5"
+                className="absolute top-0 right-0 text-9xl font-black opacity-[0.03]"
                 style={{ color: accent }}
             >
                 {number}
