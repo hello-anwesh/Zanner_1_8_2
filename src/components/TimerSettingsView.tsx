@@ -1,4 +1,6 @@
 import { motion } from 'framer-motion';
+import { metronomeService } from '../services/MetronomeService';
+import { TimerPreview } from './TimerPreview';
 
 interface TimerSettingsViewProps {
     accent: string;
@@ -85,7 +87,13 @@ export function TimerSettingsView({ accent, activePreset, timerStyle, onTimerSty
 
             {/* Timer Style Selector */}
             <div className="space-y-6">
-                <h3 className="font-black text-2xl text-white leading-none">Timer Style</h3>
+                <div className="flex items-start justify-between">
+                    <h3 className="font-black text-2xl text-white leading-none">Timer Style</h3>
+                    <div className="flex flex-col items-end gap-2">
+                        <span className="text-xs font-medium text-white/40 uppercase tracking-wider">Preview</span>
+                        <TimerPreview style={timerStyle} accent={accent} />
+                    </div>
+                </div>
                 <div className="grid grid-cols-2 gap-5">
                     {TIMER_STYLES.map((style) => (
                         <motion.button
@@ -131,6 +139,96 @@ export function TimerSettingsView({ accent, activePreset, timerStyle, onTimerSty
                         </motion.button>
                     ))}
                 </div>
+            </div>
+
+            {/* Metronome Section */}
+            <div className="space-y-6">
+                <h3 className="font-black text-2xl text-white leading-none">Metronome</h3>
+                <motion.div
+                    className="p-8 rounded-[28px] space-y-6"
+                    style={{
+                        background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
+                        border: "1px solid rgba(255,255,255,0.12)",
+                        backdropFilter: "blur(30px)",
+                        boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
+                    }}
+                >
+                    {/* Enable Toggle */}
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="font-bold text-lg text-white mb-1">Enable Metronome</p>
+                            <p className="text-sm font-medium text-white/50">Background tick sound during focus sessions</p>
+                        </div>
+                        <button
+                            onClick={() => {
+                                const newState = !metronomeService.getState().enabled;
+                                metronomeService.setEnabled(newState);
+                            }}
+                            className="relative w-14 h-8 rounded-full transition-all"
+                            style={{
+                                background: metronomeService.getState().enabled ? accent : 'rgba(255,255,255,0.1)',
+                                boxShadow: metronomeService.getState().enabled ? `0 0 20px ${accent}40` : 'none'
+                            }}
+                        >
+                            <div
+                                className="absolute top-1 w-6 h-6 rounded-full bg-white transition-transform"
+                                style={{
+                                    transform: metronomeService.getState().enabled ? 'translateX(24px)' : 'translateX(4px)'
+                                }}
+                            />
+                        </button>
+                    </div>
+
+                    {/* BPM Slider */}
+                    <div>
+                        <div className="flex items-center justify-between mb-3">
+                            <label className="font-bold text-base text-white">BPM (Beats Per Minute)</label>
+                            <span className="text-sm font-bold px-3 py-1 rounded-lg" style={{ background: `${accent}20`, color: accent }}>
+                                {metronomeService.getState().bpm}
+                            </span>
+                        </div>
+                        <input
+                            type="range"
+                            min="30"
+                            max="240"
+                            value={metronomeService.getState().bpm}
+                            onChange={(e) => metronomeService.setBPM(parseInt(e.target.value))}
+                            className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                            style={{
+                                background: `linear-gradient(to right, ${accent} 0%, ${accent} ${((metronomeService.getState().bpm - 30) / (240 - 30)) * 100}%, rgba(255,255,255,0.1) ${((metronomeService.getState().bpm - 30) / (240 - 30)) * 100}%, rgba(255,255,255,0.1) 100%)`
+                            }}
+                        />
+                        <div className="flex justify-between mt-2">
+                            <span className="text-xs font-medium text-white/40">30 BPM</span>
+                            <span className="text-xs font-medium text-white/40">240 BPM</span>
+                        </div>
+                    </div>
+
+                    {/* Volume Slider */}
+                    <div>
+                        <div className="flex items-center justify-between mb-3">
+                            <label className="font-bold text-base text-white">Volume</label>
+                            <span className="text-sm font-bold px-3 py-1 rounded-lg" style={{ background: `${accent}20`, color: accent }}>
+                                {Math.round(metronomeService.getState().volume * 100)}%
+                            </span>
+                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={metronomeService.getState().volume * 100}
+                            onChange={(e) => metronomeService.setVolume(parseInt(e.target.value) / 100)}
+                            className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                            style={{
+                                background: `linear-gradient(to right, ${accent} 0%, ${accent} ${metronomeService.getState().volume * 100}%, rgba(255,255,255,0.1) ${metronomeService.getState().volume * 100}%, rgba(255,255,255,0.1) 100%)`
+                            }}
+                        />
+                        <div className="flex justify-between mt-2">
+                            <span className="text-xs font-medium text-white/40">0%</span>
+                            <span className="text-xs font-medium text-white/40">100%</span>
+                        </div>
+                    </div>
+                </motion.div>
             </div>
 
             {/* Info */}

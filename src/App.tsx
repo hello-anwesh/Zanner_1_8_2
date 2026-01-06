@@ -41,6 +41,7 @@ import { TitleBar } from "./components/TitleBar";
 import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
 import { SessionHistory } from "./components/SessionHistory";
 import { useAnalytics } from "./hooks/useAnalytics";
+import { metronomeService } from "./services/MetronomeService";
 
 
 
@@ -178,6 +179,11 @@ function App() {
     loading: _analyticsLoading
   } = useAnalytics();
 
+  // Load metronome config on mount
+  useEffect(() => {
+    metronomeService.loadConfig();
+  }, []);
+
   const [isAILoading, setIsAILoading] = useState(false);
 
   // Hooks
@@ -261,6 +267,15 @@ function App() {
       });
     }, 1000);
     return () => clearInterval(interval);
+  }, [isRunning, timeLeft]);
+
+  // Control metronome based on timer state
+  useEffect(() => {
+    if (isRunning) {
+      metronomeService.start();
+    } else {
+      metronomeService.stop();
+    }
   }, [isRunning]);
 
   useEffect(() => {
@@ -559,214 +574,228 @@ function App() {
                           ))}
                         </div>
 
-                        {/* Timer Display */}
+                        {/* Timer Display - REDESIGNED CLEAN & MODERN */}
                         {(() => {
-                          const size = 340;
-                          const stroke = 8;
-                          const radius = size / 2 - stroke / 2;
+                          const size = 360;
+                          const stroke = 6;
+                          const radius = size / 2 - stroke / 2 - 20;
                           const circ = 2 * Math.PI * radius;
                           const totalSeconds = durations[mode] * 60;
                           const progress = 1 - timeLeft / totalSeconds;
                           const offset = circ * (1 - progress);
 
                           return (
-                            <div className="relative mb-16 w-full flex justify-center">
+                            <div className="relative mb-20 w-full flex justify-center">
+                              {/* 1. CLEAN RING (formerly 3D) */}
                               {timerStyle === '3d' && (
-                                <div className="h-[400px] w-full max-w-2xl relative">
-                                  <div className="absolute inset-0 z-10">
-                                    <Canvas camera={{ position: [0, 0, 5], fov: 45 }} dpr={[1, 2]}>
-                                      <ambientLight intensity={0.5} />
-                                      <HoloTimer
-                                        progress={progress}
-                                        mode={mode === 'focus' ? 'work' : mode}
-                                      />
-                                      <Environment preset="city" />
-                                    </Canvas>
-                                  </div>
-                                  <div className="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none">
-                                    <span
-                                      className="text-[8rem] font-black tracking-tighter text-white tabular-nums leading-none"
-                                      style={{ textShadow: `0 0 40px ${accent}60` }}
-                                    >
+                                <div className="flex flex-col items-center justify-center py-12 relative">
+                                  <svg width={size} height={size} className="-rotate-90">
+                                    {/* Background ring */}
+                                    <circle
+                                      cx={size / 2}
+                                      cy={size / 2}
+                                      r={radius}
+                                      fill="none"
+                                      stroke="rgba(255,255,255,0.08)"
+                                      strokeWidth={stroke}
+                                    />
+                                    {/* Progress ring */}
+                                    <circle
+                                      cx={size / 2}
+                                      cy={size / 2}
+                                      r={radius}
+                                      fill="none"
+                                      stroke={accent}
+                                      strokeWidth={stroke}
+                                      strokeLinecap="round"
+                                      strokeDasharray={circ}
+                                      strokeDashoffset={offset}
+                                      style={{ transition: "stroke-dashoffset 0.5s ease" }}
+                                    />
+                                    {/* Inner decorative circle */}
+                                    <circle
+                                      cx={size / 2}
+                                      cy={size / 2}
+                                      r={radius - 40}
+                                      fill="none"
+                                      stroke="rgba(255,255,255,0.04)"
+                                      strokeWidth={1}
+                                    />
+                                  </svg>
+
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span className="text-8xl font-light tracking-tight text-white tabular-nums">
                                       {formatTime(timeLeft)}
                                     </span>
-                                    <div className="flex items-center gap-3 mt-6 px-5 py-2 rounded-full bg-black/40 border border-white/10 backdrop-blur-md">
-                                      <div className={`w-2 h-2 rounded-full transition-all duration-500 ${isRunning ? 'bg-green-400 shadow-[0_0_10px_#4ade80]' : 'bg-white/20'}`} />
-                                      <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">
-                                        {isRunning ? "System Active" : "System Paused"}
+                                    <div className="mt-6 flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
+                                      <div className={`w-2 h-2 rounded-full transition-colors ${isRunning ? 'bg-green-400' : 'bg-white/30'}`} />
+                                      <span className="text-xs font-medium uppercase tracking-wider text-white/50">
+                                        {isRunning ? "Active" : "Paused"}
                                       </span>
                                     </div>
                                   </div>
                                 </div>
                               )}
 
+                              {/* 2. MINIMAL - Keep clean as is */}
                               {timerStyle === 'minimal' && (
-                                <div className="flex flex-col items-center justify-center py-20 relative animate-fade-in">
-                                  <div className="text-[10rem] font-black tracking-tighter tabular-nums leading-none text-white select-none relative z-10 transition-all duration-300">
+                                <div className="flex flex-col items-center justify-center py-20">
+                                  <div className="text-[10rem] font-light tracking-tight tabular-nums text-white">
                                     {formatTime(timeLeft)}
                                   </div>
                                   <div className="mt-8">
-                                    <span className={`text-sm font-bold uppercase tracking-[0.3em] px-4 py-2 rounded-full ${isRunning ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-white/5 text-white/40 border border-white/10'}`}>
+                                    <span className={`text-sm font-medium uppercase tracking-wider px-5 py-2.5 rounded-lg ${isRunning ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-white/5 text-white/40 border border-white/10'}`}>
                                       {isRunning ? "Focus Mode" : "Ready"}
                                     </span>
                                   </div>
                                 </div>
                               )}
 
+                              {/* 3. CIRCULAR - Clean flat version */}
                               {timerStyle === 'circular' && (
-                                <div className="relative py-10 scale-110">
-                                  {isRunning && (
-                                    <div
-                                      className="absolute inset-0 rounded-full animate-pulse-glow"
-                                      style={{ "--glow-color": `${accent}50`, transform: "scale(1.15)" } as React.CSSProperties}
-                                    />
-                                  )}
-
-                                  <svg width={size} height={size} className="-rotate-90 relative z-10">
-                                    <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke} />
+                                <div className="relative py-12">
+                                  <svg width={size} height={size} className="-rotate-90">
                                     <circle
-                                      cx={size / 2} cy={size / 2} r={radius} fill="none"
-                                      stroke={accent} strokeWidth={stroke} strokeLinecap="round"
-                                      strokeDasharray={circ} strokeDashoffset={offset}
-                                      style={{ transition: "stroke-dashoffset 0.5s ease", filter: `drop-shadow(0 0 12px ${accent})` }}
+                                      cx={size / 2}
+                                      cy={size / 2}
+                                      r={radius}
+                                      fill="none"
+                                      stroke="rgba(255,255,255,0.08)"
+                                      strokeWidth={stroke}
+                                    />
+                                    <circle
+                                      cx={size / 2}
+                                      cy={size / 2}
+                                      r={radius}
+                                      fill="none"
+                                      stroke={accent}
+                                      strokeWidth={stroke}
+                                      strokeLinecap="round"
+                                      strokeDasharray={circ}
+                                      strokeDashoffset={offset}
+                                      style={{ transition: "stroke-dashoffset 0.5s ease" }}
                                     />
                                   </svg>
 
-                                  <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
-                                    <span
-                                      className="text-8xl font-extralight tracking-tighter text-white"
-                                      style={{
-                                        fontVariantNumeric: "tabular-nums",
-                                        textShadow: isRunning ? `0 0 60px ${accent}60` : "none",
-                                        transition: "text-shadow 0.5s",
-                                      }}
-                                    >
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span className="text-8xl font-light tracking-tight text-white tabular-nums">
                                       {formatTime(timeLeft)}
                                     </span>
+                                    <div className="mt-4">
+                                      <span className="text-sm font-medium uppercase tracking-wider" style={{ color: `${accent}` }}>
+                                        {Math.round(progress * 100)}%
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                               )}
 
-                              {timerStyle === 'analog' && (
-                                <div className="relative py-10">
-                                  <svg width={size} height={size} className="relative z-10">
-                                    {/* Clock face background */}
-                                    <circle cx={size / 2} cy={size / 2} r={radius} fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)" strokeWidth={2} />
 
-                                    {/* Hour markers */}
+                              {/* 4. ANALOG - Clean modern clock */}
+                              {timerStyle === 'analog' && (
+                                <div className="relative py-12">
+                                  <svg width={size} height={size}>
+                                    {/* Clock face */}
+                                    <circle
+                                      cx={size / 2}
+                                      cy={size / 2}
+                                      r={radius}
+                                      fill="rgba(255,255,255,0.02)"
+                                      stroke="rgba(255,255,255,0.08)"
+                                      strokeWidth={2}
+                                    />
+
+                                    {/* Hour markers - simplified */}
                                     {Array.from({ length: 12 }).map((_, i) => {
                                       const angle = (i * 30 - 90) * (Math.PI / 180);
-                                      const x1 = size / 2 + (radius - 15) * Math.cos(angle);
-                                      const y1 = size / 2 + (radius - 15) * Math.sin(angle);
-                                      const x2 = size / 2 + (radius - 5) * Math.cos(angle);
-                                      const y2 = size / 2 + (radius - 5) * Math.sin(angle);
+                                      const x1 = size / 2 + (radius - 12) * Math.cos(angle);
+                                      const y1 = size / 2 + (radius - 12) * Math.sin(angle);
+                                      const x2 = size / 2 + (radius - 4) * Math.cos(angle);
+                                      const y2 = size / 2 + (radius - 4) * Math.sin(angle);
                                       return (
                                         <line
                                           key={i}
                                           x1={x1} y1={y1} x2={x2} y2={y2}
-                                          stroke="rgba(255,255,255,0.3)"
-                                          strokeWidth={i % 3 === 0 ? 3 : 1.5}
+                                          stroke="rgba(255,255,255,0.2)"
+                                          strokeWidth={i % 3 === 0 ? 2 : 1}
                                         />
                                       );
                                     })}
 
                                     {/* Progress arc */}
                                     <circle
-                                      cx={size / 2} cy={size / 2} r={radius - 10} fill="none"
-                                      stroke={accent} strokeWidth={4} strokeLinecap="round"
-                                      strokeDasharray={circ} strokeDashoffset={offset}
+                                      cx={size / 2}
+                                      cy={size / 2}
+                                      r={radius - 10}
+                                      fill="none"
+                                      stroke={accent}
+                                      strokeWidth={3}
+                                      strokeLinecap="round"
+                                      strokeDasharray={circ}
+                                      strokeDashoffset={offset}
                                       className="-rotate-90 origin-center"
-                                      style={{ transition: "stroke-dashoffset 0.5s ease", filter: `drop-shadow(0 0 8px ${accent})`, transformOrigin: '50% 50%' }}
+                                      style={{ transition: "stroke-dashoffset 0.5s ease", transformOrigin: '50% 50%' }}
                                     />
 
                                     {/* Clock hand */}
                                     <line
                                       x1={size / 2}
                                       y1={size / 2}
-                                      x2={size / 2 + (radius - 40) * Math.cos((progress * 360 - 90) * (Math.PI / 180))}
-                                      y2={size / 2 + (radius - 40) * Math.sin((progress * 360 - 90) * (Math.PI / 180))}
+                                      x2={size / 2 + (radius - 50) * Math.cos((progress * 360 - 90) * (Math.PI / 180))}
+                                      y2={size / 2 + (radius - 50) * Math.sin((progress * 360 - 90) * (Math.PI / 180))}
                                       stroke={accent}
-                                      strokeWidth={3}
+                                      strokeWidth={2}
                                       strokeLinecap="round"
-                                      style={{ filter: `drop-shadow(0 0 6px ${accent})`, transition: "all 0.5s ease" }}
+                                      style={{ transition: "all 0.5s ease" }}
                                     />
 
                                     {/* Center dot */}
-                                    <circle cx={size / 2} cy={size / 2} r={6} fill={accent} style={{ filter: `drop-shadow(0 0 8px ${accent})` }} />
+                                    <circle cx={size / 2} cy={size / 2} r={4} fill={accent} />
                                   </svg>
 
-                                  <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
-                                    <span
-                                      className="text-7xl font-light tracking-tight text-white"
-                                      style={{
-                                        fontVariantNumeric: "tabular-nums",
-                                        textShadow: isRunning ? `0 0 40px ${accent}60` : "none",
-                                        transition: "text-shadow 0.5s",
-                                      }}
-                                    >
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span className="text-7xl font-light tracking-tight text-white tabular-nums">
                                       {formatTime(timeLeft)}
                                     </span>
                                   </div>
                                 </div>
                               )}
 
+                              {/* 5. BAR - Clean progress bar */}
                               {timerStyle === 'bar' && (
                                 <div className="flex flex-col items-center gap-12 py-16">
                                   {/* Time display */}
-                                  <div className="text-9xl font-black tracking-tighter text-white tabular-nums">
+                                  <div className="text-9xl font-light tracking-tight text-white tabular-nums">
                                     {formatTime(timeLeft)}
                                   </div>
 
                                   {/* Progress bar */}
                                   <div className="w-full max-w-2xl">
-                                    <div
-                                      className="h-4 rounded-full bg-white/5 overflow-hidden relative"
-                                      style={{ boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.3)' }}
-                                    >
+                                    <div className="h-3 rounded-full bg-white/5 overflow-hidden">
                                       <div
-                                        className="h-full rounded-full transition-all duration-500 ease-out relative overflow-hidden"
+                                        className="h-full rounded-full transition-all duration-500 ease-out"
                                         style={{
                                           width: `${progress * 100}%`,
-                                          background: `linear-gradient(90deg, ${accent} 0%, ${accent}cc 100%)`,
-                                          boxShadow: `0 0 20px ${accent}80, inset 0 1px 0 rgba(255,255,255,0.3)`,
+                                          background: accent,
                                         }}
-                                      >
-                                        {/* Animated shimmer effect */}
-                                        <div
-                                          className="absolute inset-0 opacity-40"
-                                          style={{
-                                            background: `linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)`,
-                                            animation: isRunning ? 'shimmer 2s infinite' : 'none',
-                                          }}
-                                        />
-                                      </div>
+                                      />
                                     </div>
 
                                     {/* Percentage */}
                                     <div className="mt-4 text-center">
-                                      <span
-                                        className="text-2xl font-bold tracking-wide"
-                                        style={{ color: accent }}
-                                      >
+                                      <span className="text-xl font-medium tracking-wide" style={{ color: accent }}>
                                         {Math.round(progress * 100)}%
                                       </span>
                                     </div>
                                   </div>
 
                                   {/* Status badge */}
-                                  <div
-                                    className="px-6 py-3 rounded-full text-sm font-bold uppercase tracking-widest"
-                                    style={{
-                                      background: isRunning ? `${accent}20` : 'rgba(255,255,255,0.05)',
-                                      border: `1.5px solid ${isRunning ? accent + '60' : 'rgba(255,255,255,0.1)'}`,
-                                      color: isRunning ? accent : 'rgba(255,255,255,0.4)',
-                                      boxShadow: isRunning ? `0 0 20px ${accent}40` : 'none',
-                                    }}
-                                  >
+                                  <div className={`px-6 py-2.5 rounded-lg text-sm font-medium uppercase tracking-wider ${isRunning ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-white/5 text-white/40 border border-white/10'}`}>
                                     {isRunning ? "In Progress" : "Paused"}
                                   </div>
                                 </div>
                               )}
+
                             </div>
                           );
                         })()}

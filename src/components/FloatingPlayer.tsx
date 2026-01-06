@@ -366,51 +366,50 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
             {/* Main Container */}
             <div className="fixed bottom-8 right-8 z-50">
 
-                {/* === TRIGGER BUTTON === */}
+                {/* === TRIGGER BUTTON - CLEAN FLAT === */}
                 {!showLibrary && !currentTrack && (
                     <button
                         onClick={() => setShowLibrary(true)}
-                        className="w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110"
+                        className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-105"
                         style={{
-                            background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}99)`,
-                            boxShadow: `0 4px 24px ${colors.accent}60`,
+                            background: colors.accent,
+                            border: '1px solid rgba(255,255,255,0.1)',
                         }}
                     >
-                        <Music2 size={22} color="#000" />
+                        <Music2 size={22} color="#000" strokeWidth={2.5} />
                     </button>
                 )}
 
-                {/* === MINI PLAYER === */}
+                {/* === MINI PLAYER - CLEAN FLAT === */}
                 {!showLibrary && currentTrack && (
                     <div
                         onClick={() => setShowLibrary(true)}
-                        className="flex items-center gap-4 p-3 pr-4 rounded-full cursor-pointer shadow-2xl"
+                        className="flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer shadow-lg transition-all hover:border-white/20"
                         style={{
-                            background: "rgba(0,0,0,0.9)",
-                            backdropFilter: "blur(20px)",
-                            border: `1px solid ${error ? "#F43F5E40" : "rgba(255,255,255,0.08)"}`,
+                            background: "#1E1E1E",
+                            border: error ? "1px solid #F43F5E" : "1px solid rgba(255,255,255,0.1)",
                         }}
                     >
                         <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${isLoading ? "animate-pulse" : ""}`}
-                            style={{ background: error ? "#F43F5E20" : `${colors.accent}20` }}
+                            className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${isLoading ? "animate-pulse" : ""}`}
+                            style={{ background: error ? "#F43F5E20" : `${colors.accent}20`, border: `1px solid ${error ? '#F43F5E40' : colors.accent + '40'}` }}
                         >
                             {error ? <AlertCircle size={18} color="#F43F5E" /> : currentTrack.icon}
                         </div>
                         <span className="text-sm font-medium text-white max-w-32 truncate">
                             {error ? "Error" : currentTrack.name}
                         </span>
-                        <div className="flex gap-1">
+                        <div className="flex gap-2">
                             <button
                                 onClick={e => { e.stopPropagation(); toggle(); }}
-                                className="w-9 h-9 rounded-full flex items-center justify-center"
+                                className="w-9 h-9 rounded-lg flex items-center justify-center transition-transform hover:scale-105"
                                 style={{ background: colors.accent }}
                             >
                                 {isPlaying ? <Pause size={16} color="#000" /> : <Play size={16} color="#000" />}
                             </button>
                             <button
                                 onClick={e => { e.stopPropagation(); stop(); }}
-                                className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10"
+                                className="w-9 h-9 rounded-lg flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors"
                             >
                                 <X size={14} className="text-white/50" />
                             </button>
@@ -418,44 +417,37 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
                     </div>
                 )}
 
-                {/* === LIBRARY PANEL === */}
+                {/* === LIBRARY PANEL - CLEAN FLAT === */}
                 {showLibrary && (
                     <div
-                        className="w-[440px] rounded-3xl overflow-hidden shadow-2xl relative"
+                        className="w-[440px] rounded-2xl overflow-hidden shadow-xl"
                         style={{
-                            background: "linear-gradient(160deg, rgba(18,18,24,0.98) 0%, rgba(12,12,16,0.99) 100%)",
-                            backdropFilter: "blur(60px) saturate(180%)",
-                            border: "1px solid rgba(255,255,255,0.08)",
+                            background: "#1E1E1E",
+                            border: "1px solid rgba(255,255,255,0.1)",
                             maxHeight: "75vh",
-                            boxShadow: `0 32px 80px rgba(0,0,0,0.8), inset 0 0 80px rgba(${parseInt(colors.accent.slice(1, 3), 16)}, ${parseInt(colors.accent.slice(3, 5), 16)}, ${parseInt(colors.accent.slice(5, 7), 16)}, 0.04)`
                         }}
                     >
-                        {/* Ambient Glow */}
-                        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                            <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full blur-[100px]" style={{ background: `radial-gradient(circle, ${colors.accent}15 0%, transparent 70%)` }} />
-                        </div>
-
                         {/* Header */}
-                        <div className="relative p-6 pb-5 flex items-center justify-between border-b" style={{ borderColor: "rgba(255,255,255,0.05)" }}>
+                        <div className="p-6 flex items-center justify-between border-b" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
                             <div className="flex items-center gap-4">
                                 <div
-                                    className="p-3 rounded-2xl relative overflow-hidden"
+                                    className="p-3 rounded-lg"
                                     style={{
-                                        background: `linear-gradient(135deg, ${colors.accent}20 0%, ${colors.accent}10 100%)`,
-                                        border: `1px solid ${colors.accent}30`
+                                        background: `${colors.accent}20`,
+                                        border: `1px solid ${colors.accent}40`
                                     }}
                                 >
                                     <Music size={20} style={{ color: colors.accent }} strokeWidth={2.5} />
                                 </div>
-                                <h2 className="text-xl font-bold tracking-tight text-white">Sound Library</h2>
-                                <button
-                                    onClick={() => setShowLibrary(false)}
-                                    className="p-2.5 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95"
-                                    style={{ background: "rgba(255,255,255,0.05)" }}
-                                >
-                                    <X size={18} style={{ color: "rgba(255,255,255,0.5)" }} />
-                                </button>
+                                <h2 className="text-xl font-bold text-white">Sound Library</h2>
                             </div>
+                            <button
+                                onClick={() => setShowLibrary(false)}
+                                className="p-2.5 rounded-lg transition-colors hover:bg-white/10"
+                                style={{ background: "rgba(255,255,255,0.05)" }}
+                            >
+                                <X size={18} style={{ color: "rgba(255,255,255,0.5)" }} />
+                            </button>
                         </div>
 
                         {/* Error Banner */}
