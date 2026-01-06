@@ -1276,6 +1276,7 @@ function App() {
             isRunning={isRunning}
             mode={mode}
             accent={colors.accent}
+            sessions={sessions}
             onToggleTimer={() => setIsRunning(!isRunning)}
             onExpand={() => {
               setIsCompactMode(false);
