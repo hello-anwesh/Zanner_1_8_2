@@ -7,11 +7,26 @@ class DatabaseService {
 
     async init() {
         try {
+            if (this.db) return; // Already initialized
+
+            console.log('Initializing database connection...');
             this.db = await Database.load(this.DB_NAME);
+
+            console.log('Database loaded, checking tables...');
             await this.createTables();
-            console.log('Database initialized successfully');
+
+            // Verify table existence
+            const tables = await this.db.select("SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'");
+            if (Array.isArray(tables) && tables.length === 0) {
+                console.error('CRITICAL: Table "sessions" was not created! Retrying creation...');
+                await this.createTables();
+            } else {
+                console.log('Database verified: "sessions" table exists.');
+            }
         } catch (error) {
             console.error('Failed to initialize database:', error);
+            // Reset db instance to allow retry
+            this.db = null;
             throw error;
         }
     }
@@ -32,6 +47,43 @@ class DatabaseService {
             );
         `;
         await this.db.execute(query);
+    }
+
+    async seedMockData() {
+        if (!this.db) await this.init();
+        if (!this.db) throw new Error('Database not initialized');
+
+        // Check if data exists
+        const count: any[] = await this.db.select('SELECT COUNT(*) as c FROM sessions');
+        if (count[0].c > 0) {
+            console.log('Database already has data, skipping seed.');
+            return;
+        }
+
+        console.log('Seeding mock data...');
+        const now = new Date();
+        const statuses = ['COMPLETED', 'COMPLETED', 'COMPLETED', 'ABANDONED'];
+
+        for (let i = 0; i < 20; i++) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - Math.floor(Math.random() * 7)); // Last 7 days
+            date.setHours(9 + Math.floor(Math.random() * 8), 0, 0, 0); // Work hours
+
+            const duration = 25;
+            const status = statuses[Math.floor(Math.random() * statuses.length)];
+            const actual = status === 'COMPLETED' ? duration * 60 : Math.floor(Math.random() * duration * 60);
+
+            await this.createSession({
+                start_time: date.toISOString(),
+                mode: 'focus',
+                duration_minutes: duration,
+                actual_duration_seconds: actual,
+                status: status as any,
+                notes: 'Mock session data',
+                end_time: new Date(date.getTime() + actual * 1000).toISOString()
+            });
+        }
+        console.log('Mock data seeded successfully!');
     }
 
     async createSession(session: Omit<LoggedSession, 'id'>): Promise<number> {

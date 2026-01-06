@@ -40,7 +40,16 @@ export function useAnalytics() {
     const fetchStats = async () => {
         try {
             setLoading(true);
-            const allSessions = await databaseService.getSessions();
+            let allSessions = await databaseService.getSessions();
+
+            // Auto-seed in development if empty to show valid mockup
+            // ONLY in dev mode to avoid polluting user data in prod
+            if (allSessions.length === 0 && import.meta.env.DEV) {
+                console.log('Dev mode & empty DB detected: Seeding mock data...');
+                await databaseService.seedMockData();
+                allSessions = await databaseService.getSessions();
+            }
+
             setSessions(allSessions);
 
             // Calculate stats
