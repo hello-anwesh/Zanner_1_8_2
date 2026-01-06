@@ -42,6 +42,7 @@ import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
 import { SessionHistory } from "./components/SessionHistory";
 import { useAnalytics } from "./hooks/useAnalytics";
 import { metronomeService } from "./services/MetronomeService";
+import { PhilosophyView } from "./components/PhilosophyView";
 
 
 
