@@ -36,6 +36,7 @@ export function ZennerCoach({
     const isInitializedRef = useRef(false);
 
     const toggleListening = () => {
+        console.log("🎤 MIC BUTTON CLICKED - isListening:", isListening);
         if (isListening) {
             recognitionRef.current?.stop();
             setIsListening(false);

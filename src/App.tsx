@@ -43,6 +43,7 @@ import { SessionHistory } from "./components/SessionHistory";
 import { useAnalytics } from "./hooks/useAnalytics";
 import { metronomeService } from "./services/MetronomeService";
 import { PhilosophyView } from "./components/PhilosophyView";
+import { JournalView } from "./components/JournalView";
 import { AISettingsView } from "./components/AISettingsView";
 
 
@@ -51,7 +52,7 @@ import { AISettingsView } from "./components/AISettingsView";
 // TYPES & CONSTANTS
 // ============================================================================
 
-type View = "home" | "stats" | "integrations" | "frequencies" | "philosophy" |
+type View = "home" | "stats" | "integrations" | "frequencies" | "philosophy" | "journal" |
   "settings-ai" | "settings-theme" | "settings-spotify" | "settings-timer" | "settings-voice" |
   "ai-identity" | "ai-cognition" | "ai-rhythms" | "ai-training" |
   "voice-speech" | "voice-tts";
@@ -919,6 +920,11 @@ function App() {
                   {/* PHILOSOPHY / ABOUT */}
                   {view === "philosophy" && (
                     <PhilosophyView accent={accent} />
+                  )}
+
+                  {/* JOURNAL */}
+                  {view === "journal" && (
+                    <JournalView />
                   )}
 
                   {/* SETTINGS - AI */}
