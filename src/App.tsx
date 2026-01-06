@@ -11,11 +11,18 @@ import { useTheme } from "./contexts/ThemeContext";
 import PremiumSidebar from "./components/PremiumSidebar";
 import { SettingsModal } from "./components/settings";
 import { FloatingPlayer } from "./components/FloatingPlayer";
+import { Canvas } from "@react-three/fiber";
+import { Environment } from "@react-three/drei";
+import { HoloTimer } from "./components/Cyberpunk/HoloTimer";
 
 import { ParticleSystem, ParallaxBackground, ThreeDTiltContainer } from "./components/PremiumEffects";
 import { AITrainingView } from "./components/training/AITrainingView";
 import { AIRhythmsView } from "./components/AIRhythmsView";
+import { AIIdentityView } from "./components/AIIdentityView";
+import { AICognitionView } from "./components/AICognitionView";
 import { VoiceSettingsView } from "./components/VoiceSettingsView";
+import { SpotifySettingsView } from "./components/SpotifySettingsView";
+import { TimerSettingsView } from "./components/TimerSettingsView";
 import { eventBus } from "./services";
 import { musicController } from "./services/music/MusicController";
 import { useAI } from "./hooks/useAI";
@@ -36,6 +43,7 @@ import { SessionHistory } from "./components/SessionHistory";
 import { useAnalytics } from "./hooks/useAnalytics";
 
 
+
 // ============================================================================
 // TYPES & CONSTANTS
 // ============================================================================
@@ -45,6 +53,7 @@ type View = "home" | "stats" | "integrations" | "frequencies" |
   "ai-identity" | "ai-cognition" | "ai-rhythms" | "ai-training" |
   "voice-speech" | "voice-tts";
 type TimerMode = "focus" | "shortBreak" | "longBreak";
+type TimerStyle = "minimal" | "circular" | "analog" | "bar" | "3d";
 
 // Theme system moved to ThemeContext
 
@@ -110,7 +119,7 @@ function App() {
     const stored = localStorage.getItem("timerPresets");
     const presets = stored ? JSON.parse(stored) : presetManager.getPresets();
     // Check if smart sprint exists, if not add it
-    if (!presets.find(p => p.id === "smart-sprint")) {
+    if (!presets.find((p: any) => p.id === "smart-sprint")) {
       const sprint = presetManager.createSprintPreset(5);
       presetManager.savePreset(sprint);
       presets.push(sprint);
@@ -121,6 +130,7 @@ function App() {
   const [showPresetPicker, setShowPresetPicker] = useState(false);
   const [showPresetEditor, setShowPresetEditor] = useState(false);
   const [sequenceIndex, setSequenceIndex] = useState(0);
+  const [timerStyle, setTimerStyle] = useState<TimerStyle>('3d');
 
   const durations = { focus: activePreset.focus, shortBreak: activePreset.shortBreak, longBreak: activePreset.longBreak };
   const [mode, setMode] = useState<TimerMode>("focus");
@@ -383,7 +393,7 @@ function App() {
               onViewChange={(v) => setView(v as any)}
               accent={accent}
               onFrequencyClick={() => setView("frequencies")}
-              onCommandClick={() => setShowCommandCenter(true)}
+              onCoachOpen={() => setShowCoach(true)}
             />
 
             {/* ========== MAIN ========== */}
@@ -548,99 +558,271 @@ function App() {
                             </button>
                           ))}
                         </div>
-                      </div>
 
-                      {/* Timer Ring */}
-                      <div className="relative mb-20">
-                        {/* Outer glow */}
-                        {isRunning && (
-                          <div
-                            className="absolute inset-0 rounded-full animate-pulse-glow"
-                            style={{ "--glow-color": `${accent}50`, transform: "scale(1.15)" } as React.CSSProperties}
-                          />
-                        )}
+                        {/* Timer Display */}
+                        {(() => {
+                          const size = 340;
+                          const stroke = 8;
+                          const radius = size / 2 - stroke / 2;
+                          const circ = 2 * Math.PI * radius;
+                          const totalSeconds = durations[mode] * 60;
+                          const progress = 1 - timeLeft / totalSeconds;
+                          const offset = circ * (1 - progress);
 
-                        <svg width={size} height={size} className="-rotate-90 relative z-10">
-                          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke} />
-                          <circle
-                            cx={size / 2} cy={size / 2} r={radius} fill="none"
-                            stroke={accent} strokeWidth={stroke} strokeLinecap="round"
-                            strokeDasharray={circ} strokeDashoffset={offset}
-                            style={{ transition: "stroke-dashoffset 0.5s ease", filter: `drop - shadow(0 0 12px ${accent})` }}
-                          />
-                        </svg>
+                          return (
+                            <div className="relative mb-16 w-full flex justify-center">
+                              {timerStyle === '3d' && (
+                                <div className="h-[400px] w-full max-w-2xl relative">
+                                  <div className="absolute inset-0 z-10">
+                                    <Canvas camera={{ position: [0, 0, 5], fov: 45 }} dpr={[1, 2]}>
+                                      <ambientLight intensity={0.5} />
+                                      <HoloTimer
+                                        progress={progress}
+                                        mode={mode === 'focus' ? 'work' : mode}
+                                      />
+                                      <Environment preset="city" />
+                                    </Canvas>
+                                  </div>
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none">
+                                    <span
+                                      className="text-[8rem] font-black tracking-tighter text-white tabular-nums leading-none"
+                                      style={{ textShadow: `0 0 40px ${accent}60` }}
+                                    >
+                                      {formatTime(timeLeft)}
+                                    </span>
+                                    <div className="flex items-center gap-3 mt-6 px-5 py-2 rounded-full bg-black/40 border border-white/10 backdrop-blur-md">
+                                      <div className={`w-2 h-2 rounded-full transition-all duration-500 ${isRunning ? 'bg-green-400 shadow-[0_0_10px_#4ade80]' : 'bg-white/20'}`} />
+                                      <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">
+                                        {isRunning ? "System Active" : "System Paused"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
 
-                        <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
-                          <span
-                            className="text-8xl font-extralight tracking-tighter"
+                              {timerStyle === 'minimal' && (
+                                <div className="flex flex-col items-center justify-center py-20 relative animate-fade-in">
+                                  <div className="text-[10rem] font-black tracking-tighter tabular-nums leading-none text-white select-none relative z-10 transition-all duration-300">
+                                    {formatTime(timeLeft)}
+                                  </div>
+                                  <div className="mt-8">
+                                    <span className={`text-sm font-bold uppercase tracking-[0.3em] px-4 py-2 rounded-full ${isRunning ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-white/5 text-white/40 border border-white/10'}`}>
+                                      {isRunning ? "Focus Mode" : "Ready"}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {timerStyle === 'circular' && (
+                                <div className="relative py-10 scale-110">
+                                  {isRunning && (
+                                    <div
+                                      className="absolute inset-0 rounded-full animate-pulse-glow"
+                                      style={{ "--glow-color": `${accent}50`, transform: "scale(1.15)" } as React.CSSProperties}
+                                    />
+                                  )}
+
+                                  <svg width={size} height={size} className="-rotate-90 relative z-10">
+                                    <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke} />
+                                    <circle
+                                      cx={size / 2} cy={size / 2} r={radius} fill="none"
+                                      stroke={accent} strokeWidth={stroke} strokeLinecap="round"
+                                      strokeDasharray={circ} strokeDashoffset={offset}
+                                      style={{ transition: "stroke-dashoffset 0.5s ease", filter: `drop-shadow(0 0 12px ${accent})` }}
+                                    />
+                                  </svg>
+
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
+                                    <span
+                                      className="text-8xl font-extralight tracking-tighter text-white"
+                                      style={{
+                                        fontVariantNumeric: "tabular-nums",
+                                        textShadow: isRunning ? `0 0 60px ${accent}60` : "none",
+                                        transition: "text-shadow 0.5s",
+                                      }}
+                                    >
+                                      {formatTime(timeLeft)}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {timerStyle === 'analog' && (
+                                <div className="relative py-10">
+                                  <svg width={size} height={size} className="relative z-10">
+                                    {/* Clock face background */}
+                                    <circle cx={size / 2} cy={size / 2} r={radius} fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)" strokeWidth={2} />
+
+                                    {/* Hour markers */}
+                                    {Array.from({ length: 12 }).map((_, i) => {
+                                      const angle = (i * 30 - 90) * (Math.PI / 180);
+                                      const x1 = size / 2 + (radius - 15) * Math.cos(angle);
+                                      const y1 = size / 2 + (radius - 15) * Math.sin(angle);
+                                      const x2 = size / 2 + (radius - 5) * Math.cos(angle);
+                                      const y2 = size / 2 + (radius - 5) * Math.sin(angle);
+                                      return (
+                                        <line
+                                          key={i}
+                                          x1={x1} y1={y1} x2={x2} y2={y2}
+                                          stroke="rgba(255,255,255,0.3)"
+                                          strokeWidth={i % 3 === 0 ? 3 : 1.5}
+                                        />
+                                      );
+                                    })}
+
+                                    {/* Progress arc */}
+                                    <circle
+                                      cx={size / 2} cy={size / 2} r={radius - 10} fill="none"
+                                      stroke={accent} strokeWidth={4} strokeLinecap="round"
+                                      strokeDasharray={circ} strokeDashoffset={offset}
+                                      className="-rotate-90 origin-center"
+                                      style={{ transition: "stroke-dashoffset 0.5s ease", filter: `drop-shadow(0 0 8px ${accent})`, transformOrigin: '50% 50%' }}
+                                    />
+
+                                    {/* Clock hand */}
+                                    <line
+                                      x1={size / 2}
+                                      y1={size / 2}
+                                      x2={size / 2 + (radius - 40) * Math.cos((progress * 360 - 90) * (Math.PI / 180))}
+                                      y2={size / 2 + (radius - 40) * Math.sin((progress * 360 - 90) * (Math.PI / 180))}
+                                      stroke={accent}
+                                      strokeWidth={3}
+                                      strokeLinecap="round"
+                                      style={{ filter: `drop-shadow(0 0 6px ${accent})`, transition: "all 0.5s ease" }}
+                                    />
+
+                                    {/* Center dot */}
+                                    <circle cx={size / 2} cy={size / 2} r={6} fill={accent} style={{ filter: `drop-shadow(0 0 8px ${accent})` }} />
+                                  </svg>
+
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
+                                    <span
+                                      className="text-7xl font-light tracking-tight text-white"
+                                      style={{
+                                        fontVariantNumeric: "tabular-nums",
+                                        textShadow: isRunning ? `0 0 40px ${accent}60` : "none",
+                                        transition: "text-shadow 0.5s",
+                                      }}
+                                    >
+                                      {formatTime(timeLeft)}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {timerStyle === 'bar' && (
+                                <div className="flex flex-col items-center gap-12 py-16">
+                                  {/* Time display */}
+                                  <div className="text-9xl font-black tracking-tighter text-white tabular-nums">
+                                    {formatTime(timeLeft)}
+                                  </div>
+
+                                  {/* Progress bar */}
+                                  <div className="w-full max-w-2xl">
+                                    <div
+                                      className="h-4 rounded-full bg-white/5 overflow-hidden relative"
+                                      style={{ boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.3)' }}
+                                    >
+                                      <div
+                                        className="h-full rounded-full transition-all duration-500 ease-out relative overflow-hidden"
+                                        style={{
+                                          width: `${progress * 100}%`,
+                                          background: `linear-gradient(90deg, ${accent} 0%, ${accent}cc 100%)`,
+                                          boxShadow: `0 0 20px ${accent}80, inset 0 1px 0 rgba(255,255,255,0.3)`,
+                                        }}
+                                      >
+                                        {/* Animated shimmer effect */}
+                                        <div
+                                          className="absolute inset-0 opacity-40"
+                                          style={{
+                                            background: `linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)`,
+                                            animation: isRunning ? 'shimmer 2s infinite' : 'none',
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Percentage */}
+                                    <div className="mt-4 text-center">
+                                      <span
+                                        className="text-2xl font-bold tracking-wide"
+                                        style={{ color: accent }}
+                                      >
+                                        {Math.round(progress * 100)}%
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Status badge */}
+                                  <div
+                                    className="px-6 py-3 rounded-full text-sm font-bold uppercase tracking-widest"
+                                    style={{
+                                      background: isRunning ? `${accent}20` : 'rgba(255,255,255,0.05)',
+                                      border: `1.5px solid ${isRunning ? accent + '60' : 'rgba(255,255,255,0.1)'}`,
+                                      color: isRunning ? accent : 'rgba(255,255,255,0.4)',
+                                      boxShadow: isRunning ? `0 0 20px ${accent}40` : 'none',
+                                    }}
+                                  >
+                                    {isRunning ? "In Progress" : "Paused"}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+
+                        {/* Controls */}
+                        <div className="flex items-center gap-6 mb-28">
+                          <button
+                            onClick={toggleTimer}
+                            className="relative p-12 rounded-[36px] transition-all duration-300 hover:scale-105 active:scale-95"
                             style={{
-                              fontVariantNumeric: "tabular-nums",
-                              textShadow: isRunning ? `0 0 60px ${accent}60` : "none",
-                              transition: "text-shadow 0.5s",
+                              background: `linear-gradient(135deg, ${accent}0%, ${accent}cc 100%)`,
+                              boxShadow: `0 12px 40px ${accent}50, inset 0 2px 0 rgba(255, 255, 255, 0.25)`,
                             }}
                           >
-                            {formatTime(timeLeft)}
-                          </span>
-                          <div className="flex items-center gap-2 mt-3">
-                            <div className="w-2.5 h-2.5 rounded-full transition-all duration-300" style={{ background: isRunning ? "#4ade80" : textMuted, boxShadow: isRunning ? "0 0 12px #4ade80" : "none" }} />
-                            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: isRunning ? "#4ade80" : textMuted }}>
-                              {isRunning ? "Running" : "Paused"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                            {isRunning ? <Pause size={36} fill="#000" color="#000" /> : <Play size={36} fill="#000" color="#000" className="ml-1" />}
+                          </button>
 
-                      {/* Controls */}
-                      <div className="flex items-center gap-6 mb-28">
-                        <button
-                          onClick={toggleTimer}
-                          className="relative p-12 rounded-[36px] transition-all duration-300 hover:scale-105 active:scale-95"
-                          style={{
-                            background: `linear-gradient(135deg, ${accent}0%, ${accent}cc 100%)`,
-                            boxShadow: `0 12px 40px ${accent}50, inset 0 2px 0 rgba(255, 255, 255, 0.25)`,
-                          }}
-                        >
-                          {isRunning ? <Pause size={36} fill="#000" color="#000" /> : <Play size={36} fill="#000" color="#000" className="ml-1" />}
-                        </button>
-
-                        <button
-                          onClick={() => setIsCompactMode(true)}
-                          className="p-4 rounded-xl transition-all duration-300 hover:scale-105 hover:bg-white/5"
-                          title="Compact Mode"
-                          style={{ border: `1px solid ${accent}30` }}
-                        >
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" />
-                            <path d="M9 3v18" />
-                            <path d="m14 9 3 3-3 3" />
-                          </svg>
-                        </button>
-                      </div>
-
-                      {/* Stats */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-12 w-full max-w-5xl px-4">
-                        {[
-                          { label: "Today", value: sessions, icon: Target, suffix: "sessions" },
-                          { label: "Streak", value: 7, icon: Flame, suffix: "days" },
-                          { label: "Focus", value: sessions * 25, icon: TrendingUp, suffix: "min" },
-                        ].map(({ label, value, icon: Icon, suffix }, i) => (
-                          <div
-                            key={label}
-                            className="card-premium animate-fade-in"
-                            style={{ animationDelay: `${i * 0.1} s` }}
+                          <button
+                            onClick={() => setIsCompactMode(true)}
+                            className="p-4 rounded-xl transition-all duration-300 hover:scale-105 hover:bg-white/5"
+                            title="Compact Mode"
+                            style={{ border: `1px solid ${accent}30` }}
                           >
-                            <div className="flex items-center gap-5 mb-6">
-                              <div className="p-4 rounded-2xl" style={{ background: `${accent}15` }}>
-                                <Icon size={20} style={{ color: accent }} />
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="3" width="18" height="18" rx="2" />
+                              <path d="M9 3v18" />
+                              <path d="m14 9 3 3-3 3" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-12 w-full max-w-5xl px-4">
+                          {[
+                            { label: "Today", value: sessions, icon: Target, suffix: "sessions" },
+                            { label: "Streak", value: 7, icon: Flame, suffix: "days" },
+                            { label: "Focus", value: sessions * 25, icon: TrendingUp, suffix: "min" },
+                          ].map(({ label, value, icon: Icon, suffix }, i) => (
+                            <div
+                              key={label}
+                              className="card-premium animate-fade-in"
+                              style={{ animationDelay: `${i * 0.1} s` }}
+                            >
+                              <div className="flex items-center gap-5 mb-6">
+                                <div className="p-4 rounded-2xl" style={{ background: `${accent}15` }}>
+                                  <Icon size={20} style={{ color: accent }} />
+                                </div>
+                                <span className="text-xs font-semibold uppercase tracking-wider opacity-50">{label}</span>
                               </div>
-                              <span className="text-xs font-semibold uppercase tracking-wider opacity-50">{label}</span>
+                              <div className="flex items-baseline gap-3">
+                                <span className="text-5xl font-bold gradient-text">{value}</span>
+                                <span className="text-sm opacity-50">{suffix}</span>
+                              </div>
                             </div>
-                            <div className="flex items-baseline gap-3">
-                              <span className="text-5xl font-bold gradient-text">{value}</span>
-                              <span className="text-sm opacity-50">{suffix}</span>
-                            </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -712,96 +894,16 @@ function App() {
                   )}
 
                   {/* SETTINGS - SPOTIFY */}
-                  {view === "settings-spotify" && (
-                    <div className="page-container animate-fade-in">
-                      <span className="px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-white/[0.03] text-white/40 border border-white/[0.08] inline-block mb-6">Spotify</span>
-                      <div className="card-premium p-5">
-                        <div className="text-center py-8">
-                          <p className="text-sm text-white/60 mb-4">Connect Spotify to play focus music during sessions</p>
-                          <button
-                            className="px-6 py-3 rounded-lg font-bold text-sm transition-all"
-                            style={{
-                              background: '#1DB954',
-                              color: 'white'
-                            }}
-                          >
-                            Connect Spotify
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  {view === "settings-spotify" && <SpotifySettingsView accent={accent} />}
 
                   {/* SETTINGS - TIMER */}
                   {view === "settings-timer" && (
-                    <div className="page-container animate-fade-in">
-                      <span className="px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-white/[0.03] text-white/40 border border-white/[0.08] inline-block mb-6">Timer</span>
-
-                      {/* Current Preset Info */}
-                      <div className="card-premium p-5 space-y-5">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{activePreset.icon}</span>
-                          <div>
-                            <p className="text-sm font-bold">{activePreset.name}</p>
-                            <p className="text-xs text-white/40">{activePreset.description}</p>
-                          </div>
-                        </div>
-
-                        {/* Beautiful Duration Pills */}
-                        <div className="grid grid-cols-3 gap-3">
-                          <div
-                            className="p-4 rounded-xl text-center transition-all"
-                            style={{
-                              background: `${activePreset.color}15`,
-                              border: `1px solid ${activePreset.color}30`
-                            }}
-                          >
-                            <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: activePreset.color }}>
-                              Production
-                            </p>
-                            <p className="text-2xl font-black" style={{ color: activePreset.color }}>
-                              {activePreset.focus}
-                            </p>
-                            <p className="text-[10px] text-white/40 mt-0.5">minutes</p>
-                          </div>
-
-                          <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] text-center transition-all">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-white/50 mb-1.5">
-                              Quick Break
-                            </p>
-                            <p className="text-2xl font-black text-white/70">
-                              {activePreset.shortBreak}
-                            </p>
-                            <p className="text-[10px] text-white/40 mt-0.5">minutes</p>
-                          </div>
-
-                          <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] text-center transition-all">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-white/50 mb-1.5">
-                              Extended Rest
-                            </p>
-                            <p className="text-2xl font-black text-white/70">
-                              {activePreset.longBreak}
-                            </p>
-                            <p className="text-[10px] text-white/40 mt-0.5">minutes</p>
-                          </div>
-                        </div>
-
-                        {/* Timer Skin Selector */}
-                        <div className="pt-4 border-t border-white/[0.05]">
-                          <p className="text-xs text-white/50 mb-3">Timer Style</p>
-                          <div className="grid grid-cols-5 gap-2">
-                            {["Minimal", "Circular", "Analog", "Bar", "3D"].map((skin) => (
-                              <button
-                                key={skin}
-                                className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.05] transition-all text-center"
-                              >
-                                <p className="text-[10px] font-medium text-white/60">{skin}</p>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <TimerSettingsView
+                      accent={accent}
+                      activePreset={activePreset}
+                      timerStyle={timerStyle}
+                      onTimerStyleChange={(s) => setTimerStyle(s as any)}
+                    />
                   )}
 
                   {/* SETTINGS - VOICE */}
@@ -811,68 +913,13 @@ function App() {
                   {view === "frequencies" && <FrequencyGenerator isOpen={true} accent={accent} />}
 
                   {/* AI TRAINING */}
-                  {view === "ai-training" && <AITrainingView accent={accent} />}
+                  {view === "ai-training" && <AITrainingView accent={accent} onClose={() => setView('home')} />}
 
                   {/* AI - IDENTITY */}
-                  {view === "ai-identity" && (
-                    <div className="page-container animate-fade-in">
-                      <span className="px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-white/[0.03] text-white/40 border border-white/[0.08] inline-block mb-6">AI Identity</span>
-
-                      <div className="card-premium p-5 space-y-4">
-                        <p className="text-xs text-white/50 mb-4">Configure your AI coach's personality and expertise</p>
-
-                        <div>
-                          <label className="block text-xs font-medium text-white/60 mb-2">Coach Name</label>
-                          <input
-                            type="text"
-                            value={profile.identity.name}
-                            onChange={(e) => setProfile({ ...profile, identity: { ...profile.identity, name: e.target.value } })}
-                            className="w-full px-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-sm focus:outline-none focus:border-white/20 transition-colors"
-                            placeholder="Enter coach name"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-medium text-white/60 mb-2">Role/Expertise</label>
-                          <input
-                            type="text"
-                            value={profile.identity.role}
-                            onChange={(e) => setProfile({ ...profile, identity: { ...profile.identity, role: e.target.value } })}
-                            className="w-full px-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-sm focus:outline-none focus:border-white/20 transition-colors"
-                            placeholder="e.g., Productivity Expert, Focus Coach"
-                          />
-                        </div>
-
-                        <div className="pt-3 flex items-center justify-between border-t border-white/[0.05]">
-                          <p className="text-[10px] text-white/40">Changes save automatically</p>
-                          <button
-                            className="px-4 py-2 rounded-lg text-xs font-bold transition-all"
-                            style={{
-                              background: `${accent}15`,
-                              color: accent,
-                              border: `1px solid ${accent}30`
-                            }}
-                          >
-                            Reset to Default
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  {view === "ai-identity" && <AIIdentityView accent={accent} />}
 
                   {/* AI - COGNITION */}
-                  {view === "ai-cognition" && (
-                    <div className="page-container animate-fade-in">
-                      <span className="px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-white/[0.03] text-white/40 border border-white/[0.08] inline-block mb-6">AI Cognition</span>
-                      <div className="card-premium p-5">
-                        <p className="text-xs text-white/50 mb-4">Upload documents and notes to train your AI coach's contextual awareness</p>
-                        <div className="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:border-white/20 transition-all cursor-pointer">
-                          <p className="text-sm text-white/60 mb-2">Drop files here or click to upload</p>
-                          <p className="text-xs text-white/40">Supports PDF, TXT, MD files</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  {view === "ai-cognition" && <AICognitionView accent={accent} />}
 
                   {/* AI - RHYTHMS */}
                   {view === "ai-rhythms" && <AIRhythmsView accent={accent} />}
@@ -1163,25 +1210,27 @@ function App() {
               />
             )
           }
-
         </>
-      )}
+      )
+      }
 
       {/* Compact Timer */}
-      {isCompactMode && (
-        <CompactTimer
-          timeLeft={timeLeft}
-          isRunning={isRunning}
-          mode={mode}
-          accent={colors.accent}
-          onToggleTimer={() => setIsRunning(!isRunning)}
-          onExpand={() => {
-            setIsCompactMode(false);
-            setView('home');
-          }}
-          onClose={() => setIsCompactMode(false)}
-        />
-      )}
+      {
+        isCompactMode && (
+          <CompactTimer
+            timeLeft={timeLeft}
+            isRunning={isRunning}
+            mode={mode}
+            accent={colors.accent}
+            onToggleTimer={() => setIsRunning(!isRunning)}
+            onExpand={() => {
+              setIsCompactMode(false);
+              setView('home');
+            }}
+            onClose={() => setIsCompactMode(false)}
+          />
+        )
+      }
     </div >
   );
 }

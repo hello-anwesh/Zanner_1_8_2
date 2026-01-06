@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Torus, Sphere } from "@react-three/drei";
+import { Torus } from "@react-three/drei";
 import * as THREE from "three";
 
 interface HoloTimerProps {
@@ -8,100 +8,116 @@ interface HoloTimerProps {
     mode: "work" | "shortBreak" | "longBreak";
 }
 
-export function HoloTimer({ mode }: HoloTimerProps) {
-    const outerRingRef = useRef<THREE.Mesh>(null);
-    const midRingRef = useRef<THREE.Mesh>(null);
-    const innerRingRef = useRef<THREE.Mesh>(null);
-    const particlesRef = useRef<THREE.Group>(null);
+export function HoloTimer({ progress, mode }: HoloTimerProps) {
+    const mainColor = mode === "work" ? "#00d4ff" : mode === "shortBreak" ? "#ff6b9d" : "#a78bfa";
 
-    const mainColor = mode === "work" ? "#00f3ff" : mode === "shortBreak" ? "#ff00aa" : "#bd00ff";
+    // Refs for subtle animation
+    const outerRingRef = useRef<THREE.Mesh>(null);
+    const progressRingRef = useRef<THREE.Mesh>(null);
+    const glowRef = useRef<THREE.Mesh>(null);
 
     useFrame((state) => {
         const t = state.clock.getElapsedTime();
 
+        // Subtle breathing rotation
         if (outerRingRef.current) {
-            outerRingRef.current.rotation.x = Math.sin(t * 0.2) * 0.5;
-            outerRingRef.current.rotation.y = t * 0.3;
+            outerRingRef.current.rotation.z = t * 0.08;
         }
-        if (midRingRef.current) {
-            midRingRef.current.rotation.x = Math.cos(t * 0.5) * 0.5;
-            midRingRef.current.rotation.y = -t * 0.5;
-        }
-        if (innerRingRef.current) {
-            innerRingRef.current.rotation.z = t * 0.8;
-            // Pulse effect based on progress
+
+        // Progress ring subtle pulse
+        if (progressRingRef.current) {
             const scale = 1 + Math.sin(t * 2) * 0.02;
-            innerRingRef.current.scale.set(scale, scale, scale);
+            progressRingRef.current.scale.setScalar(scale);
         }
-        if (particlesRef.current) {
-            particlesRef.current.rotation.y = t * 0.1;
+
+        // Gentle glow pulse
+        if (glowRef.current) {
+            const intensity = 0.6 + Math.sin(t * 1.5) * 0.2;
+            (glowRef.current.material as THREE.MeshBasicMaterial).opacity = intensity;
         }
     });
 
+    // Calculate progress angle
+    const progressAngle = progress * Math.PI * 2;
+
     return (
-        <group position={[0, 0, 0]}>
-            {/* Outer Glow Ring */}
-            <Torus ref={outerRingRef} args={[2, 0.05, 16, 100]} rotation={[1, 0, 0]}>
-                <meshStandardMaterial
+        <group>
+            {/* Soft ambient glow */}
+            <mesh ref={glowRef} position={[0, 0, -0.5]}>
+                <ringGeometry args={[3, 4.5, 64]} />
+                <meshBasicMaterial
                     color={mainColor}
-                    emissive={mainColor}
-                    emissiveIntensity={2}
                     transparent
-                    opacity={0.6}
-                    wireframe
+                    opacity={0.15}
+                    blending={THREE.AdditiveBlending}
                 />
-            </Torus>
+            </mesh>
 
-            {/* Middle Data Ring */}
-            <Torus ref={midRingRef} args={[1.6, 0.02, 16, 64]} rotation={[0, 1, 0]}>
-                <meshStandardMaterial
+            {/* Outer decorative ring */}
+            <Torus ref={outerRingRef} args={[3.5, 0.03, 16, 100]}>
+                <meshBasicMaterial
                     color="#ffffff"
-                    emissive="#ffffff"
-                    emissiveIntensity={1}
                     transparent
-                    opacity={0.3}
+                    opacity={0.12}
                 />
             </Torus>
 
-            {/* Progress Ring (Dynamic) */}
-            <Torus ref={innerRingRef} args={[1.2, 0.08, 16, 100]} rotation={[0, 0, 0]}>
+            {/* Main ring background */}
+            <Torus args={[2.8, 0.12, 16, 100]}>
+                <meshStandardMaterial
+                    color="#1a1a1a"
+                    emissive="#0a0a0a"
+                    emissiveIntensity={0.5}
+                    metalness={0.8}
+                    roughness={0.2}
+                />
+            </Torus>
+
+            {/* Progress ring */}
+            <Torus
+                ref={progressRingRef}
+                args={[2.8, 0.14, 16, 100, progressAngle]}
+            >
                 <meshStandardMaterial
                     color={mainColor}
                     emissive={mainColor}
-                    emissiveIntensity={4}
+                    emissiveIntensity={2.5}
+                    toneMapped={false}
                     transparent
-                    opacity={0.9}
+                    opacity={0.95}
                 />
             </Torus>
 
-            {/* Core Orb */}
-            <Sphere args={[0.5, 32, 32]}>
-                <meshStandardMaterial
-                    color="#000000"
-                    roughness={0}
-                    metalness={1}
-                    emissive={mainColor}
-                    emissiveIntensity={0.5}
+            {/* Progress end cap for smooth finish */}
+            {progress > 0 && (
+                <mesh
+                    position={[
+                        Math.cos(progressAngle - Math.PI / 2) * 2.8,
+                        Math.sin(progressAngle - Math.PI / 2) * 2.8,
+                        0
+                    ]}
+                >
+                    <sphereGeometry args={[0.15, 16, 16]} />
+                    <meshStandardMaterial
+                        color={mainColor}
+                        emissive={mainColor}
+                        emissiveIntensity={3}
+                        toneMapped={false}
+                    />
+                </mesh>
+            )}
+
+            {/* Subtle accent ring */}
+            <Torus args={[2.2, 0.02, 16, 64]}>
+                <meshBasicMaterial
+                    color={mainColor}
+                    transparent
+                    opacity={0.25}
                 />
-            </Sphere>
+            </Torus>
 
-            {/* Floating Particles */}
-            <group ref={particlesRef}>
-                {[...Array(20)].map((_, i) => (
-                    <mesh key={i} position={[
-                        (Math.random() - 0.5) * 5,
-                        (Math.random() - 0.5) * 5,
-                        (Math.random() - 0.5) * 2
-                    ]}>
-                        <sphereGeometry args={[0.02]} />
-                        <meshBasicMaterial color={mainColor} transparent opacity={0.6} />
-                    </mesh>
-                ))}
-            </group>
-
-            {/* Lights */}
-            <pointLight position={[10, 10, 10]} intensity={1} color="#00ffff" />
-            <pointLight position={[-10, -10, -10]} intensity={0.5} color="#ff00ff" />
+            {/* Soft lighting */}
+            <pointLight position={[0, 0, 2]} intensity={1.5} color={mainColor} distance={8} decay={2} />
             <ambientLight intensity={0.2} />
         </group>
     );

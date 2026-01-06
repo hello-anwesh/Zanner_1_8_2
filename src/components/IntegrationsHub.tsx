@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Brain, Image, MonitorSmartphone, X,
     Zap, Cpu, Sparkles, Wand2,
-    Tablet, Play, Link2, Loader2, CheckCircle2, AlertCircle
+    Tablet, Play, Link2, Loader2, CheckCircle2, AlertCircle, RefreshCw
 } from "lucide-react";
 import { aiService } from "../services/ai/AIService";
 import type { AIProviderType } from "../services/ai/types";
@@ -149,6 +149,7 @@ const AUTOMATION_PROVIDERS: IntegrationProvider[] = [
 ];
 
 export function IntegrationsHub({ accent }: IntegrationsHubProps) {
+    const [activeTab, setActiveTab] = useState<"text" | "image" | "automation">("text");
     const [selectedProvider, setSelectedProvider] = useState<IntegrationProvider | null>(null);
     const [apiKey, setApiKey] = useState("");
     const [baseUrl, setBaseUrl] = useState("");
@@ -158,10 +159,8 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
     const [selectedModel, setSelectedModel] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
 
-    // Dynamic provider statuses
     const [textProviders, setTextProviders] = useState(TEXT_AI_PROVIDERS);
 
-    // Load saved config and update provider statuses on mount
     useEffect(() => {
         const config = aiService.getConfig();
         const updated = TEXT_AI_PROVIDERS.map(p => ({
@@ -173,7 +172,6 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
         setTextProviders(updated);
     }, []);
 
-
     const validateAndFetchModels = async (provider: IntegrationProvider, key: string, url?: string) => {
         setIsValidating(true);
         setValidationStatus("validating");
@@ -181,7 +179,6 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
         setAvailableModels([]);
 
         try {
-            // Map provider ID to AIService provider type
             const providerType = provider.id === "claude" ? "claude" :
                 provider.id === "gemini" ? "gemini" :
                     provider.id === "ollama" ? "ollama" :
@@ -191,25 +188,22 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
                 throw new Error("Provider not supported yet");
             }
 
-            // Configure the provider with API key
             aiService.updateConfig({
                 providers: {
                     [providerType]: {
                         apiKey: key,
                         ...(url && { baseUrl: url }),
-                        model: "" // Will be set after model selection
+                        model: ""
                     }
                 } as any
             });
 
-            // Test connection
             const status = await aiService.checkProvider(providerType as any);
 
             if (!status.available) {
                 throw new Error(status.error || "Connection failed");
             }
 
-            // Fetch available models
             const models = await aiService.fetchModels(providerType as any);
 
             if (models.length === 0) {
@@ -233,21 +227,13 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
         setValidationStatus("idle");
         setAvailableModels([]);
 
-        // Auto-validate when key looks complete (basic heuristic)
         if (value.length > 20 && selectedProvider) {
             validateAndFetchModels(selectedProvider, value, baseUrl || undefined);
         }
     };
 
     const handleSave = async () => {
-        console.log("=== SAVE CLICKED ===");
-        console.log("selectedProvider:", selectedProvider);
-        console.log("selectedModel:", selectedModel);
-        console.log("apiKey:", apiKey);
-        console.log("baseUrl:", baseUrl);
-
         if (!selectedProvider || !selectedModel) {
-            console.error("Missing provider or model!");
             return;
         }
 
@@ -257,7 +243,7 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
                     selectedProvider.id === "openai" ? "openai" : null;
 
         if (providerType) {
-            const configToSave = {
+            aiService.updateConfig({
                 activeProvider: providerType as any,
                 providers: {
                     [providerType]: {
@@ -266,18 +252,7 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
                         model: selectedModel
                     }
                 } as any
-            };
-
-            console.log("Calling aiService.updateConfig with:", JSON.stringify(configToSave, null, 2));
-            aiService.updateConfig(configToSave as any);
-
-            // Verify what was saved
-            const savedConfig = aiService.getConfig();
-            console.log("Config after save:", JSON.stringify(savedConfig, null, 2));
-
-            // Check localStorage
-            const stored = localStorage.getItem('ai-service-config');
-            console.log("localStorage content:", stored);
+            });
         }
 
         setSelectedProvider(null);
@@ -286,139 +261,134 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
         setAvailableModels([]);
     };
 
-    const ProviderCard = ({ provider }: { provider: IntegrationProvider }) => {
-        const Icon = provider.icon;
-        const isConnected = provider.status === "connected";
+    const currentProviders = activeTab === "text" ? textProviders :
+        activeTab === "image" ? IMAGE_AI_PROVIDERS :
+            AUTOMATION_PROVIDERS;
 
-        return (
-            <div
-                className="p-6 rounded-2xl transition-all hover:scale-[1.01]"
-                style={{
-                    background: "rgba(255, 255, 255, 0.02)",
-                    border: `1px solid ${isConnected ? provider.color + "20" : "rgba(255, 255, 255, 0.06)"}`,
-                }}
-            >
-                <div className="flex items-start justify-between mb-6">
-                    {/* Left: Icon + Info */}
-                    <div className="flex items-start gap-4 flex-1">
-                        <div
-                            className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                            style={{
-                                background: `${provider.color}10`,
-                                border: `1px solid ${provider.color}20`
-                            }}
-                        >
-                            <Icon size={22} style={{ color: provider.color }} strokeWidth={2} />
-                        </div>
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                                <h3 className="text-base font-bold text-white">{provider.name}</h3>
-                                {provider.isLocal && (
-                                    <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                        Local
-                                    </span>
-                                )}
-                            </div>
-                            <p className="text-xs text-white/40">{provider.description}</p>
-                        </div>
-                    </div>
-
-                    {/* Right: Status */}
-                    {isConnected && (
-                        <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg" style={{
-                            background: `${provider.color}10`,
-                            color: provider.color,
-                            border: `1px solid ${provider.color}20`
-                        }}>
-                            <CheckCircle2 size={14} />
-                            Active
-                        </span>
-                    )}
-                </div>
-
-                {/* Bottom: Configure Button */}
-                <button
-                    onClick={() => {
-                        setSelectedProvider(provider);
-                        setApiKey("");
-                        setBaseUrl("");
-                        setValidationStatus("idle");
-                        setAvailableModels([]);
-                    }}
-                    className="w-full px-4 py-3 rounded-xl text-sm font-bold transition-all"
-                    style={{
-                        background: isConnected ? 'rgba(255,255,255,0.03)' : `${provider.color}15`,
-                        color: isConnected ? '#888' : provider.color,
-                        border: `1px solid ${isConnected ? 'rgba(255,255,255,0.08)' : provider.color + '25'}`
-                    }}
-                >
-                    {isConnected ? '⚙️ Reconfigure' : '→ Configure'}
-                </button>
-            </div>
-        );
-    };
-
-    const CategorySection = ({
-        title,
-        icon: Icon,
-        providers
-    }: {
-        title: string;
-        icon: any;
-        providers: IntegrationProvider[]
-    }) => (
-        <div className="mb-12">
-            <div className="flex items-center gap-3 mb-6">
-                <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{
-                        background: `${accent}15`,
-                        border: `1px solid ${accent}25`
-                    }}
-                >
-                    <Icon size={18} style={{ color: accent }} strokeWidth={2.5} />
-                </div>
-                <div>
-                    <h2 className="text-lg font-black text-white uppercase tracking-wider">{title}</h2>
-                    <p className="text-[10px] text-white/40 font-medium">{providers.length} providers available</p>
-                </div>
-            </div>
-            <div className="space-y-3">
-                {providers.map(provider => (
-                    <ProviderCard key={provider.id} provider={provider} />
-                ))}
-            </div>
-        </div>
-    );
+    const configuredCount = currentProviders.filter(p => p.status === "connected").length;
+    const totalCount = currentProviders.length;
 
     return (
-        <div className="min-h-full p-6 animate-fade-in">
-            <div className="max-w-6xl mx-auto">
-                {/* Small Badge */}
-                <div className="mb-6">
-                    <span className="px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-white/[0.03] text-white/40 border border-white/[0.08]">
-                        Integrations
-                    </span>
+        <div className="min-h-full bg-[#2B2B35] p-8 animate-fade-in">
+            <div className="max-w-5xl mx-auto">
+                {/* Header - PROPER SPACING */}
+                <div className="mb-8">
+                    <div className="flex items-center justify-between mb-2">
+                        <h1 className="text-2xl font-semibold text-white">AI Providers</h1>
+                        <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/8 transition-colors text-sm font-medium">
+                            <RefreshCw size={14} />
+                            Refresh
+                        </button>
+                    </div>
+                    <p className="text-sm text-[#B8B8C4]">{configuredCount} configured • Securely stored in macOS Keychain</p>
                 </div>
 
-                <CategorySection
-                    title="Text AI"
-                    icon={Brain}
-                    providers={textProviders}
-                />
-                <CategorySection
-                    title="Image AI"
-                    icon={Image}
-                    providers={IMAGE_AI_PROVIDERS}
-                />
-                <CategorySection
-                    title="Screen Control"
-                    icon={MonitorSmartphone}
-                    providers={AUTOMATION_PROVIDERS}
-                />
+                {/* Tabs - PROPER SIZING */}
+                <div className="flex gap-2 mb-6 p-1 bg-[#333340] rounded-lg border border-white/8 inline-flex">
+                    <button
+                        onClick={() => setActiveTab("text")}
+                        className="px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2"
+                        style={{
+                            background: activeTab === "text" ? "#00A8E8" : "transparent",
+                            color: activeTab === "text" ? "#000" : "#B8B8C4",
+                            minWidth: "100px"
+                        }}
+                    >
+                        <Brain size={14} />
+                        LLM {configuredCount}/{totalCount}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("image")}
+                        className="px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2"
+                        style={{
+                            background: activeTab === "image" ? "#00A8E8" : "transparent",
+                            color: activeTab === "image" ? "#000" : "#B8B8C4",
+                            minWidth: "100px"
+                        }}
+                    >
+                        <Image size={14} />
+                        Image
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("automation")}
+                        className="px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2"
+                        style={{
+                            background: activeTab === "automation" ? "#00A8E8" : "transparent",
+                            color: activeTab === "automation" ? "#000" : "#B8B8C4",
+                            minWidth: "120px"
+                        }}
+                    >
+                        <MonitorSmartphone size={14} />
+                        Screen Control
+                    </button>
+                </div>
+
+                {/* Section Title - PROPER TYPOGRAPHY */}
+                <div className="mb-4">
+                    <h2 className="text-lg font-semibold text-white mb-1">
+                        {activeTab === "text" ? "LLMs Providers" : activeTab === "image" ? "Image AI Providers" : "Automation Tools"}
+                    </h2>
+                    <p className="text-sm text-[#808090]">
+                        {activeTab === "text" ? "Main LLM providers for chat and reasoning" :
+                            activeTab === "image" ? "AI image generation services" :
+                                "Browser and system automation"}
+                    </p>
+                </div>
+
+                {/* Provider Cards - MASSIVE SPACING */}
+                <div className="space-y-6">
+                    {currentProviders.map(provider => {
+                        const Icon = provider.icon;
+                        const isConnected = provider.status === "connected";
+
+                        return (
+                            <div
+                                key={provider.id}
+                                className="bg-[#333340] border border-white/8 rounded-xl p-8 hover:border-white/12 transition-all"
+                            >
+                                <div className="flex items-center justify-between gap-8">
+                                    {/* Left side - GENEROUS SPACING */}
+                                    <div className="flex-1">
+                                        <h3 className="text-lg font-semibold text-white mb-2">{provider.name}</h3>
+                                        <p className="text-sm text-[#B8B8C4]">
+                                            {isConnected ?
+                                                (provider.description.includes("models") ? provider.description : "API Key configured") :
+                                                "API Key not configured"
+                                            }
+                                        </p>
+                                    </div>
+
+                                    {/* Right side - PROPER BUTTON SIZE */}
+                                    <div className="flex items-center gap-4 flex-shrink-0">
+                                        {isConnected && (
+                                            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-sm font-medium">
+                                                <CheckCircle2 size={14} />
+                                                Configured
+                                            </span>
+                                        )}
+                                        <button
+                                            onClick={() => {
+                                                setSelectedProvider(provider);
+                                                setApiKey("");
+                                                setBaseUrl("");
+                                                setValidationStatus("idle");
+                                                setAvailableModels([]);
+                                            }}
+                                            className="px-6 py-3 rounded-lg bg-[#00A8E8] hover:bg-[#0095D0] text-black font-medium text-sm transition-colors flex items-center gap-2"
+                                            style={{ height: "40px" }}
+                                        >
+                                            <Link2 size={16} />
+                                            Configure
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
 
-            {/* Configuration Modal */}
+            {/* Modal - PROPER DIMENSIONS */}
             <AnimatePresence>
                 {selectedProvider && (
                     <motion.div
@@ -429,31 +399,27 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
                         onClick={() => setSelectedProvider(null)}
                     >
                         <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
+                            initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-full max-w-md p-6 rounded-3xl"
-                            style={{
-                                background: "rgba(10, 10, 15, 0.95)",
-                                border: "1px solid rgba(255, 255, 255, 0.1)"
-                            }}
+                            className="w-full max-w-md p-6 rounded-2xl bg-[#333340] border border-white/10"
                         >
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-xl font-black text-white">{selectedProvider.name}</h3>
+                                <h3 className="text-xl font-semibold text-white">{selectedProvider.name}</h3>
                                 <button
                                     onClick={() => setSelectedProvider(null)}
-                                    className="p-2 rounded-xl hover:bg-white/5"
+                                    className="p-2 rounded-lg hover:bg-white/5 transition-colors"
                                 >
                                     <X size={18} className="text-white/60" />
                                 </button>
                             </div>
-                            <p className="text-sm text-white/60 mb-6">{selectedProvider.description}</p>
+                            <p className="text-sm text-[#B8B8C4] mb-6">{selectedProvider.description}</p>
 
                             {selectedProvider.requiresApiKey && (
                                 <>
                                     <div className="mb-4">
-                                        <label className="block text-xs font-bold text-white/60 mb-2 uppercase tracking-wider">
+                                        <label className="block text-xs font-medium text-[#808090] mb-2 uppercase tracking-wide">
                                             API Key
                                         </label>
                                         <div className="relative">
@@ -462,7 +428,8 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
                                                 value={apiKey}
                                                 onChange={(e) => handleApiKeyChange(e.target.value)}
                                                 placeholder="Enter your API key..."
-                                                className="w-full px-4 py-3 pr-10 rounded-xl bg-white/5 border border-white/10 text-white text-sm outline-none"
+                                                className="w-full px-4 py-3 pr-10 rounded-lg bg-[#2A2A35] border border-white/12 text-white text-sm outline-none focus:border-[#00A8E8] transition-colors"
+                                                style={{ height: "44px" }}
                                             />
                                             {validationStatus === "validating" && (
                                                 <Loader2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 animate-spin" />
@@ -481,7 +448,7 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
 
                                     {selectedProvider.isLocal && (
                                         <div className="mb-4">
-                                            <label className="block text-xs font-bold text-white/60 mb-2 uppercase tracking-wider">
+                                            <label className="block text-xs font-medium text-[#808090] mb-2 uppercase tracking-wide">
                                                 Base URL (Optional)
                                             </label>
                                             <input
@@ -489,23 +456,25 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
                                                 value={baseUrl}
                                                 onChange={(e) => setBaseUrl(e.target.value)}
                                                 placeholder="http://localhost:11434"
-                                                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm outline-none"
+                                                className="w-full px-4 py-3 rounded-lg bg-[#2A2A35] border border-white/12 text-white text-sm outline-none focus:border-[#00A8E8] transition-colors"
+                                                style={{ height: "44px" }}
                                             />
                                         </div>
                                     )}
 
                                     {availableModels.length > 0 && (
                                         <div className="mb-4">
-                                            <label className="block text-xs font-bold text-white/60 mb-2 uppercase tracking-wider">
+                                            <label className="block text-xs font-medium text-[#808090] mb-2 uppercase tracking-wide">
                                                 Select Model
                                             </label>
                                             <select
                                                 value={selectedModel}
                                                 onChange={(e) => setSelectedModel(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm outline-none"
+                                                className="w-full px-4 py-3 rounded-lg bg-[#2A2A35] border border-white/12 text-white text-sm outline-none focus:border-[#00A8E8] transition-colors"
+                                                style={{ height: "44px" }}
                                             >
                                                 {availableModels.map(model => (
-                                                    <option key={model} value={model} style={{ background: "#1a1a1f" }}>
+                                                    <option key={model} value={model} style={{ background: "#2A2A35" }}>
                                                         {model}
                                                     </option>
                                                 ))}
@@ -515,19 +484,14 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
                                 </>
                             )}
 
-                            {/* Buttons */}
+                            {/* Buttons - PROPER HEIGHT */}
                             <div className="space-y-3 mt-6">
-                                {/* Test Connection Button */}
                                 {selectedProvider.requiresApiKey && (
                                     <button
                                         onClick={() => selectedProvider && validateAndFetchModels(selectedProvider, apiKey, baseUrl || undefined)}
                                         disabled={!apiKey || isValidating}
-                                        className="w-full px-4 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-30"
-                                        style={{
-                                            background: 'rgba(255,255,255,0.05)',
-                                            border: '1px solid rgba(255,255,255,0.1)',
-                                            color: '#fff'
-                                        }}
+                                        className="w-full px-6 py-3 rounded-lg text-sm font-medium transition-all disabled:opacity-30 bg-white/5 border border-white/12 text-white hover:bg-white/8"
+                                        style={{ height: "44px" }}
                                     >
                                         {isValidating ? (
                                             <><Loader2 size={16} className="inline mr-2 animate-spin" /> Testing Connection...</>
@@ -537,21 +501,16 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
                                     </button>
                                 )}
 
-                                {/* BIG ASS SAVE BUTTON */}
                                 {availableModels.length > 0 && (
                                     <button
                                         onClick={() => {
                                             handleSave();
                                             setSelectedProvider(null);
                                         }}
-                                        className="w-full px-6 py-4 rounded-xl text-base font-black uppercase tracking-wide transition-all"
-                                        style={{
-                                            background: selectedProvider.color,
-                                            color: "#000",
-                                            boxShadow: `0 8px 24px ${selectedProvider.color}60`
-                                        }}
+                                        className="w-full px-6 py-3 rounded-lg text-sm font-semibold transition-all bg-[#00A8E8] hover:bg-[#0095D0] text-black"
+                                        style={{ height: "44px" }}
                                     >
-                                        ✓ Save Configuration
+                                        Save Configuration
                                     </button>
                                 )}
                             </div>

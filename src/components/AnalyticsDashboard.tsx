@@ -139,26 +139,26 @@ export function AnalyticsDashboard({ accent, stats, historical }: AnalyticsDashb
     };
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-6" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-10" style={{ fontFamily: "'Inter', sans-serif" }}>
             {/* Header */}
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center gap-6 mb-8 pl-2">
                 <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center"
                     style={{
                         background: `linear-gradient(135deg, ${accent}, ${accent}DD)`,
-                        boxShadow: `0 4px 16px ${accent}40`
+                        boxShadow: `0 8px 32px ${accent}40`
                     }}
                 >
-                    <BarChart2 size={24} color="#000" strokeWidth={2} />
+                    <BarChart2 size={32} color="#000" strokeWidth={2} />
                 </div>
                 <div>
-                    <h2 className="text-xl font-bold text-white leading-none mb-1">Analytics Dashboard</h2>
-                    <p className="text-sm text-white/50">Track your productivity journey</p>
+                    <h2 className="text-3xl font-black text-white leading-tight mb-2">Analytics Dashboard</h2>
+                    <p className="text-base text-white/50 font-medium">Track your productivity journey and focus patterns</p>
                 </div>
             </div>
 
             {/* Key Stats Grid */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
                 <StatCard
                     icon={Target}
                     label="Total Sessions"
@@ -194,33 +194,33 @@ export function AnalyticsDashboard({ accent, stats, historical }: AnalyticsDashb
             </div>
 
             {/* Charts Grid */}
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Focus Time Trend */}
                 <ChartCard title="Focus Time Trend" subtitle="Last 7 days" icon={TrendingUp} accent={accent}>
-                    <div className="h-64">
+                    <div className="h-72">
                         <Line data={lineChartData} options={chartOptions} />
                     </div>
                 </ChartCard>
 
                 {/* Sessions Per Day */}
                 <ChartCard title="Sessions Per Day" subtitle="Last 7 days" icon={Calendar} accent={accent}>
-                    <div className="h-64">
+                    <div className="h-72">
                         <Bar data={barChartData} options={chartOptions} />
                     </div>
                 </ChartCard>
             </div>
 
             {/* Bottom Row */}
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Completion Rate Donut */}
                 <ChartCard title="Success Rate" subtitle="This week" icon={Award} accent={accent}>
-                    <div className="h-48 flex items-center justify-center">
-                        <div className="w-40 h-40 relative">
+                    <div className="h-56 flex items-center justify-center py-4">
+                        <div className="w-48 h-48 relative">
                             <Doughnut
                                 data={doughnutData}
                                 options={{
                                     ...chartOptions,
-                                    cutout: '70%',
+                                    cutout: '75%',
                                     plugins: {
                                         ...chartOptions.plugins,
                                         tooltip: {
@@ -233,8 +233,8 @@ export function AnalyticsDashboard({ accent, stats, historical }: AnalyticsDashb
                                 }}
                             />
                             <div className="absolute inset-0 flex items-center justify-center flex-col">
-                                <p className="text-3xl font-black text-white">{stats.completionRate}%</p>
-                                <p className="text-xs text-white/50">Complete</p>
+                                <p className="text-4xl font-black text-white">{stats.completionRate}%</p>
+                                <p className="text-sm font-bold text-white/50 uppercase tracking-widest mt-1">Complete</p>
                             </div>
                         </div>
                     </div>
@@ -242,52 +242,66 @@ export function AnalyticsDashboard({ accent, stats, historical }: AnalyticsDashb
 
                 {/* Best Time */}
                 <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    className="p-6 rounded-xl bg-white/5 border border-white/10"
+                    whileHover={{ y: -4 }}
+                    className="p-8 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex flex-col justify-between h-full"
                 >
-                    <h3 className="text-sm font-bold text-white/70 mb-4">Best Productivity Time</h3>
-                    <div className="space-y-3">
+                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
+                        <span className="p-2 rounded-lg bg-white/5"><Clock size={16} /></span>
+                        Best Productivity Time
+                    </h3>
+                    <div className="space-y-5 flex-1">
                         {historical.bestTimes.length > 0 ? (
                             historical.bestTimes.map((slot, i) => (
-                                <div key={i} className="flex items-center justify-between">
-                                    <span className="text-sm text-white/80">{slot.time}</span>
-                                    <div className="flex items-center gap-2">
-                                        <div
-                                            className="h-2 rounded-full"
-                                            style={{
-                                                width: `${slot.sessions * 3}px`,
-                                                background: slot.color
-                                            }}
-                                        />
-                                        <span className="text-xs font-bold text-white/60">{slot.sessions}</span>
+                                <div key={i} className="flex items-center justify-between group">
+                                    <span className="text-base text-white/90 font-medium font-mono">{slot.time}</span>
+                                    <div className="flex items-center gap-3 flex-1 justify-end">
+                                        <div className="h-2 rounded-full bg-white/5 w-24 overflow-hidden">
+                                            <div
+                                                className="h-full rounded-full transition-all duration-500 group-hover:opacity-100 opacity-80"
+                                                style={{
+                                                    width: `${Math.min(slot.sessions * 10, 100)}%`,
+                                                    background: slot.color
+                                                }}
+                                            />
+                                        </div>
+                                        <span className="text-xs font-bold text-white/60 min-w-[2rem] text-right">{slot.sessions}</span>
                                     </div>
                                 </div>
                             ))
                         ) : (
-                            <p className="text-sm text-white/40 text-center py-4">No data yet</p>
+                            <div className="flex-1 flex items-center justify-center flex-col text-white/30 space-y-2">
+                                <Activity size={32} />
+                                <p className="text-sm font-medium">No data yet</p>
+                            </div>
                         )}
                     </div>
                 </motion.div>
 
                 {/* Weekly Summary */}
                 <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    className="p-6 rounded-xl bg-white/5 border border-white/10"
+                    whileHover={{ y: -4 }}
+                    className="p-8 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex flex-col justify-between h-full"
                 >
-                    <h3 className="text-sm font-bold text-white/70 mb-4">This Week</h3>
-                    <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
+                        <span className="p-2 rounded-lg bg-white/5"><Calendar size={16} /></span>
+                        This Week
+                    </h3>
+                    <div className="space-y-6">
                         <div>
-                            <p className="text-xs text-white/50 mb-1">Total Focus Time</p>
-                            <p className="text-2xl font-black text-white">{historical.weeklyTotal} hrs</p>
+                            <p className="text-sm font-medium text-white/50 mb-2 uppercase tracking-wider">Total Focus Time</p>
+                            <p className="text-4xl font-black text-white tracking-tight">{historical.weeklyTotal} <span className="text-lg text-white/40 font-normal">hrs</span></p>
                         </div>
                         <div>
-                            <p className="text-xs text-white/50 mb-1">Average per Day</p>
-                            <p className="text-xl font-bold text-white">{historical.weeklyAverage} hrs</p>
+                            <p className="text-sm font-medium text-white/50 mb-2 uppercase tracking-wider">Average per Day</p>
+                            <p className="text-3xl font-bold text-white tracking-tight">{historical.weeklyAverage} <span className="text-lg text-white/40 font-normal">hrs</span></p>
                         </div>
-                        <div className="pt-3 border-t border-white/10">
-                            <p className="text-xs font-medium" style={{ color: accent }}>
-                                {historical.weeklyChange > 0 ? '📈' : historical.weeklyChange < 0 ? '📉' : '➡️'} {historical.weeklyChange > 0 ? '+' : ''}{historical.weeklyChange}% vs last week
-                            </p>
+                        <div className="pt-6 border-t border-white/10 mt-auto">
+                            <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg border border-white/5">
+                                <span className="text-xl">{historical.weeklyChange > 0 ? '📈' : historical.weeklyChange < 0 ? '📉' : '➡️'}</span>
+                                <p className="text-sm font-bold" style={{ color: accent }}>
+                                    {historical.weeklyChange > 0 ? '+' : ''}{historical.weeklyChange}% <span className="text-white/40 font-medium">vs last week</span>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </motion.div>

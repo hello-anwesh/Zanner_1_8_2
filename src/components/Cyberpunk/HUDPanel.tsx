@@ -16,23 +16,36 @@ export function HUDPanel({ title, side, children, className }: HUDPanelProps) {
 
     return (
         <div className={cn(
-            "bg-[#001015]/60 border border-[#00f3ff]/30 backdrop-blur-md p-4 pointer-events-auto rounded-none clip-path-polygon relative group transition-all duration-300 hover:border-[#00f3ff]/60",
-            "flex flex-col gap-2",
+            "backdrop-blur-xl p-6 pointer-events-auto rounded-2xl relative group transition-all duration-300",
+            "flex flex-col gap-4",
             alignment,
             className
-        )}>
-            {/* Corner Decals */}
-            <div className="absolute top-0 left-0 w-2 h-2 border-l-2 border-t-2 border-[#00f3ff]" />
-            <div className="absolute top-0 right-0 w-2 h-2 border-r-2 border-t-2 border-[#00f3ff]" />
-            <div className="absolute bottom-0 left-0 w-2 h-2 border-l-2 border-b-2 border-[#00f3ff]" />
-            <div className="absolute bottom-0 right-0 w-2 h-2 border-r-2 border-b-2 border-[#00f3ff]" />
-
-            {/* Title Tag */}
-            <div className="text-[10px] uppercase tracking-[0.2em] text-[#00f3ff] mb-2 pl-1 border-l-2 border-[#00f3ff]/50">
-                {title} // SYSTEM_READY
+        )}
+            style={{
+                background: 'linear-gradient(135deg, rgba(0, 243, 255, 0.08) 0%, rgba(0, 16, 21, 0.85) 100%)',
+                border: '1px solid rgba(0, 243, 255, 0.25)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 243, 255, 0.15) inset'
+            }}
+        >
+            {/* Subtle ambient glow */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl">
+                <div
+                    className="absolute -top-20 -right-20 w-40 h-40 rounded-full blur-[80px]"
+                    style={{ background: 'radial-gradient(circle, rgba(0, 243, 255, 0.15) 0%, transparent 70%)' }}
+                />
             </div>
 
-            {children}
+            {/* Title Tag */}
+            <div className="relative z-10 text-xs uppercase tracking-wider font-bold text-[#00f3ff] flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#00f3ff] animate-pulse"
+                    style={{ boxShadow: '0 0 8px #00f3ff' }}
+                />
+                {title}
+            </div>
+
+            <div className="relative z-10">
+                {children}
+            </div>
         </div>
     );
 }

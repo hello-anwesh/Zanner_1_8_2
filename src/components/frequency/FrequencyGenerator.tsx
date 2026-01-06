@@ -9,6 +9,7 @@ import {
     loadCustomMixes, saveCustomMixes
 } from "./frequencies";
 import { getFrequencyEngine, FrequencyEngine } from "./FrequencyEngine";
+import { GlassCard, PremiumInput, PremiumButton } from "../primitives";
 
 interface FrequencyGeneratorProps {
     isOpen: boolean;
@@ -537,49 +538,68 @@ export function FrequencyGenerator({ isOpen, accent }: Omit<FrequencyGeneratorPr
 
 
             {/* Save Modal */}
-            {
-                showSaveModal && (
-                    <div className="absolute inset-0 flex items-center justify-center p-4 z-10">
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowSaveModal(false)} />
-                        <div
-                            className="relative w-full max-w-sm p-6 rounded-2xl"
-                            style={{
-                                background: "#141418",
-                                border: `1px solid ${accent}20`,
-                            }}
-                        >
-                            <h3 className="text-lg font-bold text-white mb-4">Save Custom Mix</h3>
-                            <input
-                                type="text"
-                                value={mixName}
-                                onChange={(e) => setMixName(e.target.value)}
-                                placeholder="Enter mix name..."
-                                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm outline-none focus:border-${accent}"
-                                autoFocus
-                            />
-                            <div className="flex gap-2 mt-4">
-                                <button
-                                    onClick={() => setShowSaveModal(false)}
-                                    className="flex-1 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 text-sm font-medium"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={saveMix}
-                                    disabled={!mixName.trim()}
-                                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105"
-                                    style={{
-                                        background: accent,
-                                        color: "#000",
-                                    }}
-                                >
-                                    Save
-                                </button>
+            {showSaveModal && (
+                <div className="absolute inset-0 flex items-center justify-center p-4 z-10">
+                    <div
+                        className="absolute inset-0 backdrop-blur-sm"
+                        style={{ background: 'rgba(0,0,0,0.7)' }}
+                        onClick={() => setShowSaveModal(false)}
+                    />
+                    <GlassCard
+                        className="relative w-full max-w-md z-10"
+                        accent={accent}
+                        padding="xl"
+                    >
+                        <div className="flex items-center gap-3 mb-6">
+                            <div
+                                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                                style={{
+                                    background: `linear-gradient(135deg, ${accent}30 0%, ${accent}15 100%)`,
+                                    boxShadow: `0 4px 16px ${accent}30`
+                                }}
+                            >
+                                <Save size={20} style={{ color: accent }} strokeWidth={2.5} />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-white">Save Custom Mix</h3>
+                                <p className="text-xs text-white/50">Create a reusable frequency blend</p>
                             </div>
                         </div>
-                    </div>
-                )
-            }
+
+                        <PremiumInput
+                            type="text"
+                            value={mixName}
+                            onChange={(e) => setMixName(e.target.value)}
+                            placeholder="Enter mix name..."
+                            accent={accent}
+                            label="Mix Name"
+                            helperText={`${activeFreqs.length} frequencies will be saved`}
+                            autoFocus
+                        />
+
+                        <div className="flex gap-3 mt-6">
+                            <PremiumButton
+                                variant="secondary"
+                                size="lg"
+                                fullWidth
+                                onClick={() => setShowSaveModal(false)}
+                            >
+                                Cancel
+                            </PremiumButton>
+                            <PremiumButton
+                                variant="primary"
+                                size="lg"
+                                fullWidth
+                                accent={accent}
+                                onClick={saveMix}
+                                disabled={!mixName.trim()}
+                            >
+                                Save Mix
+                            </PremiumButton>
+                        </div>
+                    </GlassCard>
+                </div>
+            )}
         </div >
     );
 }

@@ -14,10 +14,10 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
     const [showSuccess, setShowSuccess] = useState(false);
 
     const tabs = [
-        { id: "identity", label: "Identity", icon: User, desc: "Who you are", gradient: "from-violet-500 to-purple-600", emoji: "🎯" },
-        { id: "personality", label: "Zeni's Persona", icon: Heart, desc: "How she serves", gradient: "from-pink-500 to-rose-600", emoji: "💝" },
-        { id: "knowledge", label: "Knowledge Base", icon: Database, desc: "Facts & Rules", gradient: "from-cyan-500 to-blue-600", emoji: "🧠" },
-        { id: "habits", label: "Your Patterns", icon: Target, desc: "Work Style", gradient: "from-orange-500 to-red-600", emoji: "⚡" }
+        { id: "identity", label: "Identity", icon: User, desc: "Who you are", emoji: "🎯" },
+        { id: "personality", label: "Zeni's Persona", icon: Heart, desc: "How she serves", emoji: "💝" },
+        { id: "knowledge", label: "Knowledge Base", icon: Database, desc: "Facts & Rules", emoji: "🧠" },
+        { id: "habits", label: "Your Patterns", icon: Target, desc: "Work Style", emoji: "⚡" }
     ];
 
     const saveProfile = () => {
@@ -62,111 +62,94 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
     const currentTab = tabs.find(t => t.id === activeTab)!;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-8" style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(12px)" }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-12" style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(20px)" }}>
             <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                initial={{ opacity: 0, scale: 0.95, y: 30 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="w-full max-w-6xl h-[88vh] rounded-[32px] overflow-hidden flex flex-col relative"
+                exit={{ opacity: 0, scale: 0.95, y: 30 }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full max-w-7xl h-[90vh] rounded-[40px] overflow-hidden flex flex-col relative"
                 style={{
-                    background: "linear-gradient(165deg, rgba(18,18,24,0.98) 0%, rgba(12,12,16,0.99) 100%)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    boxShadow: "0 20px 80px rgba(0,0,0,0.6)",
+                    background: "linear-gradient(165deg, rgba(20,20,26,0.97) 0%, rgba(12,12,16,0.98) 100%)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    boxShadow: "0 25px 100px rgba(0,0,0,0.7)",
                     fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
                 }}
             >
-                {/* Animated Background Glow */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
+                {/* Subtle Ambient Glow */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
                     <motion.div
                         animate={{
-                            scale: [1, 1.3, 1],
-                            opacity: [0.3, 0.6, 0.3],
-                            rotate: [0, 90, 0]
+                            scale: [1, 1.2, 1],
+                            opacity: [0.2, 0.4, 0.2]
                         }}
-                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                        className="absolute -top-1/2 -right-1/2 w-full h-full rounded-full blur-[150px]"
-                        style={{ background: `radial-gradient(circle, ${accent}40 0%, transparent 70%)` }}
-                    />
-                    <motion.div
-                        animate={{
-                            scale: [1.3, 1, 1.3],
-                            opacity: [0.2, 0.5, 0.2],
-                            rotate: [90, 0, 90]
-                        }}
-                        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-                        className="absolute -bottom-1/2 -left-1/2 w-full h-full rounded-full blur-[150px]"
+                        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute top-0 right-0 w-1/2 h-1/2 rounded-full blur-[120px]"
                         style={{ background: `radial-gradient(circle, ${accent}30 0%, transparent 70%)` }}
                     />
                 </div>
 
-                {/* Premium Header */}
-                <div className="relative px-12 py-10 border-b border-white/10 bg-gradient-to-b from-white/5 to-transparent">
-                    <div className="flex items-center justify-between mb-8">
-                        <div className="flex items-center gap-6">
-                            <motion.div
-                                whileHover={{ scale: 1.1, rotate: 10 }}
-                                className="relative w-20 h-20 rounded-[24px] flex items-center justify-center"
+                {/* Clean Header */}
+                <div className="relative px-16 py-12 border-b border-white/5">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-8">
+                            <div
+                                className="w-20 h-20 rounded-[28px] flex items-center justify-center relative"
                                 style={{
-                                    background: `linear-gradient(135deg, ${accent} 0%, ${accent}E6 100%)`,
-                                    boxShadow: `0 16px 48px ${accent}50`
+                                    background: `linear-gradient(135deg, ${accent}15 0%, ${accent}05 100%)`,
+                                    border: `1.5px solid ${accent}30`
                                 }}
                             >
-                                <div className="absolute inset-0 bg-white/30 blur-2xl rounded-[24px]" />
-                                <Brain size={40} color="#000" strokeWidth={2.5} className="relative z-10" />
-                                <motion.div
-                                    animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
-                                    transition={{ duration: 2, repeat: Infinity }}
-                                    className="absolute inset-0 rounded-[24px]"
-                                    style={{ border: `2px solid ${accent}`, boxShadow: `0 0 30px ${accent}` }}
-                                />
-                            </motion.div>
+                                <Brain size={36} style={{ color: accent }} strokeWidth={2} />
+                            </div>
                             <div>
-                                <h2 className="text-4xl font-black text-white tracking-tight leading-none mb-3">AI Training</h2>
-                                <p className="text-lg font-medium leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>Teach Zeni about you • Build your perfect AI companion</p>
+                                <h2 className="text-5xl font-black text-white tracking-tight leading-none mb-3">AI Training</h2>
+                                <p className="text-lg font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Teach Zeni about yourself and personalize your AI experience</p>
                             </div>
                         </div>
                         <motion.button
-                            whileHover={{ scale: 1.1, rotate: 90 }}
-                            whileTap={{ scale: 0.9 }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={onClose}
-                            className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all"
+                            className="p-5 rounded-[24px] bg-white/5 hover:bg-white/8 transition-all"
                         >
-                            <X size={24} className="text-white/70" />
+                            <X size={24} className="text-white/60" />
                         </motion.button>
                     </div>
+                </div>
 
-                    {/* Tabs */}
-                    <div className="flex gap-4">
+                {/* Navigation Tabs */}
+                <div className="px-16 py-10 border-b border-white/5">
+                    <div className="grid grid-cols-4 gap-6">
                         {tabs.map((tab, index) => (
                             <motion.button
                                 key={tab.id}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.1 }}
-                                whileHover={{ scale: 1.05, y: -4 }}
+                                transition={{ delay: index * 0.08 }}
+                                whileHover={{ scale: 1.03, y: -2 }}
                                 onClick={() => setActiveTab(tab.id as any)}
-                                className="flex-1 p-6 rounded-[24px] transition-all duration-500 relative overflow-hidden group"
+                                className="p-8 rounded-[28px] transition-all duration-300 relative overflow-hidden group text-left"
                                 style={activeTab === tab.id ? {
-                                    background: `linear-gradient(135deg, ${accent} 0%, ${accent}E6 100%)`,
-                                    boxShadow: `0 12px 32px ${accent}60, inset 0 2px 0 rgba(255,255,255,0.3)`,
-                                    border: "1px solid rgba(255,255,255,0.2)"
+                                    background: `linear-gradient(135deg, ${accent}18 0%, ${accent}08 100%)`,
+                                    border: `1.5px solid ${accent}40`,
+                                    boxShadow: `0 8px 32px ${accent}30`
                                 } : {
-                                    background: "rgba(255,255,255,0.04)",
-                                    border: "1px solid rgba(255,255,255,0.08)"
+                                    background: "rgba(255,255,255,0.03)",
+                                    border: "1.5px solid rgba(255,255,255,0.05)"
                                 }}
                             >
                                 {activeTab !== tab.id && (
-                                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                 )}
-                                <div className="relative z-10 flex flex-col items-center gap-3">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <span className="text-3xl">{tab.emoji}</span>
-                                        <tab.icon size={22} color={activeTab === tab.id ? "#000" : "#fff"} strokeWidth={2.5} />
+                                <div className="relative z-10">
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <span className="text-4xl">{tab.emoji}</span>
                                     </div>
-                                    <span className="font-black text-base" style={{ color: activeTab === tab.id ? "#000" : "#fff" }}>
+                                    <span className="font-black text-xl text-white block mb-2">
                                         {tab.label}
                                     </span>
-                                    <p className="text-xs font-medium" style={{ color: activeTab === tab.id ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.4)" }}>
+                                    <p className="text-sm font-medium" style={{ color: activeTab === tab.id ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.3)" }}>
                                         {tab.desc}
                                     </p>
                                 </div>
@@ -175,36 +158,8 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
                     </div>
                 </div>
 
-                {/* Content Area with Gradient Background */}
-                <div
-                    className="flex-1 overflow-y-auto px-12 py-10 custom-scrollbar relative"
-                    style={{
-                        background: `linear-gradient(to bottom, transparent 0%, ${accent}05 100%)`
-                    }}
-                >
-                    {/* Tab Content Header with Icon */}
-                    <motion.div
-                        key={activeTab}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="mb-10 flex items-center gap-5"
-                    >
-                        <div
-                            className="w-16 h-16 rounded-[20px] flex items-center justify-center"
-                            style={{
-                                background: `linear-gradient(135deg, ${accent}30 0%, ${accent}10 100%)`,
-                                border: `1.5px solid ${accent}40`,
-                                boxShadow: `0 8px 24px ${accent}30`
-                            }}
-                        >
-                            <currentTab.icon size={32} color={accent} strokeWidth={2.5} />
-                        </div>
-                        <div>
-                            <h3 className="text-3xl font-black text-white leading-none mb-2">{currentTab.label}</h3>
-                            <p className="text-base font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>{currentTab.desc}</p>
-                        </div>
-                    </motion.div>
-
+                {/* Content Area */}
+                <div className="flex-1 overflow-y-auto px-16 py-12 custom-scrollbar">
                     <AnimatePresence mode="wait">
                         {/* IDENTITY TAB */}
                         {activeTab === "identity" && (
@@ -214,9 +169,9 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
                                 transition={{ duration: 0.3 }}
-                                className="space-y-8"
+                                className="max-w-5xl mx-auto space-y-12"
                             >
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="grid grid-cols-2 gap-8">
                                     <FormField
                                         label="Your Name"
                                         icon="👤"
@@ -263,60 +218,56 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
                                 transition={{ duration: 0.3 }}
-                                className="space-y-8"
+                                className="max-w-5xl mx-auto space-y-12"
                             >
-                                <PremiumCard accent={accent} gradient="from-pink-500/20 to-rose-500/10">
-                                    <div className="flex items-start justify-between mb-8">
-                                        <div className="flex items-center gap-5">
-                                            <div className="w-16 h-16 rounded-[20px] bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-3xl shadow-xl">
+                                <CleanCard accent={accent}>
+                                    <div className="flex items-start justify-between mb-12">
+                                        <div className="flex items-center gap-6">
+                                            <div className="w-20 h-20 rounded-[24px] bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-4xl shadow-2xl">
                                                 💝
                                             </div>
                                             <div>
-                                                <h3 className="text-2xl font-black text-white mb-2 leading-none">Zeni's Core Persona</h3>
-                                                <p className="text-base font-medium" style={{ color: "rgba(255,255,255,0.6)" }}>Define how your AI assistant behaves</p>
+                                                <h3 className="text-3xl font-black text-white mb-3 leading-none">Zeni's Core Persona</h3>
+                                                <p className="text-lg font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>Define how your AI assistant behaves</p>
                                             </div>
                                         </div>
                                         <motion.button
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
                                             onClick={initializeZeniPersona}
-                                            className="px-6 py-4 rounded-2xl font-bold text-base flex items-center gap-3"
+                                            className="px-8 py-5 rounded-[20px] font-bold text-lg flex items-center gap-4 shadow-2xl"
                                             style={{
                                                 background: `linear-gradient(135deg, ${accent} 0%, ${accent}E6 100%)`,
-                                                color: "#000",
-                                                boxShadow: `0 8px 24px ${accent}50`
+                                                color: "#000"
                                             }}
                                         >
-                                            <Sparkles size={20} />
+                                            <Sparkles size={22} />
                                             Initialize Persona
                                         </motion.button>
                                     </div>
 
-                                    <div className="space-y-5">
-                                        <h4 className="text-sm font-bold text-white/70 uppercase tracking-wider flex items-center gap-2">
-                                            <Zap size={16} className="text-yellow-400" />
+                                    <div className="space-y-8">
+                                        <h4 className="text-sm font-bold text-white/50 uppercase tracking-widest flex items-center gap-3 mb-6">
+                                            <Zap size={18} className="text-yellow-400" />
                                             Example Interactions
                                         </h4>
                                         <ExampleInteraction
                                             icon="😰"
                                             situation="When you're stressed"
                                             response="I sense you might need a moment, Sir. How about we try a 7.83Hz Schumann frequency to help you reset?"
-                                            accent={accent}
                                         />
                                         <ExampleInteraction
                                             icon="🎯"
                                             situation="When you complete a session"
                                             response="Excellent work! That's 4 sessions today. You're crushing it. Ready for a well-deserved break?"
-                                            accent={accent}
                                         />
                                         <ExampleInteraction
                                             icon="💪"
                                             situation="When you need motivation"
                                             response="Remember your vision. Every focused session brings you closer. Let's make this one count. I'm here with you."
-                                            accent={accent}
                                         />
                                     </div>
-                                </PremiumCard>
+                                </CleanCard>
                             </motion.div>
                         )}
 
@@ -328,57 +279,54 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
                                 transition={{ duration: 0.3 }}
-                                className="space-y-8"
+                                className="max-w-5xl mx-auto space-y-12"
                             >
-                                <PremiumCard accent={accent} gradient="from-cyan-500/20 to-blue-500/10">
-                                    <div className="flex items-center gap-4 mb-8">
-                                        <div className="w-14 h-14 rounded-[18px] bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-2xl shadow-xl">
+                                <CleanCard accent={accent}>
+                                    <div className="flex items-center gap-6 mb-12">
+                                        <div className="w-18 h-18 rounded-[22px] bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-4xl shadow-2xl">
                                             🧠
                                         </div>
-                                        <h3 className="text-2xl font-black text-white leading-none">Add New Knowledge</h3>
+                                        <h3 className="text-3xl font-black text-white leading-none">Add New Knowledge</h3>
                                     </div>
-                                    <div className="flex gap-4 mb-8">
+                                    <div className="flex gap-6 mb-12">
                                         <input
                                             value={newKnowledge}
                                             onChange={e => setNewKnowledge(e.target.value)}
                                             onKeyDown={e => e.key === "Enter" && addKnowledge("fact")}
                                             placeholder="e.g., I prefer working in 90-minute deep work blocks"
-                                            className="flex-1 px-6 py-5 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 outline-none focus:border-white/20 text-base font-medium"
-                                            style={{
-                                                boxShadow: "inset 0 2px 12px rgba(0,0,0,0.3)"
-                                            }}
+                                            className="flex-1 px-8 py-6 rounded-[24px] bg-white/4 border border-white/8 text-white placeholder:text-white/25 outline-none focus:border-white/15 text-lg font-medium transition-all"
                                         />
                                         <motion.button
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
+                                            whileHover={{ scale: 1.03 }}
+                                            whileTap={{ scale: 0.97 }}
                                             onClick={() => addKnowledge("fact")}
-                                            className="px-8 py-5 rounded-2xl font-bold flex items-center gap-3"
+                                            className="px-10 py-6 rounded-[24px] font-bold flex items-center gap-4 text-lg shadow-xl"
                                             style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}E6 100%)`, color: "#000" }}
                                         >
-                                            <Plus size={22} />
+                                            <Plus size={24} />
                                             Add
                                         </motion.button>
                                     </div>
 
-                                    <div className="space-y-4">
+                                    <div className="space-y-6">
                                         {profile.knowledgeBase.map((item) => (
                                             <motion.div
                                                 key={item.id}
                                                 initial={{ opacity: 0, x: -20 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 exit={{ opacity: 0, x: 20 }}
-                                                whileHover={{ scale: 1.02, x: 4 }}
-                                                className="p-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between group transition-all"
+                                                whileHover={{ scale: 1.01, x: 4 }}
+                                                className="p-8 rounded-[24px] bg-white/4 border border-white/8 flex items-center justify-between group transition-all"
                                             >
-                                                <div className="flex items-center gap-5 flex-1">
-                                                    <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                                                        <Database size={20} className="text-white/60" />
+                                                <div className="flex items-center gap-6 flex-1">
+                                                    <div className="w-14 h-14 rounded-[18px] bg-white/8 flex items-center justify-center shrink-0">
+                                                        <Database size={24} className="text-white/50" />
                                                     </div>
                                                     <div className="flex-1">
-                                                        <p className="text-white font-medium text-base leading-relaxed">{item.content}</p>
-                                                        <div className="flex items-center gap-2 mt-2">
-                                                            <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full" style={{
-                                                                background: `${accent}20`,
+                                                        <p className="text-white font-medium text-lg leading-relaxed">{item.content}</p>
+                                                        <div className="flex items-center gap-3 mt-3">
+                                                            <span className="text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full" style={{
+                                                                background: `${accent}15`,
                                                                 color: accent
                                                             }}>{item.category}</span>
                                                         </div>
@@ -388,14 +336,14 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
                                                     whileHover={{ scale: 1.1 }}
                                                     whileTap={{ scale: 0.9 }}
                                                     onClick={() => removeKnowledge(item.id)}
-                                                    className="p-3 rounded-xl bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    className="p-4 rounded-[16px] bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
                                                 >
-                                                    <Trash2 size={18} className="text-red-400" />
+                                                    <Trash2 size={20} className="text-red-400" />
                                                 </motion.button>
                                             </motion.div>
                                         ))}
                                     </div>
-                                </PremiumCard>
+                                </CleanCard>
                             </motion.div>
                         )}
 
@@ -407,16 +355,16 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
                                 transition={{ duration: 0.3 }}
-                                className="space-y-8"
+                                className="max-w-5xl mx-auto space-y-12"
                             >
-                                <PremiumCard accent={accent} gradient="from-orange-500/20 to-red-500/10">
-                                    <div className="flex items-center gap-4 mb-8">
-                                        <div className="w-14 h-14 rounded-[18px] bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-2xl shadow-xl">
+                                <CleanCard accent={accent}>
+                                    <div className="flex items-center gap-6 mb-12">
+                                        <div className="w-18 h-18 rounded-[22px] bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-4xl shadow-2xl">
                                             ⚡
                                         </div>
-                                        <h3 className="text-2xl font-black text-white leading-none">Work Patterns</h3>
+                                        <h3 className="text-3xl font-black text-white leading-none">Work Patterns</h3>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-2 gap-8 mb-10">
                                         <SelectField
                                             label="Energy Type"
                                             icon="🌅"
@@ -462,26 +410,26 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
                                         placeholder="25"
                                         accent={accent}
                                     />
-                                </PremiumCard>
+                                </CleanCard>
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </div>
 
                 {/* Footer */}
-                <div className="relative px-12 py-8 border-t border-white/10 flex items-center justify-between bg-gradient-to-t from-white/5 to-transparent">
-                    <div className="flex items-center gap-3">
-                        <Star size={20} className="text-yellow-400" />
-                        <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>All changes are saved automatically</p>
+                <div className="px-16 py-10 border-t border-white/5 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <Star size={22} className="text-yellow-400" />
+                        <p className="text-base font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>All changes are saved automatically</p>
                     </div>
                     <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={saveProfile}
-                        className="px-10 py-5 rounded-2xl font-black flex items-center gap-4 text-base"
-                        style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}E6 100%)`, color: "#000", boxShadow: `0 8px 24px ${accent}50` }}
+                        className="px-12 py-6 rounded-[24px] font-black flex items-center gap-4 text-lg shadow-2xl"
+                        style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}E6 100%)`, color: "#000" }}
                     >
-                        <Save size={22} />
+                        <Save size={24} />
                         Save Profile
                     </motion.button>
                 </div>
@@ -490,13 +438,13 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
                 <AnimatePresence>
                     {showSuccess && (
                         <motion.div
-                            initial={{ opacity: 0, y: 50, scale: 0.8 }}
+                            initial={{ opacity: 0, y: 50, scale: 0.9 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 50, scale: 0.8 }}
-                            className="fixed bottom-10 right-10 px-8 py-5 rounded-2xl font-bold flex items-center gap-4 text-lg"
-                            style={{ background: "#10B981", color: "#000", boxShadow: "0 12px 48px rgba(16, 185, 129, 0.5)" }}
+                            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+                            className="fixed bottom-12 right-12 px-10 py-6 rounded-[24px] font-bold flex items-center gap-5 text-xl shadow-2xl"
+                            style={{ background: "#10B981", color: "#000" }}
                         >
-                            <TrendingUp size={24} />
+                            <TrendingUp size={28} />
                             Saved Successfully!
                         </motion.div>
                     )}
@@ -506,31 +454,23 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
     );
 }
 
-function PremiumCard({ children, gradient }: { children: React.ReactNode; accent?: string; gradient?: string }) {
+function CleanCard({ children, accent }: { children: React.ReactNode; accent?: string }) {
     return (
-        <div className="p-10 rounded-[28px] border relative overflow-hidden" style={{
-            background: `linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)`,
-            borderColor: "rgba(255,255,255,0.12)",
-            boxShadow: "0 12px 48px rgba(0,0,0,0.3)"
+        <div className="p-12 rounded-[32px] border relative" style={{
+            background: "rgba(255,255,255,0.02)",
+            borderColor: "rgba(255,255,255,0.06)",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.2)"
         }}>
-            {gradient && (
-                <div className="absolute inset-0 opacity-30" style={{
-                    background: `linear-gradient(135deg, var(--tw-gradient-stops))`,
-                    filter: "blur(60px)"
-                }} />
-            )}
-            <div className="relative z-10">
-                {children}
-            </div>
+            {children}
         </div>
     );
 }
 
-function FormField({ label, icon, value, onChange, placeholder, type = "text" }: any) {
+function FormField({ label, icon, value, onChange, placeholder, type = "text", accent }: any) {
     return (
-        <div className="space-y-4">
-            <label className="text-sm font-bold uppercase tracking-wider text-white/60 pl-1 flex items-center gap-2">
-                <span className="text-lg">{icon}</span>
+        <div className="space-y-5">
+            <label className="text-sm font-bold uppercase tracking-widest text-white/40 pl-2 flex items-center gap-3">
+                <span className="text-2xl">{icon}</span>
                 {label}
             </label>
             <input
@@ -538,50 +478,41 @@ function FormField({ label, icon, value, onChange, placeholder, type = "text" }:
                 value={value}
                 onChange={e => onChange(e.target.value)}
                 placeholder={placeholder}
-                className="w-full px-6 py-5 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 outline-none focus:border-white/20 transition-all text-base font-medium"
-                style={{
-                    boxShadow: "inset 0 2px 12px rgba(0,0,0,0.3)"
-                }}
+                className="w-full px-8 py-6 rounded-[24px] bg-white/4 border border-white/8 text-white placeholder:text-white/25 outline-none focus:border-white/15 transition-all text-lg font-medium"
             />
         </div>
     );
 }
 
-function FormTextArea({ label, icon, value, onChange, placeholder }: any) {
+function FormTextArea({ label, icon, value, onChange, placeholder, accent }: any) {
     return (
-        <div className="space-y-4">
-            <label className="text-sm font-bold uppercase tracking-wider text-white/60 pl-1 flex items-center gap-2">
-                <span className="text-lg">{icon}</span>
+        <div className="space-y-5">
+            <label className="text-sm font-bold uppercase tracking-widest text-white/40 pl-2 flex items-center gap-3">
+                <span className="text-2xl">{icon}</span>
                 {label}
             </label>
             <textarea
                 value={value}
                 onChange={e => onChange(e.target.value)}
                 placeholder={placeholder}
-                rows={4}
-                className="w-full px-6 py-5 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 outline-none focus:border-white/20 transition-all resize-none text-base font-medium leading-relaxed"
-                style={{
-                    boxShadow: "inset 0 2px 12px rgba(0,0,0,0.3)"
-                }}
+                rows={5}
+                className="w-full px-8 py-6 rounded-[24px] bg-white/4 border border-white/8 text-white placeholder:text-white/25 outline-none focus:border-white/15 transition-all resize-none text-lg font-medium leading-relaxed"
             />
         </div>
     );
 }
 
-function SelectField({ label, icon, value, onChange, options }: any) {
+function SelectField({ label, icon, value, onChange, options, accent }: any) {
     return (
-        <div className="space-y-4">
-            <label className="text-sm font-bold uppercase tracking-wider text-white/60 pl-1 flex items-center gap-2">
-                <span className="text-lg">{icon}</span>
+        <div className="space-y-5">
+            <label className="text-sm font-bold uppercase tracking-widest text-white/40 pl-2 flex items-center gap-3">
+                <span className="text-2xl">{icon}</span>
                 {label}
             </label>
             <select
                 value={value}
                 onChange={e => onChange?.(e.target.value)}
-                className="w-full px-6 py-5 rounded-2xl bg-white/5 border border-white/10 text-white outline-none focus:border-white/20 transition-all cursor-pointer text-base font-medium"
-                style={{
-                    boxShadow: "inset 0 2px 12px rgba(0,0,0,0.3)"
-                }}
+                className="w-full px-8 py-6 rounded-[24px] bg-white/4 border border-white/8 text-white outline-none focus:border-white/15 transition-all cursor-pointer text-lg font-medium"
             >
                 {options.map((opt: any) => (
                     <option key={opt.value} value={opt.value} className="bg-gray-900">
@@ -596,15 +527,15 @@ function SelectField({ label, icon, value, onChange, options }: any) {
 function ExampleInteraction({ icon, situation, response }: any) {
     return (
         <motion.div
-            whileHover={{ scale: 1.02, x: 4 }}
-            className="p-6 rounded-2xl bg-white/5 border border-white/10 relative overflow-hidden group"
+            whileHover={{ scale: 1.01, x: 4 }}
+            className="p-8 rounded-[24px] bg-white/4 border border-white/8 relative overflow-hidden group"
         >
-            <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="relative z-10 flex items-start gap-4">
-                <span className="text-3xl shrink-0">{icon}</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-white/3 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative z-10 flex items-start gap-6">
+                <span className="text-4xl shrink-0">{icon}</span>
                 <div className="flex-1">
-                    <p className="text-xs font-bold text-white/50 mb-3 uppercase tracking-wider">{situation}</p>
-                    <p className="text-base text-white/90 leading-relaxed italic font-medium">"{response}"</p>
+                    <p className="text-sm font-bold text-white/40 mb-4 uppercase tracking-widest">{situation}</p>
+                    <p className="text-lg text-white/80 leading-relaxed italic font-medium">"{response}"</p>
                 </div>
             </div>
         </motion.div>
