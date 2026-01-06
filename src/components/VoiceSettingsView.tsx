@@ -38,17 +38,62 @@ export const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({ accent }) 
     });
 
     const [testingVoice, setTestingVoice] = useState(false);
+    const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+    // Load available voices from system
+    React.useEffect(() => {
+        const loadVoices = () => {
+            const voices = window.speechSynthesis.getVoices();
+            setAvailableVoices(voices);
+        };
+
+        loadVoices();
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+    }, []);
 
     const voices = [
-        { id: 'Samantha', name: 'Samantha', gender: 'Female', language: 'en-US' },
-        { id: 'Alex', name: 'Alex', gender: 'Male', language: 'en-US' },
-        { id: 'Victoria', name: 'Victoria', gender: 'Female', language: 'en-GB' },
-        { id: 'Daniel', name: 'Daniel', gender: 'Male', language: 'en-GB' }
+        // Premium curated voices
+        { id: 'Samantha', name: 'Samantha', gender: 'Female', language: 'en-US', description: 'Warm & clear' },
+        { id: 'Alex', name: 'Alex', gender: 'Male', language: 'en-US', description: 'Natural & professional' },
+        { id: 'Victoria', name: 'Victoria', gender: 'Female', language: 'en-GB', description: 'British accent' },
+        { id: 'Daniel', name: 'Daniel', gender: 'Male', language: 'en-GB', description: 'Deep & authoritative' },
+        { id: 'Karen', name: 'Karen', gender: 'Female', language: 'en-AU', description: 'Australian' },
+        { id: 'Moira', name: 'Moira', gender: 'Female', language: 'en-IE', description: 'Irish accent' },
+        { id: 'Rishi', name: 'Rishi', gender: 'Male', language: 'en-IN', description: 'Indian accent' },
+        { id: 'Fiona', name: 'Fiona', gender: 'Female', language: 'en-SCT', description: 'Scottish accent' }
     ];
 
     const testVoice = () => {
-        setTestingVoice(true);
-        setTimeout(() => setTestingVoice(false), 2000);
+        if ('speechSynthesis' in window) {
+            setTestingVoice(true);
+
+            // Cancel any ongoing speech
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(
+                "Great work! You're crushing your productivity goals. Let's keep the momentum going."
+            );
+
+            // Find the selected voice in available voices
+            const selectedVoice = availableVoices.find(v =>
+                v.name.includes(settings.voice) || v.voiceURI.includes(settings.voice)
+            );
+
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+
+            utterance.rate = settings.speed;
+            utterance.pitch = settings.pitch;
+            utterance.volume = settings.volume;
+
+            utterance.onend = () => setTestingVoice(false);
+            utterance.onerror = () => setTestingVoice(false);
+
+            window.speechSynthesis.speak(utterance);
+        } else {
+            alert('Text-to-speech not supported in your browser');
+        }
     };
 
     const updateSetting = <K extends keyof VoiceSettings>(key: K, value: VoiceSettings[K]) => {
@@ -121,7 +166,7 @@ export const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({ accent }) 
                         }}
                     >
                         <h3 className="font-black text-2xl mb-8 text-white leading-none">Voice</h3>
-                        <div className="grid grid-cols-2 gap-5 mb-8">
+                        <div className="grid grid-cols-3 gap-5 mb-8">
                             {voices.map((voice) => (
                                 <motion.button
                                     key={voice.id}
@@ -136,8 +181,9 @@ export const VoiceSettingsView: React.FC<VoiceSettingsViewProps> = ({ accent }) 
                                         boxShadow: settings.voice === voice.id ? `0 8px 24px ${accent}30` : 'none'
                                     }}
                                 >
-                                    <p className="font-bold text-lg mb-2 text-white">{voice.name}</p>
-                                    <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>{voice.gender} • {voice.language}</p>
+                                    <p className="font-bold text-lg mb-1 text-white">{voice.name}</p>
+                                    <p className="text-xs font-medium mb-2" style={{ color: "rgba(255,255,255,0.4)" }}>{voice.gender} • {voice.language}</p>
+                                    <p className="text-xs font-medium" style={{ color: accent }}>{voice.description}</p>
                                 </motion.button>
                             ))}
                         </div>
