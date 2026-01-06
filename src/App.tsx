@@ -130,6 +130,7 @@ function App() {
   const [activePreset, setActivePreset] = useState<TimerPreset>(allPresets[0]);
   const [showPresetPicker, setShowPresetPicker] = useState(false);
   const [showPresetEditor, setShowPresetEditor] = useState(false);
+  const [showThemePicker, setShowThemePicker] = useState(false);
   const [sequenceIndex, setSequenceIndex] = useState(0);
   const [timerStyle, setTimerStyle] = useState<TimerStyle>('3d');
 
@@ -417,11 +418,35 @@ function App() {
               {/* Top Bar */}
               <div className="absolute top-6 right-6 z-50 flex gap-3">
                 <button
-                  onClick={() => setView("settings-theme")}
-                  className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all hover:scale-105 group"
+                  onClick={() => setShowThemePicker(!showThemePicker)}
+                  className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all hover:scale-105 group relative"
                   title="Change Theme"
                 >
                   <Palette size={20} className="text-white/60 group-hover:text-white transition-colors" />
+                  {showThemePicker && (
+                    <div className="absolute right-0 top-full mt-2 p-4 bg-[#1E1E1E] border border-white/10 rounded-xl shadow-2xl z-50 w-64"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <p className="text-xs font-bold text-white/50 uppercase tracking-wider mb-3">Select Theme</p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {themes.map((t) => (
+                          <button
+                            key={t.id}
+                            onClick={() => {
+                              setTheme(t.id);
+                              setShowThemePicker(false);
+                            }}
+                            className="w-full aspect-square rounded-lg border-2 transition-all hover:scale-110"
+                            style={{
+                              background: t.accent,
+                              borderColor: theme === t.id ? '#FFF' : 'transparent'
+                            }}
+                            title={t.name}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </button>
               </div>
 

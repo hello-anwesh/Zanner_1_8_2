@@ -164,18 +164,18 @@ export function ZennerCoach({
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
-            <div className="px-6 py-4 border-t border-white/10">
-                {/* Quick Actions */}
-                <div className="flex gap-2 mb-3">
+            {/* Input Area - AWESOME VERSION */}
+            <div className="px-8 py-6 border-t border-white/10 bg-black/20">
+                {/* Quick Actions - Enhanced */}
+                <div className="flex gap-3 mb-4">
                     <button
                         onClick={() => {
                             setInput("I need motivation");
                             setTimeout(() => inputRef.current?.focus(), 50);
                         }}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/8 transition-colors text-sm text-white/70"
+                        className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-fuchsia-500/10 to-purple-500/10 border border-fuchsia-500/20 hover:border-fuchsia-500/40 hover:from-fuchsia-500/20 hover:to-purple-500/20 transition-all text-sm font-medium text-white/80 hover:text-white"
                     >
-                        <Zap size={14} strokeWidth={2} />
+                        <Zap size={16} className="group-hover:scale-110 transition-transform" strokeWidth={2.5} />
                         Motivate Me
                     </button>
                     <button
@@ -183,14 +183,14 @@ export function ZennerCoach({
                             setInput("Show me my progress");
                             setTimeout(() => inputRef.current?.focus(), 50);
                         }}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/8 transition-colors text-sm text-white/70"
+                        className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 hover:border-blue-500/40 hover:from-blue-500/20 hover:to-cyan-500/20 transition-all text-sm font-medium text-white/80 hover:text-white"
                     >
-                        <TrendingUp size={14} strokeWidth={2} />
+                        <TrendingUp size={16} className="group-hover:scale-110 transition-transform" strokeWidth={2.5} />
                         My Progress
                     </button>
                 </div>
 
-                {/* Input */}
+                {/* Input - Premium Design */}
                 <div className="relative">
                     <input
                         ref={inputRef}
@@ -198,18 +198,26 @@ export function ZennerCoach({
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                        placeholder="Message Zeni..."
+                        placeholder="Ask Zeni anything..."
                         disabled={isTyping}
-                        className="w-full px-4 py-3 pr-12 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 outline-none focus:border-fuchsia-500/50 transition-colors"
+                        className="w-full px-5 py-4 pr-14 rounded-xl bg-white/5 border-2 border-white/10 text-base font-medium text-white placeholder:text-white/40 outline-none focus:border-fuchsia-500/50 focus:bg-white/8 transition-all disabled:opacity-50"
+                        style={{
+                            boxShadow: input.length > 0 ? '0 0 0 4px rgba(217, 70, 239, 0.1)' : 'none'
+                        }}
                     />
                     <button
                         onClick={handleSend}
                         disabled={!input.trim() || isTyping}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md bg-fuchsia-500 hover:bg-fuchsia-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-lg bg-gradient-to-br from-fuchsia-500 to-purple-600 hover:from-fuchsia-600 hover:to-purple-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-fuchsia-500/50 hover:scale-105 active:scale-95"
                     >
-                        <Send size={16} color="#FFF" strokeWidth={2} />
+                        <Send size={18} color="#FFF" strokeWidth={2.5} />
                     </button>
                 </div>
+
+                {/* Hint Text */}
+                <p className="text-xs text-white/30 mt-3 text-center">
+                    Press <kbd className="px-2 py-0.5 rounded bg-white/10 text-white/50 font-mono">Enter</kbd> to send
+                </p>
             </div>
         </div>
     );

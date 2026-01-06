@@ -13,9 +13,10 @@ interface PremiumSidebarProps {
     onViewChange: (view: string) => void;
     accent: string;
     onFrequencyClick: () => void;
+    onCoachOpen: () => void;
 }
 
-const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, accent, onFrequencyClick }: PremiumSidebarProps) => {
+const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, accent, onFrequencyClick, onCoachOpen }: PremiumSidebarProps) => {
     const [expandedSections, setExpandedSections] = React.useState({
         settings: false,
         ai: false
@@ -98,7 +99,14 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
             {/* Main Items */}
             <nav className="flex-1 px-4 flex flex-col justify-center gap-2 overflow-y-auto overflow-x-hidden custom-scrollbar pb-5">
                 {mainItems.map(item => (
-                    <NavButton key={item.id} {...item} view={view} onClick={() => onViewChange(item.id)} collapsed={collapsed} accent={accent} />
+                    <NavButton
+                        key={item.id}
+                        {...item}
+                        view={view}
+                        onClick={() => item.id === 'zeni' ? onCoachOpen() : onViewChange(item.id)}
+                        collapsed={collapsed}
+                        accent={accent}
+                    />
                 ))}
 
                 {/* Settings Expandable */}
