@@ -33,6 +33,7 @@ export function ZennerCoach({
     const inputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const recognitionRef = useRef<any>(null);
+    const isInitializedRef = useRef(false);
 
     const toggleListening = () => {
         if (isListening) {
@@ -76,6 +77,10 @@ export function ZennerCoach({
     };
 
     useEffect(() => {
+        // Prevent duplicate initialization (React Strict Mode issue)
+        if (isInitializedRef.current) return;
+        isInitializedRef.current = true;
+
         // 1. Try to load saved history
         const savedHistory = localStorage.getItem('zenner_chat_history');
         if (savedHistory) {
