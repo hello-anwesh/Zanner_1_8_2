@@ -122,27 +122,35 @@ ${context.userEnergy ? `- Energy Level: ${context.userEnergy}` : ""}`;
     async getSessionStartMessage(context: CoachContext): Promise<string> {
         const profile = trainingService.getProfile();
         const isFirstToday = context.sessionsToday === 0;
-        const hour = new Date().getHours();
+        const name = profile.identity.name || 'friend';
 
         // Intelligent session start based on context
         if (isFirstToday) {
-            const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+            const greetings = [
+                `Hey ${name}! Ready to make today count?`,
+                `What's up! What are we building today?`,
+                `Let's go. What's the mission today?`,
+                `Ready to crush some work?`,
+                `Morning! Let's turn ideas into reality.`
+            ];
+
             if (profile.identity.longTermVision) {
-                return `${greeting}, ${profile.identity.name || 'there'}. Ready to work toward ${profile.identity.longTermVision.split('.')[0]}?`;
+                return `${greetings[0].split('!')[0]}! Working toward ${profile.identity.longTermVision.split('.')[0]} today?`;
             }
-            return `${greeting}. Let's make today count. What's the focus?`;
+            return greetings[Math.floor(Math.random() * greetings.length)];
         }
 
         // If they're on a streak
         if (context.sessionsToday >= 4) {
-            return `Session ${context.currentSession}. You're on fire today - ${context.sessionsToday} sessions completed. Keep this momentum.`;
+            return `${context.sessionsToday} sessions deep. You're absolutely killing it today. Keep going.`;
         }
 
         // Default intelligent message
         const messages = [
-            `Session ${context.currentSession}. Everything ready for deep focus.`,
-            `${context.sessionsToday} down, ready for the next one?`,
-            `Back for more. I'm tracking your progress - looking strong so far.`
+            `Back at it. What's next on the list?`,
+            `Session ${context.currentSession}. Let's lock in.`,
+            `${context.sessionsToday} done. You're building momentum.`,
+            `Ready when you are. What's the focus?`
         ];
 
         return messages[Math.floor(Math.random() * messages.length)];
