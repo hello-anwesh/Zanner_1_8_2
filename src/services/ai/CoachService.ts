@@ -2,6 +2,7 @@ import { aiService } from "./AIService";
 import { trainingService } from "../training/TrainingService";
 import { databaseService } from "../db/DatabaseService";
 import { ragService } from "./RAGService";
+import { journalService } from "../journal/JournalService";
 
 export interface CoachContext {
     sessionsToday: number;
@@ -24,7 +25,7 @@ export interface CoachResponse {
 class CoachService {
     private conversationHistory: Array<{ role: string; content: string }> = [];
 
-    private getAdvancedPersonaPrompt(analytics?: any): string {
+    private async getAdvancedPersonaPrompt(analytics?: any): Promise<string> {
         const userProfile = trainingService.getFullSystemContext();
         const profile = trainingService.getProfile();
 
@@ -32,26 +33,22 @@ class CoachService {
         const knowledgeBase = profile.knowledgeBase.map(kb => `- ${kb.content}`).join('\n');
         const hasCustomKnowledge = profile.knowledgeBase.length > 0;
 
-        // Format analytics for the AI
-        let analyticsContext = "";
+        // Get journal context
+        const journalContext = await journalService.getContextForAI(3);
+
+        // Analytics context
+        let analyticsContext = '';
         if (analytics) {
-            analyticsContext = `
-REAL-TIME ANALYTICS:
-- Today: ${analytics.today.completed} completed, ${analytics.today.abandoned} abandoned
-- Focus time: ${analytics.today.focusTimeMinutes} minutes
-- Weekly trend: ${JSON.stringify(analytics.weekly.slice(0, 3))}
-- Total lifetime: ${analytics.totalSessions} sessions
-- Pattern: ${analytics.today.completed > analytics.today.abandoned ? 'STRONG FOCUS' : 'STRUGGLING TODAY'}
-`;
+            analyticsContext = `Sessions Today: ${analytics.sessionsToday || 0}
+Completed: ${analytics.completed || 0} | Abandoned: ${analytics.abandoned || 0}`;
         }
 
-        // Determine time-based context
+        // Time-based context
         const hour = new Date().getHours();
-        let timeContext = "";
-        if (hour < 6) timeContext = "Very early morning (late night work)";
-        else if (hour < 12) timeContext = "Morning - peak cognitive hours";
-        else if (hour < 17) timeContext = "Afternoon - post-lunch dip possible";
-        else if (hour < 21) timeContext = "Evening - winding down";
+        let timeContext = '';
+        if (hour >= 6 && hour < 12) timeContext = "Morning - fresh start";
+        else if (hour >= 12 && hour < 17) timeContext = "Afternoon - mid-day energy";
+        else if (hour >= 17 && hour < 21) timeContext = "Evening - winding down";
         else timeContext = "Night - consider rest soon";
 
         return `You are Zeni - an advanced AI productivity companion.
@@ -74,6 +71,8 @@ ${hasCustomKnowledge ? `
 WHAT YOU KNOW ABOUT THE USER:
 ${knowledgeBase}
 ` : ''}
+
+${journalContext}
 
 CURRENT CONTEXT:
 - Time: ${timeContext}
@@ -215,7 +214,7 @@ Provide an intelligent, contextual response. Be helpful, concise, and specific t
             this.conversationHistory.push({ role: "user", content: userMessage });
 
             const response = await aiService.chat(fullPrompt, {
-                systemPrompt: this.getAdvancedPersonaPrompt(analytics),
+                systemPrompt: await this.getAdvancedPersonaPrompt(analytics),
                 conversationHistory: this.conversationHistory.slice(-10) // Last 5 exchanges
             });
 

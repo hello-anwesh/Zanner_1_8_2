@@ -3,7 +3,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Settings2, Brain, Palette, Music, Clock, Mic,
-    User, Database, Activity, ChevronRight, Home, BarChart2, Waves, Book
+    ChevronRight, Home, BarChart2, Waves, Book
 } from 'lucide-react';
 
 interface PremiumSidebarProps {
@@ -18,11 +18,10 @@ interface PremiumSidebarProps {
 
 const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, accent, onFrequencyClick, onCoachOpen }: PremiumSidebarProps) => {
     const [expandedSections, setExpandedSections] = React.useState({
-        settings: false,
-        ai: false
+        settings: false
     });
 
-    const toggleSection = (section: 'settings' | 'ai') => {
+    const toggleSection = (section: 'settings') => {
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
@@ -43,11 +42,6 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
         { id: 'settings-voice', icon: Mic, label: 'Voice', effect: 'pulse' }
     ];
 
-    const aiItems = [
-        { id: 'ai-identity', icon: User, label: 'Identity', effect: 'scale' },
-        { id: 'ai-cognition', icon: Database, label: 'Cognition', effect: 'glow' },
-        { id: 'ai-rhythms', icon: Activity, label: 'Rhythms', effect: 'pulse' }
-    ];
 
     return (
         <motion.aside
@@ -123,21 +117,6 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
                     accent={accent}
                 >
                     {settingsItems.map(item => (
-                        <SubItem key={item.id} {...item} view={view} onClick={() => onViewChange(item.id)} accent={accent} />
-                    ))}
-                </ExpandableSection>
-
-                {/* AI Training Expandable */}
-                <ExpandableSection
-                    title="AI Training"
-                    count={3}
-                    icon={Brain}
-                    expanded={expandedSections.ai}
-                    onToggle={() => toggleSection('ai')}
-                    collapsed={collapsed}
-                    accent={accent}
-                >
-                    {aiItems.map(item => (
                         <SubItem key={item.id} {...item} view={view} onClick={() => onViewChange(item.id)} accent={accent} />
                     ))}
                 </ExpandableSection>
