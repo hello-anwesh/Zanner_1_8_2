@@ -31,6 +31,14 @@ class DatabaseService {
         }
     }
 
+    async getDb(): Promise<Database> {
+        await this.init();
+        if (!this.db) {
+            throw new Error('Database not initialized');
+        }
+        return this.db;
+    }
+
     private async createTables() {
         if (!this.db) return;
 

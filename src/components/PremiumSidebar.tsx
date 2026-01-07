@@ -31,7 +31,8 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
         { id: 'zeni', icon: Brain, label: 'Zeni', gradient: 'from-fuchsia-500 to-pink-600' },
         { id: 'stats', icon: BarChart2, label: 'Analytics', gradient: 'from-cyan-500 to-blue-600' },
         { id: 'integrations', icon: Palette, label: 'Integrations', gradient: 'from-orange-500 to-red-600' },
-        { id: 'philosophy', icon: Book, label: 'Philosophy', gradient: 'from-emerald-500 to-teal-600' }
+        { id: 'philosophy', icon: Book, label: 'Philosophy', gradient: 'from-emerald-500 to-teal-600' },
+        { id: 'journal', icon: Book, label: 'Journal', gradient: 'from-amber-500 to-yellow-600' }
     ];
 
     const settingsItems = [
