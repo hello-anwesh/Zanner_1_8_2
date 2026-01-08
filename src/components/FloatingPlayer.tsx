@@ -402,16 +402,30 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
                         <div className="flex gap-2">
                             <button
                                 onClick={e => { e.stopPropagation(); toggle(); }}
-                                className="w-9 h-9 rounded-lg flex items-center justify-center transition-transform hover:scale-105"
+                                className="w-9 h-9 rounded-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
                                 style={{ background: colors.accent }}
+                                title={isPlaying ? "Pause" : "Play"}
                             >
-                                {isPlaying ? <Pause size={16} color="#000" /> : <Play size={16} color="#000" />}
+                                {isPlaying ? (
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#000">
+                                        <rect x="6" y="4" width="4" height="16" rx="1" />
+                                        <rect x="14" y="4" width="4" height="16" rx="1" />
+                                    </svg>
+                                ) : (
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#000">
+                                        <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                )}
                             </button>
                             <button
                                 onClick={e => { e.stopPropagation(); stop(); }}
                                 className="w-9 h-9 rounded-lg flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors"
+                                title="Stop"
                             >
-                                <X size={14} className="text-white/50" />
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="4" strokeLinecap="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
                             </button>
                         </div>
                     </div>

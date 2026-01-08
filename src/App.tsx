@@ -282,6 +282,15 @@ function App() {
     }
   }, [isRunning]);
 
+  // Control music based on timer state
+  useEffect(() => {
+    if (isRunning) {
+      musicController.resume();
+    } else {
+      musicController.pause();
+    }
+  }, [isRunning]);
+
   useEffect(() => {
     if (timeLeft === 0 && isRunning) {
       setIsRunning(false);
@@ -843,6 +852,28 @@ function App() {
                             }}
                           >
                             {isRunning ? <Pause size={36} fill="#000" color="#000" /> : <Play size={36} fill="#000" color="#000" className="ml-1" />}
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              const newState = !metronomeService.getState().enabled;
+                              metronomeService.setEnabled(newState);
+                              // Force re-render
+                              setTimeLeft(prev => prev);
+                            }}
+                            className={`p-4 rounded-xl transition-all duration-300 hover:scale-105 ${metronomeService.getState().enabled
+                              ? 'bg-white/10'
+                              : 'hover:bg-white/5'
+                              }`}
+                            title={metronomeService.getState().enabled ? "Metronome: ON" : "Metronome: OFF"}
+                            style={{
+                              border: `1px solid ${metronomeService.getState().enabled ? accent : accent + '30'}`,
+                              boxShadow: metronomeService.getState().enabled ? `0 0 20px ${accent}40` : 'none'
+                            }}
+                          >
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={metronomeService.getState().enabled ? accent : accent + '80'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M16 6l-4 14M8 6l4 14M6 12h12" />
+                            </svg>
                           </button>
 
                           <button

@@ -61,6 +61,40 @@ class MusicControllerClass {
         }
     }
 
+    // Direct control methods for timer play/pause
+    private pausedByTimer: 'spotify' | 'soundlib' | null = null;
+
+    async pause(): Promise<void> {
+        if (!this.enabled) return;
+
+        const spotifyState = spotifyService.getCurrentState();
+        const soundLibPlaying = this.soundLibIsPlaying?.() ?? false;
+
+        // Track what we're pausing so we can resume it
+        if (spotifyState?.is_playing) {
+            this.pausedByTimer = 'spotify';
+            await spotifyService.pause();
+        } else if (soundLibPlaying) {
+            this.pausedByTimer = 'soundlib';
+            this.soundLibPause?.();
+        } else {
+            this.pausedByTimer = null;
+        }
+    }
+
+    async resume(): Promise<void> {
+        if (!this.enabled || !this.pausedByTimer) return;
+
+        // Only resume what we paused
+        if (this.pausedByTimer === 'spotify') {
+            await spotifyService.play();
+        } else if (this.pausedByTimer === 'soundlib') {
+            this.soundLibResume?.();
+        }
+
+        this.pausedByTimer = null;
+    }
+
     destroy(): void {
         this.unsubscribers.forEach(unsub => unsub());
         this.unsubscribers = [];
