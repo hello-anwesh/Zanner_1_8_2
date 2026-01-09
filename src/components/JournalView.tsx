@@ -1,292 +1,397 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, Trash2, Zap, Heart, Target, Brain, CheckCircle2, XCircle } from 'lucide-react';
+import {
+    Save, Trash2, Search, Tag, Calendar, TrendingUp, Sparkles,
+    ChevronLeft, ChevronRight, Filter, Star, Flame
+} from 'lucide-react';
 import { journalService, JournalEntry } from '../services/journal/JournalService';
 
-const JOURNAL_PROMPTS = [
+const MOODS = [
+    { id: 'amazing', emoji: '🔥', label: 'On Fire', gradient: 'from-green-400 to-emerald-500' },
+    { id: 'good', emoji: '😊', label: 'Good', gradient: 'from-blue-400 to-cyan-500' },
+    { id: 'okay', emoji: '😐', label: 'Okay', gradient: 'from-yellow-400 to-amber-500' },
+    { id: 'struggling', emoji: '😓', label: 'Struggling', gradient: 'from-orange-400 to-red-500' },
+    { id: 'exhausted', emoji: '😵', label: 'Exhausted', gradient: 'from-red-500 to-pink-600' }
+];
+
+const TEMPLATES = [
     {
-        id: 'wins',
-        icon: CheckCircle2,
-        question: "What's one win from today (no matter how small)?",
-        color: '#10b981',
-        placeholder: 'Finished a task, learned something new, helped someone...'
+        name: '🎯 Focus Session',
+        prompts: [
+            { label: 'What did you accomplish?', placeholder: 'Completed tasks, made progress on...' },
+            { label: 'What challenged you?', placeholder: 'Distractions, blocks, difficulties...' },
+            { label: 'What did you learn?', placeholder: 'Insights, realizations, discoveries...' }
+        ]
     },
     {
-        id: 'struggle',
-        icon: XCircle,
-        question: "What's blocking you or draining your energy?",
-        color: '#f59e0b',
-        placeholder: 'Distractions, unclear goals, tiredness, procrastination...'
+        name: '🌅 Morning Intention',
+        prompts: [
+            { label: 'Today\'s top priority', placeholder: 'The ONE thing that matters most...' },
+            { label: 'How do you want to feel?', placeholder: 'Focused, energized, calm...' },
+            { label: 'What might derail you?', placeholder: 'Potential distractions, obstacles...' }
+        ]
     },
     {
-        id: 'focus',
-        icon: Target,
-        question: "What ONE thing deserves your focus tomorrow?",
-        color: '#8b5cf6',
-        placeholder: 'Most important task, key priority, critical decision...'
+        name: '🌙 Evening Reflection',
+        prompts: [
+            { label: 'What went well?', placeholder: 'Wins, successes, proud moments...' },
+            { label: 'What could be better?', placeholder: 'Lessons, improvements, changes...' },
+            { label: 'Gratitude moment', placeholder: 'Something you\'re grateful for today...' }
+        ]
     },
     {
-        id: 'energy',
-        icon: Zap,
-        question: "How's your energy? What would help?",
-        color: '#06b6d4',
-        placeholder: 'Feel energized/drained, need a break/challenge, want to...'
+        name: '✨ Free Form',
+        prompts: [
+            { label: 'What\'s on your mind?', placeholder: 'Thoughts, feelings, ideas, anything...' }
+        ]
     }
+];
+
+const INSPIRING_QUOTES = [
+    '"The secret of getting ahead is getting started." - Mark Twain',
+    '"Small daily improvements are the key to staggering long-term results." - Robin Sharma',
+    '"Focus on being productive instead of busy." - Tim Ferriss',
+    '"The way to get started is to quit talking and begin doing." - Walt Disney',
+    '"Don\'t watch the clock; do what it does. Keep going." - Sam Levenson'
 ];
 
 export function JournalView() {
     const [currentDate, setCurrentDate] = useState(new Date().toISOString().split('T')[0]);
-    const [responses, setResponses] = useState<Record<string, string>>({});
-    const [mood, setMood] = useState<'great' | 'good' | 'okay' | 'struggling' | 'burnt-out' | undefined>();
+    const [content, setContent] = useState('');
+    const [mood, setMood] = useState<string>();
+    const [tags, setTags] = useState<string[]>([]);
+    const [newTag, setNewTag] = useState('');
     const [isSaving, setIsSaving] = useState(false);
-    const [recentEntries, setRecentEntries] = useState<JournalEntry[]>([]);
-    const [hasChanges, setHasChanges] = useState(false);
+    const [allEntries, setAllEntries] = useState<JournalEntry[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedTemplate, setSelectedTemplate] = useState(0);
+    const [templateResponses, setTemplateResponses] = useState<Record<number, string>>({});
+    const [streak, setStreak] = useState(0);
+    const [totalEntries, setTotalEntries] = useState(0);
+    const [quote] = useState(INSPIRING_QUOTES[Math.floor(Math.random() * INSPIRING_QUOTES.length)]);
 
     useEffect(() => {
         loadEntry(currentDate);
-        loadRecentEntries();
+        loadAllEntries();
+        calculateStreak();
     }, [currentDate]);
 
     const loadEntry = async (date: string) => {
         const entry = await journalService.getEntry(date);
         if (entry) {
-            // Parse structured responses from content
             try {
                 const parsed = JSON.parse(entry.content);
-                setResponses(parsed);
+                if (parsed.template !== undefined) {
+                    setSelectedTemplate(parsed.template);
+                    setTemplateResponses(parsed.responses || {});
+                } else {
+                    setContent(entry.content);
+                }
             } catch {
-                // Old format fallback
-                setResponses({ freeform: entry.content });
+                setContent(entry.content);
             }
             setMood(entry.mood);
+            setTags(entry.tags || []);
         } else {
-            setResponses({});
+            setContent('');
             setMood(undefined);
+            setTags([]);
+            setTemplateResponses({});
         }
-        setHasChanges(false);
     };
 
-    const loadRecentEntries = async () => {
-        const entries = await journalService.getRecentEntries(7);
-        setRecentEntries(entries);
+    const loadAllEntries = async () => {
+        const entries = await journalService.getRecentEntries(30);
+        setAllEntries(entries);
+        setTotalEntries(entries.length);
+    };
+
+    const calculateStreak = async () => {
+        const entries = await journalService.getRecentEntries(365);
+        let currentStreak = 0;
+        let checkDate = new Date();
+
+        for (let i = 0; i < 365; i++) {
+            const dateStr = checkDate.toISOString().split('T')[0];
+            if (entries.some(e => e.date === dateStr)) {
+                currentStreak++;
+            } else {
+                break;
+            }
+            checkDate.setDate(checkDate.getDate() - 1);
+        }
+        setStreak(currentStreak);
     };
 
     const handleSave = async () => {
-        const hasContent = Object.values(responses).some(r => r.trim());
-        if (!hasContent) return;
-
         setIsSaving(true);
         try {
-            const content = JSON.stringify(responses);
-            await journalService.createOrUpdateEntry(currentDate, content, mood);
-            setHasChanges(false);
-            await loadRecentEntries();
-        } catch (error) {
-            alert('Failed to save journal entry');
+            const savedContent = TEMPLATES[selectedTemplate].name === '✨ Free Form'
+                ? content
+                : JSON.stringify({ template: selectedTemplate, responses: templateResponses });
+
+            await journalService.createOrUpdateEntry(currentDate, savedContent, mood, tags);
+            await loadAllEntries();
+            await calculateStreak();
         } finally {
             setIsSaving(false);
         }
     };
 
     const handleDelete = async () => {
-        if (!confirm('Delete this journal entry?')) return;
+        if (!confirm('Delete this entry?')) return;
+        await journalService.deleteEntry(currentDate);
+        setContent('');
+        setMood(undefined);
+        setTags([]);
+        setTemplateResponses({});
+        loadAllEntries();
+    };
 
-        try {
-            await journalService.deleteEntry(currentDate);
-            setResponses({});
-            setMood(undefined);
-            await loadRecentEntries();
-        } catch (error) {
-            alert('Failed to delete entry');
+    const addTag = () => {
+        if (newTag.trim() && !tags.includes(newTag.trim())) {
+            setTags([...tags, newTag.trim()]);
+            setNewTag('');
         }
     };
 
-    const moodEmojis = {
-        'great': { emoji: '🔥', label: 'On Fire', color: 'from-green-500 to-emerald-600' },
-        'good': { emoji: '😊', label: 'Good', color: 'from-blue-500 to-cyan-600' },
-        'okay': { emoji: '😐', label: 'Meh', color: 'from-yellow-500 to-amber-600' },
-        'struggling': { emoji: '😓', label: 'Struggling', color: 'from-orange-500 to-red-600' },
-        'burnt-out': { emoji: '🥵', label: 'Burnt Out', color: 'from-red-600 to-rose-700' }
+    const removeTag = (tag: string) => {
+        setTags(tags.filter(t => t !== tag));
     };
 
+    const navigateDate = (days: number) => {
+        const newDate = new Date(currentDate);
+        newDate.setDate(newDate.getDate() + days);
+        setCurrentDate(newDate.toISOString().split('T')[0]);
+    };
+
+    const filteredEntries = allEntries.filter(entry => {
+        if (!searchQuery) return true;
+        return entry.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            entry.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+    });
+
+    const hasContent = TEMPLATES[selectedTemplate].name === '✨ Free Form'
+        ? content.trim().length > 0
+        : Object.values(templateResponses).some(r => r?.trim());
+
     return (
-        <div className="flex-1 flex overflow-hidden">
-            {/* Main Editor */}
-            <div className="flex-1 flex flex-col px-16 py-10 overflow-y-auto custom-scrollbar">
-                {/* Premium Header */}
-                <div className="flex items-center justify-between mb-10">
-                    <div>
-                        <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Daily Reflection</h1>
-                        <p className="text-white/50 text-sm">Help Zeni understand you better</p>
+        <div className="flex h-screen" style={{ background: 'linear-gradient(to bottom, #0a0a0a, #1a0a1a)' }}>
+
+            {/* Sidebar - History & Stats */}
+            <motion.div
+                initial={{ x: -300 }}
+                animate={{ x: 0 }}
+                className="w-80 border-r border-white/10 flex flex-col"
+                style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(20px)' }}
+            >
+                {/* Stats */}
+                <div className="p-8 border-b border-white/10 space-y-6">
+                    <h2 className="text-2xl font-black text-white">Your Journey</h2>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-500/30">
+                            <Flame className="text-orange-400 mb-2" size={24} />
+                            <div className="text-3xl font-black text-white">{streak}</div>
+                            <div className="text-xs text-white/50">Day Streak</div>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30">
+                            <Star className="text-purple-400 mb-2" size={24} />
+                            <div className="text-3xl font-black text-white">{totalEntries}</div>
+                            <div className="text-xs text-white/50">Total Entries</div>
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        <input
-                            type="date"
-                            value={currentDate}
-                            onChange={(e) => setCurrentDate(e.target.value)}
-                            className="px-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-white font-medium focus:border-white/30 outline-none transition-all"
-                        />
+                    <p className="text-sm text-white/40 italic">"{quote}"</p>
+                </div>
 
-                        {hasChanges && (
-                            <span className="text-xs text-amber-400 flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                                Unsaved
-                            </span>
-                        )}
+                {/* Search */}
+                <div className="p-6 border-b border-white/10">
+                    <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Search entries..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder-white/30 focus:outline-none focus:border-purple-500/50"
+                        />
+                    </div>
+                </div>
+
+                {/* Recent Entries */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    <div className="p-4 space-y-2">
+                        {filteredEntries.map((entry) => (
+                            <button
+                                key={entry.date}
+                                onClick={() => setCurrentDate(entry.date)}
+                                className={`w-full p-4 rounded-xl text-left transition-all hover:bg-white/5 ${entry.date === currentDate ? 'bg-purple-500/20 border border-purple-500/30' : 'bg-white/[0.02] border border-white/10'
+                                    }`}
+                            >
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm font-bold text-white">{new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                    {entry.mood && (
+                                        <span className="text-xl">{MOODS.find(m => m.id === entry.mood)?.emoji}</span>
+                                    )}
+                                </div>
+                                <p className="text-xs text-white/40 line-clamp-2">{entry.content.substring(0, 60)}...</p>
+                                {entry.tags && entry.tags.length > 0 && (
+                                    <div className="flex gap-1 mt-2 flex-wrap">
+                                        {entry.tags.slice(0, 2).map(tag => (
+                                            <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300">
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </motion.div>
+
+            {/* Main Editor */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+
+                {/* Header */}
+                <div className="p-8 border-b border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <button
+                            onClick={() => navigateDate(-1)}
+                            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all"
+                        >
+                            <ChevronLeft size={20} className="text-white/70" />
+                        </button>
+
+                        <div>
+                            <h1 className="text-3xl font-black text-white">
+                                {new Date(currentDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                            </h1>
+                            <p className="text-white/40 text-sm mt-1">How are you feeling today?</p>
+                        </div>
 
                         <button
+                            onClick={() => navigateDate(1)}
+                            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all"
+                            disabled={currentDate >= new Date().toISOString().split('T')[0]}
+                        >
+                            <ChevronRight size={20} className="text-white/70" />
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <button
                             onClick={handleDelete}
-                            className="p-2.5 rounded-xl hover:bg-red-500/10 text-white/40 hover:text-red-400 border border-transparent hover:border-red-500/20 transition-all"
-                            title="Delete entry"
+                            className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
                         >
                             <Trash2 size={18} />
                         </button>
-
                         <button
                             onClick={handleSave}
-                            disabled={!Object.values(responses).some(r => r.trim()) || isSaving}
-                            className="px-6 py-2.5 rounded-2xl bg-gradient-to-br from-fuchsia-500 to-purple-600 text-white font-semibold hover:from-fuchsia-600 hover:to-purple-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-lg hover:shadow-fuchsia-500/50"
+                            disabled={!hasContent || isSaving}
+                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold disabled:opacity-50 hover:shadow-lg hover:shadow-purple-500/50 transition-all flex items-center gap-2"
                         >
-                            <Save size={16} />
-                            {isSaving ? 'Saving...' : 'Save'}
+                            {isSaving ? 'Saving...' : <><Save size={18} /> Save</>}
                         </button>
                     </div>
                 </div>
 
-                {/* Mood Selector - Premium */}
-                <div className="mb-10">
-                    <label className="text-sm font-semibold text-white/70 mb-4 block">How are you feeling today?</label>
-                    <div className="grid grid-cols-5 gap-3">
-                        {Object.entries(moodEmojis).map(([value, { emoji, label, color }]) => (
+                {/* Mood Selector */}
+                <div className="px-8 py-6 border-b border-white/10">
+                    <p className="text-sm text-white/50 mb-4">Today's Mood</p>
+                    <div className="flex gap-3">
+                        {MOODS.map((m) => (
                             <button
-                                key={value}
-                                onClick={() => {
-                                    setMood(value as any);
-                                    setHasChanges(true);
-                                }}
-                                className={`group relative p-6 rounded-2xl border transition-all duration-300 hover:scale-105 ${mood === value
-                                        ? `border-white/30 bg-gradient-to-br ${color} shadow-lg`
-                                        : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
+                                key={m.id}
+                                onClick={() => setMood(m.id)}
+                                className={`flex-1 p-4 rounded-2xl transition-all ${mood === m.id
+                                        ? `bg-gradient-to-br ${m.gradient} text-white shadow-lg`
+                                        : 'bg-white/5 text-white/40 hover:bg-white/10'
                                     }`}
                             >
-                                <div className="text-4xl mb-2">{emoji}</div>
-                                <div className={`text-sm font-medium ${mood === value ? 'text-white' : 'text-white/60'}`}>
-                                    {label}
-                                </div>
+                                <div className="text-3xl mb-2">{m.emoji}</div>
+                                <div className="text-xs font-bold">{m.label}</div>
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {/* Structured Questions */}
-                <div className="space-y-6">
-                    {JOURNAL_PROMPTS.map((prompt) => {
-                        const Icon = prompt.icon;
-                        return (
-                            <motion.div
-                                key={prompt.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="group"
+                {/* Template Selector */}
+                <div className="px-8 py-6 border-b border-white/10">
+                    <p className="text-sm text-white/50 mb-4">Writing Style</p>
+                    <div className="flex gap-2">
+                        {TEMPLATES.map((template, i) => (
+                            <button
+                                key={i}
+                                onClick={() => setSelectedTemplate(i)}
+                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${selectedTemplate === i
+                                        ? 'bg-purple-500 text-white'
+                                        : 'bg-white/5 text-white/50 hover:bg-white/10'
+                                    }`}
                             >
-                                <div className="flex items-start gap-4 mb-3">
-                                    <div
-                                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
-                                        style={{
-                                            background: `linear-gradient(135deg, ${prompt.color}20 0%, ${prompt.color}10 100%)`,
-                                            border: `1px solid ${prompt.color}30`
-                                        }}
-                                    >
-                                        <Icon size={20} style={{ color: prompt.color }} strokeWidth={2.5} />
-                                    </div>
-                                    <div className="flex-1">
-                                        <label className="text-base font-semibold text-white mb-1 block">
-                                            {prompt.question}
-                                        </label>
-                                        <textarea
-                                            value={responses[prompt.id] || ''}
-                                            onChange={(e) => {
-                                                setResponses({ ...responses, [prompt.id]: e.target.value });
-                                                setHasChanges(true);
-                                            }}
-                                            placeholder={prompt.placeholder}
-                                            rows={3}
-                                            className="w-full p-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 outline-none focus:border-white/30 focus:bg-white/8 resize-none transition-all"
-                                        />
-                                    </div>
-                                </div>
-                            </motion.div>
-                        );
-                    })}
-                </div>
-
-                <div className="mt-8 p-4 rounded-2xl bg-gradient-to-r from-purple-500/10 to-fuchsia-500/10 border border-purple-500/20">
-                    <div className="flex items-center gap-3">
-                        <Brain className="text-purple-400" size={20} />
-                        <p className="text-sm text-white/70">
-                            <span className="font-semibold text-white">Zeni reads this:</span> Your recent entries help me understand your patterns, struggles, and wins to give you better advice.
-                        </p>
+                                {template.name}
+                            </button>
+                        ))}
                     </div>
                 </div>
-            </div>
 
-            {/* Sidebar - Recent Entries */}
-            <div className="w-96 border-l border-white/10 p-8 overflow-y-auto custom-scrollbar bg-gradient-to-b from-transparent to-black/20">
-                <h3 className="text-sm font-bold text-white/60 uppercase tracking-wider mb-6">Recent Entries</h3>
-
-                <div className="space-y-3">
-                    <AnimatePresence>
-                        {recentEntries.map((entry) => {
-                            let parsedContent: Record<string, string> = {};
-                            try {
-                                parsedContent = JSON.parse(entry.content);
-                            } catch {
-                                parsedContent = { freeform: entry.content };
-                            }
-
-                            const preview = Object.values(parsedContent).find(v => v.trim()) || '';
-
-                            return (
-                                <motion.button
-                                    key={entry.date}
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
-                                    onClick={() => setCurrentDate(entry.date)}
-                                    className={`w-full text-left p-4 rounded-2xl border transition-all ${entry.date === currentDate
-                                            ? 'border-fuchsia-500/50 bg-fuchsia-500/10 shadow-lg'
-                                            : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
-                                        }`}
-                                >
-                                    <div className="flex items-center justify-between mb-3">
-                                        <span className="text-sm font-bold text-white">
-                                            {new Date(entry.date).toLocaleDateString('en-US', {
-                                                weekday: 'short',
-                                                month: 'short',
-                                                day: 'numeric'
-                                            })}
-                                        </span>
-                                        {entry.mood && moodEmojis[entry.mood as keyof typeof moodEmojis] && (
-                                            <span className="text-lg">
-                                                {moodEmojis[entry.mood as keyof typeof moodEmojis].emoji}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <p className="text-xs text-white/50 line-clamp-2 leading-relaxed">
-                                        {preview}
-                                    </p>
-                                </motion.button>
-                            );
-                        })}
-                    </AnimatePresence>
-
-                    {recentEntries.length === 0 && (
-                        <div className="text-center py-16 text-white/30 text-sm">
-                            <div className="text-4xl mb-4">📓</div>
-                            No entries yet.<br />Start reflecting!
+                {/* Editor */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-8">
+                    {TEMPLATES[selectedTemplate].name === '✨ Free Form' ? (
+                        <textarea
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            placeholder="What's on your mind today? Write freely..."
+                            className="w-full h-96 p-6 rounded-2xl bg-white/[0.02] border border-white/10 text-white text-lg placeholder-white/20 focus:outline-none focus:border-purple-500/50 resize-none"
+                        />
+                    ) : (
+                        <div className="space-y-6">
+                            {TEMPLATES[selectedTemplate].prompts.map((prompt, i) => (
+                                <div key={i} className="space-y-3">
+                                    <label className="block text-lg font-bold text-white">{prompt.label}</label>
+                                    <textarea
+                                        value={templateResponses[i] || ''}
+                                        onChange={(e) => setTemplateResponses({ ...templateResponses, [i]: e.target.value })}
+                                        placeholder={prompt.placeholder}
+                                        className="w-full h-32 p-4 rounded-xl bg-white/[0.02] border border-white/10 text-white placeholder-white/20 focus:outline-none focus:border-purple-500/50 resize-none"
+                                    />
+                                </div>
+                            ))}
                         </div>
                     )}
+
+                    {/* Tags */}
+                    <div className="space-y-3">
+                        <label className="block text-sm font-bold text-white/70">Tags</label>
+                        <div className="flex flex-wrap gap-2 mb-3">
+                            {tags.map(tag => (
+                                <span
+                                    key={tag}
+                                    onClick={() => removeTag(tag)}
+                                    className="px-3 py-1.5 rounded-full bg-purple-500/20 text-purple-300 text-sm cursor-pointer hover:bg-purple-500/30 transition-all"
+                                >
+                                    #{tag} ×
+                                </span>
+                            ))}
+                        </div>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={newTag}
+                                onChange={(e) => setNewTag(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && addTag()}
+                                placeholder="Add a tag..."
+                                className="flex-1 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder-white/30 focus:outline-none focus:border-purple-500/50"
+                            />
+                            <button
+                                onClick={addTag}
+                                className="px-4 py-2 rounded-xl bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-all"
+                            >
+                                <Tag size={18} />
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
