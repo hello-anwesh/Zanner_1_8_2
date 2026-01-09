@@ -29,11 +29,29 @@ export interface AIKnowledge {
     lastUpdated: number;
 }
 
+
+export interface AIExperience {
+    id: string;
+    summary: string;
+    keyLearnings: string[];
+    sentiment: "positive" | "negative" | "neutral";
+    timestamp: number;
+}
+
+export interface AIRule {
+    id: string;
+    rule: string;
+    triggerContext: string; // e.g., "morning", "stressed", "always"
+    isActive: boolean;
+}
+
 export interface TrainingProfile {
     identity: UserIdentity;
     rhythms: WorkRhythm;
     goals: GoalMetric[];
-    knowledgeBase: AIKnowledge[];
+    knowledgeBase: AIKnowledge[]; // Semantic Memory (Facts)
+    experiences: AIExperience[];  // Episodic Memory (History)
+    rules: AIRule[];              // Procedural Memory (Behavior)
 }
 
 export const DEFAULT_PROFILE: TrainingProfile = {
@@ -54,5 +72,7 @@ export const DEFAULT_PROFILE: TrainingProfile = {
         { id: "g1", label: "Focus Hours", target: 40, unit: "h/week", current: 12 },
         { id: "g2", label: "Deep Work Streak", target: 7, unit: "days", current: 3 }
     ],
-    knowledgeBase: []
+    knowledgeBase: [],
+    experiences: [],
+    rules: []
 };

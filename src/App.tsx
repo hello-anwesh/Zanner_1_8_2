@@ -46,6 +46,7 @@ import { metronomeService } from "./services/MetronomeService";
 import { PhilosophyView } from "./components/PhilosophyView";
 import { JournalView } from "./components/JournalView";
 import { AISettingsView } from "./components/AISettingsView";
+import { AIBrainView } from "./components/AIBrainView";
 
 
 
@@ -959,6 +960,11 @@ function App() {
                   {/* SETTINGS - AI */}
                   {view === "settings-ai" && (
                     <AISettingsView accent={accent} />
+                  )}
+
+                  {/* SETTINGS - BRAIN */}
+                  {view === "settings-brain" && (
+                    <AIBrainView accent={accent} />
                   )}
 
                   {/* SETTINGS - THEME */}

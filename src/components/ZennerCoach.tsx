@@ -1,400 +1,612 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, X, Sparkles, Zap, Loader, TrendingUp, Mic, MicOff, Paperclip } from "lucide-react";
-import { AnimatePresence } from "framer-motion";
+import { Send, Plus, Sparkles, RotateCcw, Copy, Check, X, Bot, User, Mic, Clock, Trash2, MessageSquare, FileText } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { coachService } from "../services/ai/CoachService";
 
 interface Message {
     id: string;
-    role: "user" | "coach";
+    role: "user" | "assistant";
     content: string;
+    timestamp: number;
+}
+
+interface ChatSession {
+    id: string;
+    title: string;
+    messages: Message[];
+    createdAt: number;
+    mode: 'productivity' | 'venting' | 'strategy';
 }
 
 interface ZennerCoachProps {
     accent: string;
-    sessionsToday: number;
-    isRunning: boolean;
-    timeLeft: string;
     onClose?: () => void;
-    onMusicSelect?: (trackUrl: string, trackName: string) => void;
 }
 
-export function ZennerCoach({
-    sessionsToday,
-    isRunning,
-    timeLeft,
-    onClose
-}: ZennerCoachProps) {
+export function ZennerCoach({ accent, onClose }: ZennerCoachProps) {
+    // Session State
+    const [sessions, setSessions] = useState<ChatSession[]>([]);
+    const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+
+    // UI State
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
-    const [isListening, setIsListening] = useState(false);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const recognitionRef = useRef<any>(null);
-    const isInitializedRef = useRef(false);
 
-    const toggleListening = () => {
-        console.log("🎤 MIC BUTTON CLICKED - isListening:", isListening);
-        if (isListening) {
-            recognitionRef.current?.stop();
-            setIsListening(false);
-        } else {
-            if ('webkitSpeechRecognition' in window) {
-                const recognition = new (window as any).webkitSpeechRecognition();
-                recognition.continuous = false;
-                recognition.interimResults = true;
-
-                recognition.onstart = () => setIsListening(true);
-                recognition.onend = () => setIsListening(false);
-                recognition.onerror = (e: any) => {
-                    console.error("Speech recognition error", e);
-                    setIsListening(false);
-                };
-
-                recognition.onresult = (event: any) => {
-                    let finalTranscript = '';
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        if (event.results[i].isFinal) {
-                            finalTranscript += event.results[i][0].transcript;
-                        }
-                    }
-
-                    if (finalTranscript) {
-                        setInput(prev => {
-                            const spacer = prev.length > 0 && !prev.endsWith(' ') ? ' ' : '';
-                            return prev + spacer + finalTranscript;
-                        });
-                    }
-                };
-
-                recognitionRef.current = recognition;
-                recognition.start();
-            } else {
-                alert("Voice input not supported in this environment");
-            }
-        }
-    };
-
+    // Initial Load
     useEffect(() => {
-        // Prevent duplicate initialization (React Strict Mode issue)
-        if (isInitializedRef.current) return;
-        isInitializedRef.current = true;
+        const savedSessions = localStorage.getItem('zenner_sessions');
+        let initialSessions: ChatSession[] = [];
 
-        // 1. Try to load saved history
-        const savedHistory = localStorage.getItem('zenner_chat_history');
-        if (savedHistory) {
+        if (savedSessions) {
             try {
-                const parsed = JSON.parse(savedHistory);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    setMessages(parsed);
-                    // Scroll to bottom after loading
-                    setTimeout(() => messagesEndRef.current?.scrollIntoView(), 100);
-                    return;
-                }
+                initialSessions = JSON.parse(savedSessions);
             } catch (e) {
-                console.error("Failed to parse chat history", e);
+                console.error('Failed to parse sessions');
             }
         }
 
-        // 2. If no history, fetch fresh welcome message
-        const context = {
-            sessionsToday,
-            currentSession: sessionsToday + 1,
-            isRunning,
-            timeLeft,
-            timeOfDay: new Date().toLocaleTimeString()
-        };
+        // AGGRESSIVE Migration: Check for legacy chat history if not already present
+        const legacyChat = localStorage.getItem('zenner_chat_history');
+        if (legacyChat) {
+            // Check if we already imported it (avoid duplicates)
+            const alreadyImported = initialSessions.some(s => s.title === 'Restored Chat');
+            if (!alreadyImported) {
+                try {
+                    const legacyMessages: Message[] = JSON.parse(legacyChat);
+                    if (legacyMessages.length > 0) {
+                        const legacySession: ChatSession = {
+                            id: 'legacy_restored_' + Date.now(),
+                            title: 'Restored Chat',
+                            messages: legacyMessages,
+                            createdAt: Date.now(),
+                            mode: 'productivity'
+                        };
+                        // Add to FRONT of list
+                        initialSessions.unshift(legacySession);
+                    }
+                } catch (e) {
+                    console.error('Failed to migrate legacy chat');
+                }
+            }
+        }
 
-        coachService.getSessionStartMessage(context).then(msg => {
-            setMessages([{
-                id: "welcome-" + Date.now(),
-                role: "coach",
-                content: msg
-            }]);
-        });
+        if (initialSessions.length > 0) {
+            setSessions(initialSessions);
+            // If we just restored, switch to it
+            const mostRecent = initialSessions[0];
+            setCurrentSessionId(mostRecent.id);
+            setMessages(mostRecent.messages);
+            setActiveMode(mostRecent.mode || 'productivity');
+        } else {
+            // Start fresh if truly nothing exists
+            const newId = Date.now().toString();
+            const newSession: ChatSession = { id: newId, title: 'New Chat', messages: [], createdAt: Date.now(), mode: 'productivity' };
+            setSessions([newSession]);
+            setCurrentSessionId(newId);
+        }
     }, []);
 
-    // 3. Auto-save history whenever it changes
+    // Save Sessions
     useEffect(() => {
-        if (messages.length > 0) {
-            localStorage.setItem('zenner_chat_history', JSON.stringify(messages));
+        if (sessions.length > 0) {
+            localStorage.setItem('zenner_sessions', JSON.stringify(sessions));
         }
-    }, [messages]);
+    }, [sessions]);
 
+    // Auto-update current session content
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+        if (!currentSessionId) return;
+
+        setSessions(prev => prev.map(s => {
+            if (s.id === currentSessionId) {
+                // Only update if content changed to avoid infinite loops if refs not unstable
+                if (s.messages === messages) return s;
+
+                return {
+                    ...s,
+                    messages: messages,
+                    title: messages.length > 0 && (s.title === 'New Chat' || !s.title)
+                        ? (messages[0].content.slice(0, 30) + (messages[0].content.length > 30 ? '...' : ''))
+                        : s.title
+                };
+            }
+            return s;
+        }));
+    }, [messages, currentSessionId]);
+
+    // Auto-scroll
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages, isTyping]);
 
     const handleSend = async () => {
         if (!input.trim() || isTyping) return;
 
-        const userMessage = input.trim();
-        setInput("");
-
-        setMessages(prev => [...prev, {
+        const userMsgText = input.trim();
+        const userMessage: Message = {
             id: Date.now().toString(),
             role: "user",
-            content: userMessage
-        }]);
+            content: userMsgText,
+            timestamp: Date.now()
+        };
+
+        setMessages(prev => [...prev, userMessage]);
+        setInput("");
+
+        // Reset height
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+        }
 
         setIsTyping(true);
 
         try {
+            // Context placeholder - in real app connect to timer/state
             const context = {
-                sessionsToday,
-                currentSession: sessionsToday + 1,
-                isRunning,
-                timeLeft,
-                timeOfDay: new Date().toLocaleTimeString()
+                sessionsToday: 0,
+                currentSession: 1,
+                isRunning: false,
+                timeLeft: "25:00",
+                timeOfDay: "Day"
             };
 
-            const response = await coachService.chat(userMessage, context);
+            const responseObj = await coachService.chat(userMsgText, context);
 
+            const assistantMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                role: "assistant",
+                content: responseObj.message,
+                timestamp: Date.now()
+            };
+
+            setMessages(prev => [...prev, assistantMessage]);
+        } catch (error) {
+            console.error('Chat error:', error);
             setMessages(prev => [...prev, {
-                id: Date.now().toString() + "-coach",
-                role: "coach",
-                content: response.message
-            }]);
-        } catch (error: any) {
-            console.error("Zeni connection error:", error);
-
-            // Determine the specific error and provide helpful guidance
-            let errorMessage = "🔌 **Not Connected**\n\n";
-
-            if (error?.message?.includes("No active provider") || error?.message?.includes("not available")) {
-                errorMessage += "I need an AI provider to work. Here's how to set me up:\n\n";
-                errorMessage += "**Option 1: Local (Free)**\n";
-                errorMessage += "1. Install Ollama: https://ollama.ai\n";
-                errorMessage += "2. Run: `ollama run llama3.2`\n";
-                errorMessage += "3. I'll auto-detect it!\n\n";
-                errorMessage += "**Option 2: Cloud (OpenAI)**\n";
-                errorMessage += "1. Go to Settings → AI (coming soon)\n";
-                errorMessage += "2. Add your OpenAI API key\n";
-                errorMessage += "3. Select a model\n\n";
-                errorMessage += "💡 Until then, I can still help with quick actions below!";
-            } else {
-                errorMessage += "Connection issue. Please check:\n\n";
-                errorMessage += "• Is Ollama running? (`ollama serve`)\n";
-                errorMessage += "• Is your OpenAI key valid?\n";
-                errorMessage += "• Internet connection OK?\n\n";
-                errorMessage += "Try again in a moment!";
-            }
-
-            setMessages(prev => [...prev, {
-                id: Date.now().toString() + "-error",
-                role: "coach",
-                content: errorMessage
+                id: (Date.now() + 1).toString(),
+                role: "assistant",
+                content: "I encountered an error. Please try again.",
+                timestamp: Date.now()
             }]);
         } finally {
             setIsTyping(false);
         }
     };
 
+    const startNewSession = () => {
+        const newId = Date.now().toString();
+        const newSession: ChatSession = {
+            id: newId,
+            title: 'New Chat',
+            messages: [],
+            createdAt: Date.now(),
+            mode: activeMode
+        };
+
+        setSessions(prev => [newSession, ...prev]);
+        setCurrentSessionId(newId);
+        setMessages([]);
+        setShowMenu(false);
+    };
+
+    const handleSwitchSession = (sessionId: string) => {
+        const session = sessions.find(s => s.id === sessionId);
+        if (session) {
+            setCurrentSessionId(session.id);
+            setMessages(session.messages);
+            setActiveMode(session.mode);
+            setShowMenu(false);
+        }
+    };
+
+    const handleDeleteSession = (e: React.MouseEvent, sessionId: string) => {
+        e.stopPropagation();
+        if (confirm('Delete this chat history?')) {
+            const newSessions = sessions.filter(s => s.id !== sessionId);
+            setSessions(newSessions);
+
+            if (currentSessionId === sessionId) {
+                if (newSessions.length > 0) {
+                    handleSwitchSession(newSessions[0].id);
+                } else {
+                    startNewSession();
+                }
+            }
+            if (newSessions.length === 0) {
+                localStorage.removeItem('zenner_sessions');
+            }
+        }
+    };
+
+    const handleExportSession = (e: React.MouseEvent, session: ChatSession) => {
+        e.stopPropagation();
+        const text = session.messages.map(m => `[${m.role.toUpperCase()}]: ${m.content}`).join('\n\n');
+        navigator.clipboard.writeText(text);
+        alert('Chat copied to clipboard!');
+    };
+
+    const handleCopy = (content: string, id: string) => {
+        navigator.clipboard.writeText(content);
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    const handleRegenerate = async () => {
+        if (messages.length < 2) return;
+
+        const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+        if (!lastUserMessage) return;
+
+        // Remove last AI response
+        setMessages(prev => prev.filter(m => m.role !== 'assistant' || m !== prev[prev.length - 1]));
+        setIsTyping(true);
+
+        try {
+            const context = {
+                sessionsToday: 0,
+                currentSession: 1,
+                isRunning: false,
+                timeLeft: "25:00",
+                timeOfDay: "Day"
+            };
+
+            const responseObj = await coachService.chat(lastUserMessage.content, context);
+
+            const assistantMessage: Message = {
+                id: Date.now().toString(),
+                role: "assistant",
+                content: responseObj.message,
+                timestamp: Date.now()
+            };
+
+            setMessages(prev => [...prev, assistantMessage]);
+        } catch (error) {
+            console.error('Regenerate error:', error);
+        } finally {
+            setIsTyping(false);
+        }
+    };
+
+    const [showMenu, setShowMenu] = useState(false);
+    const [activeMode, setActiveMode] = useState<'productivity' | 'venting' | 'strategy'>('productivity');
+
     return (
-        <div className="fixed right-0 top-0 bottom-0 w-[700px] z-[60] flex flex-col bg-[#1E1E1E] border-l border-white/10">
-            {/* Clean Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+        <div className="fixed right-6 top-24 bottom-6 w-[500px] z-[60] flex flex-col bg-[#050505] shadow-[0_0_50px_-10px_rgba(0,0,0,0.5)] border border-white/10 rounded-2xl overflow-hidden font-sans">
+
+            {/* --- Professional Header --- */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/5 bg-[#050505]/80 backdrop-blur-xl z-20 relative">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center">
-                        <Sparkles size={16} color="#FFF" strokeWidth={2} />
+                    <div
+                        className="w-9 h-9 rounded-xl flex items-center justify-center shadow-[0_0_15px_-3px_var(--accent)]"
+                        style={{
+                            background: `linear-gradient(135deg, ${accent}, ${accent}dd)`,
+                            '--accent': accent
+                        } as any}
+                    >
+                        <Bot size={20} className="text-white" strokeWidth={2} />
                     </div>
                     <div>
-                        <div className="flex items-center gap-2">
-                            <h3 className="text-base font-semibold text-white">Zeni</h3>
-                            <div className="px-1.5 py-0.5 rounded-full bg-green-500/10 border border-green-500/20 flex items-center gap-1" title="Chats are automatically saved">
-                                <div className="w-1 h-1 rounded-full bg-green-400"></div>
-                                <span className="text-[9px] font-medium text-green-400 tracking-wide uppercase">Autosave</span>
-                            </div>
+                        <h1 className="text-[17px] font-semibold text-white tracking-tight">Zenner AI</h1>
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span className="text-xs text-white/40 font-medium capitalize">{activeMode} Mode</span>
                         </div>
-                        <p className="text-xs text-white/40">AI Coach</p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={() => {
-                            if (window.confirm("Clear chat history?")) {
-                                setMessages([]);
-                                localStorage.removeItem('zenner_chat_history');
-                            }
-                        }}
-                        className="p-2 rounded-xl hover:bg-white/10 transition-all group"
-                        title="Clear History"
+                        onClick={() => setShowMenu(!showMenu)}
+                        className={`p-2.5 rounded-xl hover:bg-white/5 transition-all duration-200 ${showMenu ? 'text-white bg-white/10' : 'text-white/40 hover:text-white'}`}
+                        title="Options"
                     >
-                        {/* Use simple SVG to avoid new import for now, or use X icon logic */}
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/40 group-hover:text-red-400">
-                            <path d="M3 6h18"></path>
-                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                        </svg>
+                        <div className="flex flex-col gap-1.5">
+                            <span className={`w-5 h-0.5 bg-current transition-all ${showMenu ? 'rotate-45 translate-y-2' : ''}`}></span>
+                            <span className={`w-5 h-0.5 bg-current transition-all ${showMenu ? 'opacity-0' : ''}`}></span>
+                            <span className={`w-5 h-0.5 bg-current transition-all ${showMenu ? '-rotate-45 -translate-y-2' : ''}`}></span>
+                        </div>
                     </button>
-
                     {onClose && (
                         <button
                             onClick={onClose}
-                            className="p-2 rounded-xl hover:bg-white/10 transition-all hover:scale-110 group"
-                            style={{ background: 'rgba(255,255,255,0.05)' }}
+                            className="p-2.5 rounded-xl hover:bg-red-500/10 text-white/40 hover:text-red-400 transition-all duration-200"
                         >
-                            <X size={20} className="text-white/70 group-hover:text-white transition-colors" />
+                            <X size={18} strokeWidth={2} />
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* Floating Close Button - Extra Prominent */}
-            {onClose && (
-                <button
-                    onClick={onClose}
-                    className="absolute top-4 right-4 z-10 p-3 rounded-2xl transition-all hover:scale-110 shadow-2xl"
-                    style={{
-                        background: 'linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 100%)',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        backdropFilter: 'blur(10px)'
-                    }}
-                >
-                    <X size={24} className="text-white" strokeWidth={2.5} />
-                </button>
-            )}
+            {/* --- Options Menu (Slide Down) --- */}
+            <AnimatePresence>
+                {showMenu && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="bg-[#0a0a0a] border-b border-white/5 z-10 overflow-hidden"
+                    >
+                        <div className="p-6 space-y-6 max-h-[500px] overflow-y-auto custom-scrollbar">
+                            {/* Modes */}
+                            <div className="space-y-3">
+                                <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-2">
+                                    <Sparkles size={12} />
+                                    Mode
+                                </h3>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {[
+                                        { id: 'productivity', label: 'Focus', icon: Check },
+                                        { id: 'venting', label: 'Vent', icon: Mic },
+                                        { id: 'strategy', label: 'Plan', icon: Bot }
+                                    ].map((mode) => (
+                                        <button
+                                            key={mode.id}
+                                            onClick={() => {
+                                                setActiveMode(mode.id as any);
+                                                setShowMenu(false);
+                                            }}
+                                            className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${activeMode === mode.id
+                                                ? 'bg-white/10 border-white/20 text-white'
+                                                : 'bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white'
+                                                }`}
+                                        >
+                                            <mode.icon size={18} />
+                                            <span className="text-[11px] font-medium">{mode.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
 
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 custom-scrollbar">
-                <AnimatePresence mode="popLayout">
-                    {messages.map((message) => (
+                            {/* Actions */}
+                            <div className="space-y-3">
+                                <button
+                                    onClick={startNewSession}
+                                    className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all text-sm font-medium group"
+                                >
+                                    <Plus size={16} className="group-hover:rotate-90 transition-transform" />
+                                    Start New Chat
+                                </button>
+                            </div>
+
+                            {/* History List */}
+                            <div className="space-y-3 pt-2 border-t border-white/5">
+                                <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-2">
+                                    <Clock size={12} />
+                                    History
+                                </h3>
+                                <div className="space-y-1">
+                                    {sessions.length === 0 ? (
+                                        <p className="text-sm text-white/20 italic p-2">No history yet.</p>
+                                    ) : (
+                                        sessions.map(session => (
+                                            <div
+                                                key={session.id}
+                                                onClick={() => handleSwitchSession(session.id)}
+                                                className={`group flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${currentSessionId === session.id
+                                                    ? 'bg-white/10 text-white'
+                                                    : 'hover:bg-white/5 text-white/50 hover:text-white'
+                                                    }`}
+                                            >
+                                                <div className={`p-2 rounded-md ${currentSessionId === session.id ? 'bg-white/10' : 'bg-white/5'}`}>
+                                                    <MessageSquare size={14} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium truncate">{session.title || 'Untitled Chat'}</p>
+                                                    <p className="text-[10px] opacity-50 flex items-center gap-1.5">
+                                                        <span>{new Date(session.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                                                        <span>•</span>
+                                                        <span className="capitalize">{session.mode}</span>
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity gap-1">
+                                                    <button
+                                                        onClick={(e) => handleExportSession(e, session)}
+                                                        className="p-1.5 hover:bg-white/10 rounded-md text-white/40 hover:text-white"
+                                                        title="Copy Chat"
+                                                    >
+                                                        <FileText size={12} />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => handleDeleteSession(e, session.id)}
+                                                        className="p-1.5 hover:bg-red-500/10 rounded-md text-white/40 hover:text-red-400"
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* --- Chat Area --- */}
+            <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-[#050505]">
+                {messages.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center px-10 text-center animate-in fade-in zoom-in duration-300">
                         <div
-                            key={message.id}
-                            className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                            className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-[0_0_30px_-5px_var(--accent)]"
+                            style={{
+                                background: `linear-gradient(135deg, ${accent}20, ${accent}10)`,
+                                border: `1px solid ${accent}30`,
+                                '--accent': accent
+                            } as any}
                         >
-                            {message.role === "coach" && (
-                                <div className="flex items-start gap-3 max-w-[85%]">
-                                    <div className="w-6 h-6 rounded-md bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center flex-shrink-0 mt-1">
-                                        <Sparkles size={12} color="#FFF" strokeWidth={2} />
-                                    </div>
-                                    <div className="flex-1 px-4 py-3 rounded-lg bg-white/5 border border-white/10">
-                                        <p className="text-sm leading-relaxed text-white/90" style={{ wordBreak: "break-word" }}>
-                                            {message.content}
-                                        </p>
+                            <Bot size={32} style={{ color: accent }} strokeWidth={1.5} />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">
+                            Zenner AI
+                        </h2>
+                        <p className="text-white/40 max-w-[280px] leading-relaxed text-[15px]">
+                            {activeMode === 'productivity' && "Let's crush some tasks. What's the goal?"}
+                            {activeMode === 'venting' && "I'm listening. Tell me what's on your mind."}
+                            {activeMode === 'strategy' && "Let's build a plan. What are we optimizing?"}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="px-5 py-8 space-y-8">
+                        <AnimatePresence mode="popLayout">
+                            {messages.map((message, index) => {
+                                const isUser = message.role === 'user';
+
+                                return (
+                                    <motion.div
+                                        key={message.id}
+                                        initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                                        className={`flex gap-6 ${isUser ? 'flex-row-reverse' : 'flex-row'} group mb-4`}
+                                    >
+                                        {/* Avatar - Large & Floating */}
+                                        <div className="flex-shrink-0 -mt-2">
+                                            {isUser ? (
+                                                <div
+                                                    className="w-11 h-11 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.1)] border-2 border-white/5"
+                                                    style={{ background: `${accent}40` }}
+                                                >
+                                                    <User size={20} className="text-white opacity-80" />
+                                                </div>
+                                            ) : (
+                                                <div
+                                                    className="w-12 h-12 rounded-full flex items-center justify-center shadow-[0_0_20px_-5px_var(--accent)] border-2 border-white/10"
+                                                    style={{
+                                                        background: 'linear-gradient(135deg, #1a1a1a, #0a0a0a)',
+                                                        borderColor: `${accent}40`,
+                                                        '--accent': accent
+                                                    } as any}
+                                                >
+                                                    <img
+                                                        src="https://api.dicebear.com/7.x/avataaars/svg?seed=Zeni&backgroundColor=transparent"
+                                                        alt="AI"
+                                                        className="w-8 h-8 opacity-90"
+                                                        // Fallback to Z logo if image fails or user prefers logo
+                                                        onError={(e) => {
+                                                            e.currentTarget.style.display = 'none';
+                                                            e.currentTarget.parentElement!.innerHTML = `<span class="font-bold text-white text-lg">Z</span>`
+                                                        }}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Message Bubble + Meta */}
+                                        <div className={`flex flex-col max-w-[70%] ${isUser ? 'items-end' : 'items-start'}`}>
+                                            {/* Name Label */}
+                                            <span className={`text-[12px] font-medium text-white/40 mb-2 px-1 ${isUser ? 'text-right' : 'text-left'}`}>
+                                                {isUser ? 'You' : 'Zenner'}
+                                            </span>
+
+                                            {/* The Bubble */}
+                                            <div
+                                                className={`relative px-10 py-8 text-[15px] leading-[1.8] text-white shadow-2xl ${isUser
+                                                    ? 'rounded-[30px] rounded-tr-[4px]'
+                                                    : 'rounded-[30px] rounded-tl-[4px]'
+                                                    }`}
+                                                style={{
+                                                    background: isUser
+                                                        ? `linear-gradient(135deg, ${accent}dd, ${accent}80)`
+                                                        : '#111111',
+                                                    border: isUser
+                                                        ? `1px solid ${accent}60`
+                                                        : '1px solid rgba(255,255,255,0.08)',
+                                                    boxShadow: isUser
+                                                        ? `0 0 30px -5px ${accent}50, 0 10px 20px -5px rgba(0,0,0,0.5)` // Strong glow
+                                                        : '0 4px 20px rgba(0,0,0,0.4)',
+                                                    textAlign: 'left',
+                                                    wordBreak: 'break-word'
+                                                }}
+                                            >
+                                                <div className="whitespace-pre-wrap break-words w-full min-w-0 font-normal opacity-95">
+                                                    {message.content}
+                                                </div>
+                                            </div>
+
+                                            {/* Actions Bar - visible on hover */}
+                                            {message.role === 'assistant' && (
+                                                <div className="flex items-center gap-1 mt-2 px-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                                                    <button
+                                                        onClick={() => handleCopy(message.content, message.id)}
+                                                        className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                                                        title="Copy text"
+                                                    >
+                                                        {copiedId === message.id ? (
+                                                            <Check size={14} className="text-emerald-400" />
+                                                        ) : (
+                                                            <Copy size={14} />
+                                                        )}
+                                                    </button>
+                                                    {index === messages.length - 1 && !isTyping && (
+                                                        <button
+                                                            onClick={handleRegenerate}
+                                                            className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                                                            title="Regenerate response"
+                                                        >
+                                                            <RotateCcw size={14} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
+                        </AnimatePresence>
+
+                        {/* Typing Indicator */}
+                        {isTyping && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="flex gap-4"
+                            >
+                                <div
+                                    className="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center border-2 border-white/5"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #1a1a1a, #0a0a0a)',
+                                        borderColor: `${accent}40`
+                                    }}
+                                >
+                                    <span className="font-bold text-white text-lg">Z</span>
+                                </div>
+                                <div>
+                                    <span className="text-[12px] font-medium text-white/30 mb-2 block text-left">
+                                        Zenner
+                                    </span>
+                                    <div className="px-6 py-5 rounded-[30px] rounded-tl-[4px] bg-[#111111] border border-white/[0.08] flex items-center gap-1.5 shadow-lg">
+                                        <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                        <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                        <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce"></div>
                                     </div>
                                 </div>
-                            )}
-
-                            {message.role === "user" && (
-                                <div className="px-4 py-3 rounded-lg bg-fuchsia-500/20 border border-fuchsia-500/30 max-w-[85%]">
-                                    <p className="text-sm leading-relaxed text-white" style={{ wordBreak: "break-word" }}>
-                                        {message.content}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                </AnimatePresence>
-
-                {isTyping && (
-                    <div className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-md bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                            <Sparkles size={12} color="#FFF" strokeWidth={2} />
-                        </div>
-                        <div className="px-4 py-3 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2">
-                            <Loader size={14} className="text-white/50 animate-spin" />
-                            <span className="text-sm text-white/50">Thinking...</span>
-                        </div>
+                            </motion.div>
+                        )}
+                        <div ref={messagesEndRef} className="h-12" />
                     </div>
                 )}
-
-                <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area - AWESOME VERSION */}
-            <div className="px-8 py-6 border-t border-white/10 bg-black/20">
-                {/* Suggested Questions - Quick Access */}
-                <div className="mb-4">
-                    <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3 px-1">Suggested Questions</p>
-                    <div className="grid grid-cols-2 gap-2">
-                        <button
-                            onClick={() => {
-                                setInput("I need motivation to start working");
-                                setTimeout(() => inputRef.current?.focus(), 50);
-                            }}
-                            className="group flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500/10 to-purple-500/10 border border-fuchsia-500/20 hover:border-fuchsia-500/40 hover:from-fuchsia-500/20 hover:to-purple-500/20 transition-all text-xs font-medium text-white/80 hover:text-white"
-                        >
-                            <Zap size={14} className="group-hover:scale-110 transition-transform flex-shrink-0" strokeWidth={2.5} />
-                            <span className="text-left">Motivate Me</span>
-                        </button>
-                        <button
-                            onClick={() => {
-                                setInput("Show me my productivity insights");
-                                setTimeout(() => inputRef.current?.focus(), 50);
-                            }}
-                            className="group flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 hover:border-blue-500/40 hover:from-blue-500/20 hover:to-cyan-500/20 transition-all text-xs font-medium text-white/80 hover:text-white"
-                        >
-                            <TrendingUp size={14} className="group-hover:scale-110 transition-transform flex-shrink-0" strokeWidth={2.5} />
-                            <span className="text-left">My Progress</span>
-                        </button>
-                        <button
-                            onClick={() => {
-                                setInput("What's my best time to work?");
-                                setTimeout(() => inputRef.current?.focus(), 50);
-                            }}
-                            className="group flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 hover:border-green-500/40 hover:from-green-500/20 hover:to-emerald-500/20 transition-all text-xs font-medium text-white/80 hover:text-white"
-                        >
-                            <Sparkles size={14} className="group-hover:scale-110 transition-transform flex-shrink-0" strokeWidth={2.5} />
-                            <span className="text-left">Best Time</span>
-                        </button>
-                        <button
-                            onClick={() => {
-                                setInput("How do I use Zenner effectively?");
-                                setTimeout(() => inputRef.current?.focus(), 50);
-                            }}
-                            className="group flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-500/20 hover:border-orange-500/40 hover:from-orange-500/20 hover:to-amber-500/20 transition-all text-xs font-medium text-white/80 hover:text-white"
-                        >
-                            <Loader size={14} className="group-hover:scale-110 transition-transform flex-shrink-0" strokeWidth={2.5} />
-                            <span className="text-left">How to Use</span>
-                        </button>
-                        <button
-                            onClick={() => {
-                                setInput("What frequency should I use for deep focus?");
-                                setTimeout(() => inputRef.current?.focus(), 50);
-                            }}
-                            className="group flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-pink-500/10 to-rose-500/10 border border-pink-500/20 hover:border-pink-500/40 hover:from-pink-500/20 hover:to-rose-500/20 transition-all text-xs font-medium text-white/80 hover:text-white"
-                        >
-                            <Sparkles size={14} className="group-hover:scale-110 transition-transform flex-shrink-0" strokeWidth={2.5} />
-                            <span className="text-left">Best Frequency</span>
-                        </button>
-                        <button
-                            onClick={() => {
-                                setInput("Give me a quick tip");
-                                setTimeout(() => inputRef.current?.focus(), 50);
-                            }}
-                            className="group flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 hover:border-violet-500/40 hover:from-violet-500/20 hover:to-purple-500/20 transition-all text-xs font-medium text-white/80 hover:text-white"
-                        >
-                            <Sparkles size={14} className="group-hover:scale-110 transition-transform flex-shrink-0" strokeWidth={2.5} />
-                            <span className="text-left">Quick Tip</span>
-                        </button>
-                    </div>
-                </div>
-
-
-                {/* Input - Premium Design */}
-                <div className="relative flex items-end gap-2 bg-white/5 border border-white/10 rounded-2xl p-2 transition-all focus-within:border-fuchsia-500/50 focus-within:bg-white/8 focus-within:ring-4 focus-within:ring-fuchsia-500/10 hover:border-white/20">
-
-                    {/* Attachment Button */}
-                    <button
-                        className="p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-xl transition-all"
-                        title="Attach file (coming soon)"
-                        onClick={() => alert("File attachment coming soon!")}
-                    >
-                        <Paperclip size={20} />
-                    </button>
-
+            {/* --- Professional Input Area --- */}
+            <div className="p-6 pt-2 bg-[#050505]">
+                <div
+                    className="relative flex items-end gap-2 p-2 pl-4 rounded-[24px] border border-white/10 transition-all duration-200 focus-within:border-white/20 focus-within:shadow-[0_0_20px_-5px_rgba(255,255,255,0.1)]"
+                    style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)' }}
+                >
                     <textarea
                         ref={textareaRef}
                         value={input}
                         onChange={(e) => {
                             setInput(e.target.value);
-                            // Auto-grow height
                             e.target.style.height = 'auto';
-                            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                            e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
                         }}
                         onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
@@ -402,50 +614,37 @@ export function ZennerCoach({
                                 handleSend();
                             }
                         }}
-                        onPaste={(e) => {
-                            const items = e.clipboardData.items;
-                            for (let i = 0; i < items.length; i++) {
-                                if (items[i].type.indexOf("image") !== -1) {
-                                    e.preventDefault();
-                                    alert("Image pasting support coming in the next update!");
-                                    return;
-                                }
-                            }
-                        }}
-                        placeholder={isListening ? "Listening..." : "Ask Zeni anything..."}
+                        placeholder="Message Zenner..."
                         disabled={isTyping}
+                        className="flex-1 bg-transparent border-none outline-none text-[15px] text-white placeholder:text-white/30 resize-none py-3 max-h-[150px] min-h-[24px] leading-relaxed custom-scrollbar"
                         rows={1}
-                        className="flex-1 bg-transparent border-none outline-none text-base font-medium text-white placeholder:text-white/30 resize-none py-3 min-h-[48px] max-h-[120px] custom-scrollbar"
-                        style={{ height: 'auto' }}
+                        style={{ height: 'auto', minHeight: '44px' }}
                     />
 
-                    <div className="flex items-center gap-1 pb-0.5">
-                        {/* Mic Button */}
-                        <button
-                            onClick={toggleListening}
-                            className={`p-3 rounded-xl transition-all duration-300 ${isListening
-                                ? 'bg-red-500/20 text-red-400 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.4)]'
-                                : 'text-white/40 hover:text-white hover:bg-white/10'
-                                }`}
-                            title={isListening ? "Stop listening" : "Start voice input"}
-                        >
-                            {isListening ? <MicOff size={20} /> : <Mic size={20} />}
-                        </button>
-
+                    <div className="flex items-center gap-1 pb-1">
+                        {!input.trim() && (
+                            <button className="p-2.5 rounded-full text-white/30 hover:text-white hover:bg-white/10 transition-colors">
+                                <Mic size={18} />
+                            </button>
+                        )}
                         <button
                             onClick={handleSend}
                             disabled={!input.trim() || isTyping}
-                            className="p-3 rounded-xl bg-gradient-to-br from-fuchsia-500 to-purple-600 hover:from-fuchsia-600 hover:to-purple-700 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-fuchsia-500/50 hover:scale-105 active:scale-95"
+                            className={`p-2.5 rounded-full transition-all duration-200 flex items-center justify-center ${input.trim() && !isTyping
+                                ? 'text-white shadow-lg scale-100'
+                                : 'text-white/20 scale-95 cursor-not-allowed bg-transparent'
+                                }`}
+                            style={input.trim() && !isTyping ? {
+                                background: accent,
+                                boxShadow: `0 4px 12px ${accent}40`
+                            } : {}}
                         >
-                            <Send size={18} strokeWidth={2.5} />
+                            <Send size={18} fill={input.trim() ? "currentColor" : "none"} strokeWidth={2.5} />
                         </button>
                     </div>
                 </div>
-
-                {/* Hint Text */}
-                <div className="flex justify-between items-center px-2 mt-3 text-xs text-white/30">
-                    <span>Markdown supported</span>
-                    <span>Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/50 font-mono text-[10px] mx-1">Enter</kbd> to send</span>
+                <div className="text-center mt-3">
+                    <p className="text-[11px] text-white/20">Zenner can make mistakes. Verify important info.</p>
                 </div>
             </div>
         </div>

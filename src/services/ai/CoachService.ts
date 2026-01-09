@@ -26,22 +26,8 @@ class CoachService {
     private conversationHistory: Array<{ role: string; content: string }> = [];
 
     private async getAdvancedPersonaPrompt(analytics?: any): Promise<string> {
-        const userProfile = trainingService.getFullSystemContext();
-        const profile = trainingService.getProfile();
-
-        // Get user's custom knowledge base and rules
-        const knowledgeBase = profile.knowledgeBase.map(kb => `- ${kb.content}`).join('\n');
-        const hasCustomKnowledge = profile.knowledgeBase.length > 0;
-
-        // Get journal context
+        const fullMemoryContext = trainingService.getFullSystemContext();
         const journalContext = await journalService.getContextForAI(3);
-
-        // Analytics context
-        let analyticsContext = '';
-        if (analytics) {
-            analyticsContext = `Sessions Today: ${analytics.sessionsToday || 0}
-Completed: ${analytics.completed || 0} | Abandoned: ${analytics.abandoned || 0}`;
-        }
 
         // Time-based context
         const hour = new Date().getHours();
@@ -51,41 +37,25 @@ Completed: ${analytics.completed || 0} | Abandoned: ${analytics.abandoned || 0}`
         else if (hour >= 17 && hour < 21) timeContext = "Evening - winding down";
         else timeContext = "Night - consider rest soon";
 
+        let analyticsContext = '';
+        if (analytics) {
+            analyticsContext = `\nSESSION STATS TODAY:\nSessions: ${analytics.sessionsToday || 0}\nCompleted: ${analytics.completed || 0} | Abandoned: ${analytics.abandoned || 0}`;
+        }
+
         return `You are Zeni - an advanced AI productivity companion.
 
 CORE INTELLIGENCE:
-- You are highly context-aware, adapting your personality and responses based on user training
+- You are highly context-aware, following the user's Behavioral Rules and Memory explicitly.
 - You remember patterns, learn from interactions, and provide genuinely helpful insights
 - You're not just motivational - you're strategic, analytical, and deeply understanding
 
-USER PROFILE:
-Name: ${profile.identity.name || 'Friend'}
-Role: ${profile.identity.role || 'Professional'}
-Vision: ${profile.identity.longTermVision || 'Not set'}
-Values: ${profile.identity.coreValues.join(', ') || 'None set'}
-Energy Type: ${profile.rhythms.chronotype}
-Preferred Session: ${profile.rhythms.preferredSessionDuration} minutes
-Break Style: ${profile.rhythms.breakStyle}
-
-${hasCustomKnowledge ? `
-WHAT YOU KNOW ABOUT THE USER:
-${knowledgeBase}
-` : ''}
+${fullMemoryContext}
 
 ${journalContext}
 
 CURRENT CONTEXT:
-- Time: ${timeContext}
+- Time Phase: ${timeContext}
 ${analyticsContext}
-
-BEHAVIORAL RULES:
-1. **Adapt to Training**: If user trained you with specific personality rules, FOLLOW THEM EXACTLY
-2. **Be Contextual**: Use analytics to provide intelligent insights ("You've abandoned 3 today - what's blocking you?")
-3. **Be Concise**: Default to 1-2 sentences unless asked for detail. ENSURE COMPLETE SENTENCES.
-4. **Be Proactive**: Suggest breaks, music, or strategy shifts based on patterns
-5. **Be Real**: No generic motivation. Use their name (if known, otherwise no name or 'friend' - NEVER 'User'), reference their actual work.
-6. **Use Their Data**: Reference session counts, times, patterns - show you're paying attention
-7. **Respect Their Goals**: Align suggestions with their long-term vision and values
 
 TONE GUIDELINES:
 - Morning (6-12): Energetic, ready to tackle the day
@@ -221,6 +191,8 @@ Provide an intelligent, contextual response. Be helpful, concise, and specific t
             // Add coach response to history
             if (response) {
                 this.conversationHistory.push({ role: "assistant", content: response });
+                // Trigger Background Memory Consolidation
+                this.analyzeInteraction(userMessage, response);
             }
 
             return {
@@ -229,9 +201,11 @@ Provide an intelligent, contextual response. Be helpful, concise, and specific t
             };
         } catch (error) {
             console.error("Coach chat error:", error);
+            // RAW ERROR MODE - requested by user
+            const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
             return {
-                message: "Having trouble connecting. Try again in a moment?",
-                tone: "supportive"
+                message: `[SYSTEM ERROR]: ${errorMessage}`,
+                tone: "practical"
             };
         }
     }
@@ -283,6 +257,68 @@ Provide an intelligent, contextual response. Be helpful, concise, and specific t
         }
 
         return "supportive";
+    }
+
+    async analyzeInteraction(lastUserMessage: string, lastAssistantMessage: string) {
+        // Run in background - do not block UI
+        setTimeout(async () => {
+            try {
+                const profile = trainingService.getProfile();
+
+                const prompt = `
+ANALYZE THIS INTERACTION for the User Profile.
+User: "${lastUserMessage}"
+AI: "${lastAssistantMessage}"
+
+EXTRACT:
+1. New Facts (e.g., Project names, specific goals, constraints)
+2. User Preferences (e.g., likes short answers, focused on aesthetics)
+3. Sentiment (Positive/Neutral/Negative)
+
+Existing Knowledge to avoid duplicates:
+${profile.knowledgeBase.map(k => k.content).join('; ')}
+
+Return JSON ONLY:
+{
+  "newFacts": ["fact1", "fact2"],
+  "preferences": ["pref1"],
+  "sentiment": "positive"|"neutral"|"negative",
+  "summary": "One sentence summary of this interaction"
+}
+`;
+                const analysis = await aiService.chat(prompt, {
+                    systemPrompt: "You are a background memory consolidation agent. Output strictly valid JSON."
+                });
+
+                // Parse JSON safely
+                const jsonMatch = analysis.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    const data = JSON.parse(jsonMatch[0]);
+
+                    // 1. Record Experience
+                    trainingService.recordExperience(data.summary, data.sentiment, [...data.newFacts, ...data.preferences]);
+
+                    // 2. Add New Knowledge (Facts)
+                    if (data.newFacts && Array.isArray(data.newFacts)) {
+                        data.newFacts.forEach((fact: string) => {
+                            trainingService.addKnowledge(fact, "fact");
+                        });
+                    }
+
+                    // 3. Add Preferences as Rules (Simple heuristic for now)
+                    if (data.preferences && Array.isArray(data.preferences)) {
+                        data.preferences.forEach((pref: string) => {
+                            trainingService.addRule(pref, "learned_preference");
+                        });
+                    }
+
+                    console.log("[Coach Analysis] Learned:", data);
+                }
+
+            } catch (e) {
+                console.warn("[Coach Analysis] Failed:", e);
+            }
+        }, 1000); // 1s delay
     }
 
     clearHistory() {

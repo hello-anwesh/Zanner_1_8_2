@@ -31,7 +31,15 @@ class AIService {
         try {
             const stored = localStorage.getItem(this.STORAGE_KEY);
             if (stored) {
-                this.config = { ...DEFAULT_AI_CONFIG, ...JSON.parse(stored) };
+                const parsed = JSON.parse(stored);
+                this.config = {
+                    ...DEFAULT_AI_CONFIG,
+                    ...parsed,
+                    providers: {
+                        ...DEFAULT_AI_CONFIG.providers,
+                        ...(parsed.providers || {})
+                    }
+                };
             }
         } catch (error) {
             console.error('Failed to load AI config:', error);
@@ -199,6 +207,16 @@ class AIService {
     async chat(userMessage: string, context?: Record<string, any>): Promise<string> {
         const provider = this.getActiveProvider();
         if (!provider) throw new Error("No active provider");
+
+        // Force re-configuration to ensure API keys are fresh
+        const pConfig = this.config.providers[this.config.activeProvider];
+        if (pConfig) {
+            provider.configure({
+                apiKey: pConfig.apiKey,
+                model: pConfig.model,
+                baseUrl: (pConfig as any).baseUrl
+            });
+        }
 
         // Build context-aware system message
         let systemPrompt = this.config.systemPrompt;

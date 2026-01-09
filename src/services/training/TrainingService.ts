@@ -1,4 +1,4 @@
-import { TrainingProfile, DEFAULT_PROFILE, AIKnowledge } from "./types";
+import { TrainingProfile, DEFAULT_PROFILE, AIKnowledge, AIExperience, AIRule } from "./types";
 
 const STORAGE_KEY = "chronos_ai_training_profile";
 
@@ -49,6 +49,52 @@ class TrainingService {
         this.saveProfile();
     }
 
+    // --- Experience Memory (Episodic) ---
+    recordExperience(summary: string, sentiment: AIExperience["sentiment"] = "neutral", keyLearnings: string[] = []) {
+        // Ensure array exists (migration safety)
+        if (!this.profile.experiences) this.profile.experiences = [];
+
+        const xp: AIExperience = {
+            id: Date.now().toString(),
+            summary,
+            sentiment,
+            keyLearnings,
+            timestamp: Date.now()
+        };
+        this.profile.experiences.unshift(xp); // Newest first
+
+        // Keep only last 50 experiences to save space
+        if (this.profile.experiences.length > 50) {
+            this.profile.experiences = this.profile.experiences.slice(0, 50);
+        }
+
+        this.saveProfile();
+        console.log("[Memory] Recorded experience:", summary);
+        return xp;
+    }
+
+    // --- Procedural Memory (Rules) ---
+    addRule(rule: string, triggerContext: string = "general") {
+        if (!this.profile.rules) this.profile.rules = [];
+
+        const newRule: AIRule = {
+            id: Date.now().toString(),
+            rule,
+            triggerContext,
+            isActive: true
+        };
+        this.profile.rules.push(newRule);
+        this.saveProfile();
+        console.log("[Memory] Added rule:", rule);
+        return newRule;
+    }
+
+    removeRule(id: string) {
+        if (!this.profile.rules) return;
+        this.profile.rules = this.profile.rules.filter(r => r.id !== id);
+        this.saveProfile();
+    }
+
     // Simple RAG simulation: Retrieve relevant context based on keywords
     // In a real implementation, this would use vector similarity
     getContext(query: string): string {
@@ -65,7 +111,16 @@ class TrainingService {
     }
 
     getFullSystemContext(): string {
-        const { identity, rhythms } = this.profile;
+        const { identity, rhythms, knowledgeBase, rules, experiences } = this.profile;
+
+        // Safety checks for undefined arrays during migration
+        const safeRules = rules || [];
+        const safeExperiences = experiences || [];
+        const safeKnowledge = knowledgeBase || [];
+
+        const activeRules = safeRules.filter(r => r.isActive).map(r => `[${r.triggerContext.toUpperCase()}] ${r.rule}`).join("\n");
+        const recentHistory = safeExperiences.slice(0, 3).map(e => `- ${new Date(e.timestamp).toLocaleDateString()}: ${e.summary}`).join("\n");
+
         return `
 USER PROFILE:
 Name: ${identity.name}
@@ -78,8 +133,14 @@ Chronotype: ${rhythms.chronotype}
 Preferred Duration: ${rhythms.preferredSessionDuration}m
 Break Style: ${rhythms.breakStyle}
 
-CORE KNOWLEDGE:
-${this.profile.knowledgeBase.map(k => `- ${k.content}`).join("\n")}
+CORE KNOWLEDGE (FACTS):
+${safeKnowledge.map(k => `- ${k.content}`).join("\n")}
+
+BEHAVIORAL RULES (MUST FOLLOW):
+${activeRules}
+
+RECENT HISTORY (CONTEXT):
+${recentHistory}
 `;
     }
 }

@@ -35,6 +35,8 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
     ];
 
     const settingsItems = [
+        { id: 'settings-brain', icon: Brain, label: 'Memory', effect: 'pulse' },
+        { id: 'settings-ai', icon: Settings2, label: 'AI Engine', effect: 'rotate' },
         { id: 'settings-theme', icon: Palette, label: 'Theme', effect: 'rotate' },
         { id: 'settings-spotify', icon: Music, label: 'Spotify', effect: 'bounce' },
         { id: 'settings-youtube', icon: Music, label: 'YouTube', effect: 'bounce' },
