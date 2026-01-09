@@ -1,35 +1,18 @@
 /**
- * MusicController - Ties music playback to timer state
+ * MusicController - Clean timer/music sync system
+ * Handles automatic pause/resume based on timer state
  */
 
-import { eventBus, TimerEvent } from "../events/EventBus";
 import { spotifyService } from "../spotify/SpotifyService";
 
-interface MusicState {
-    wasPlaying: boolean;
-    source: "spotify" | "soundlib" | null;
-}
-
 class MusicControllerClass {
-    private state: MusicState = { wasPlaying: false, source: null };
     private enabled = true;
-    private unsubscribers: (() => void)[] = [];
     private soundLibPause: (() => void) | null = null;
     private soundLibResume: (() => void) | null = null;
     private soundLibIsPlaying: (() => boolean) | null = null;
 
-    init(): void {
-        this.unsubscribers.push(
-            eventBus.on("SESSION_START", (event: TimerEvent) => {
-                if (event.type === "SESSION_START" && event.mode === "focus") this.onFocusStart();
-            })
-        );
-        this.unsubscribers.push(
-            eventBus.on("SESSION_END", (event: TimerEvent) => {
-                if (event.type === "SESSION_END" && event.mode === "focus") this.onFocusEnd();
-            })
-        );
-    }
+    // Track what the TIMER paused (not what user paused manually)
+    private pausedByTimer: 'spotify' | 'soundlib' | null = null;
 
     registerSoundLibrary(pause: () => void, resume: () => void, isPlaying: () => boolean): void {
         this.soundLibPause = pause;
@@ -37,55 +20,43 @@ class MusicControllerClass {
         this.soundLibIsPlaying = isPlaying;
     }
 
-    setEnabled(enabled: boolean): void { this.enabled = enabled; }
-    isEnabled(): boolean { return this.enabled; }
-
-    private async onFocusStart(): Promise<void> {
-        if (!this.enabled || !this.state.wasPlaying) return;
-        if (this.state.source === "spotify") await spotifyService.play();
-        else if (this.state.source === "soundlib") this.soundLibResume?.();
-        this.state = { wasPlaying: false, source: null };
+    setEnabled(enabled: boolean): void {
+        this.enabled = enabled;
     }
 
-    private async onFocusEnd(): Promise<void> {
-        if (!this.enabled) return;
-        const spotifyState = spotifyService.getCurrentState();
-        const soundLibPlaying = this.soundLibIsPlaying?.() ?? false;
-
-        if (spotifyState?.is_playing) {
-            this.state = { wasPlaying: true, source: "spotify" };
-            await spotifyService.pause();
-        } else if (soundLibPlaying) {
-            this.state = { wasPlaying: true, source: "soundlib" };
-            this.soundLibPause?.();
-        }
+    isEnabled(): boolean {
+        return this.enabled;
     }
 
-    // Direct control methods for timer play/pause
-    private pausedByTimer: 'spotify' | 'soundlib' | null = null;
-
+    /**
+     * Called by timer when pausing (focus → break, or user pauses timer)
+     * Tracks what was paused so we can resume it later
+     */
     async pause(): Promise<void> {
         if (!this.enabled) return;
 
         const spotifyState = spotifyService.getCurrentState();
         const soundLibPlaying = this.soundLibIsPlaying?.() ?? false;
 
-        // Track what we're pausing so we can resume it
+        // Only track if we're actually pausing something
         if (spotifyState?.is_playing) {
             this.pausedByTimer = 'spotify';
             await spotifyService.pause();
         } else if (soundLibPlaying) {
             this.pausedByTimer = 'soundlib';
             this.soundLibPause?.();
-        } else {
-            this.pausedByTimer = null;
         }
+        // Keep pausedByTimer state for later resume
     }
 
+    /**
+     * Called by timer when resuming (break → focus, or user resumes timer)
+     * Only resumes if timer paused it (not if user manually stopped it)
+     */
     async resume(): Promise<void> {
         if (!this.enabled || !this.pausedByTimer) return;
 
-        // Only resume what we paused
+        // Resume what we paused
         if (this.pausedByTimer === 'spotify') {
             await spotifyService.play();
         } else if (this.pausedByTimer === 'soundlib') {
@@ -95,9 +66,12 @@ class MusicControllerClass {
         this.pausedByTimer = null;
     }
 
-    destroy(): void {
-        this.unsubscribers.forEach(unsub => unsub());
-        this.unsubscribers = [];
+    /**
+     * Called when user manually controls music (clicks play/pause in player)
+     * Clears timer's pause state so it doesn't interfere
+     */
+    notifyManualControl(): void {
+        this.pausedByTimer = null;
     }
 }
 

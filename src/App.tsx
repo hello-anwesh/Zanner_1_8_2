@@ -208,11 +208,7 @@ function App() {
     streak: 7,
   };
 
-  // Initialize MusicController
-  useEffect(() => {
-    musicController.init();
-    return () => musicController.destroy();
-  }, []);
+
 
   // Custom Preset Keydown
   useEffect(() => {
@@ -282,14 +278,15 @@ function App() {
     }
   }, [isRunning]);
 
-  // Control music based on timer state
+  // Control music based on timer state (only resume during focus sessions)
   useEffect(() => {
-    if (isRunning) {
+    if (isRunning && mode === "focus") {
       musicController.resume();
-    } else {
+    } else if (!isRunning) {
       musicController.pause();
     }
-  }, [isRunning]);
+  }, [isRunning, mode]);
+
 
   useEffect(() => {
     if (timeLeft === 0 && isRunning) {

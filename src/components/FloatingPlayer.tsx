@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
-    Pause, Play, X, Heart, Shuffle, Repeat, SkipForward, SkipBack,
+    Pause, Play, X, Heart, SkipForward, SkipBack,
     Volume2, VolumeX, Music, Music2, AlertCircle
 } from "lucide-react";
 import {
@@ -244,7 +244,7 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
     const toggle = useCallback(() => {
         if (!currentTrack) return;
 
-        // Handle frequency mixes
+        // Handle frequency mixes (separate system, doesn't use MusicController)
         if (currentTrack.url.startsWith('frequency-mix://')) {
             const engine = getFrequencyEngine();
             if (isPlaying) {
@@ -256,6 +256,10 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
             }
             return;
         }
+
+        // Notify music controller that user is manually controlling playback
+        // This prevents timer from interfering with manual control
+        musicController.notifyManualControl();
 
         // Handle direct audio (Archive.org MP3s)
         if (isDirectAudio(currentTrack.url) && audioRef.current) {
@@ -399,33 +403,25 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
                         <span className="text-sm font-medium text-white max-w-32 truncate">
                             {error ? "Error" : currentTrack.name}
                         </span>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 ml-auto">
                             <button
                                 onClick={e => { e.stopPropagation(); toggle(); }}
-                                className="w-9 h-9 rounded-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
-                                style={{ background: colors.accent }}
+                                className="w-10 h-10 rounded-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95 font-bold text-xl"
+                                style={{
+                                    background: colors.accent,
+                                    boxShadow: `0 4px 12px ${colors.accent}60, 0 2px 4px rgba(0,0,0,0.3)`,
+                                    color: '#000'
+                                }}
                                 title={isPlaying ? "Pause" : "Play"}
                             >
-                                {isPlaying ? (
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#000">
-                                        <rect x="6" y="4" width="4" height="16" rx="1" />
-                                        <rect x="14" y="4" width="4" height="16" rx="1" />
-                                    </svg>
-                                ) : (
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#000">
-                                        <path d="M8 5v14l11-7z" />
-                                    </svg>
-                                )}
+                                {isPlaying ? "⏸" : "▶"}
                             </button>
                             <button
                                 onClick={e => { e.stopPropagation(); stop(); }}
-                                className="w-9 h-9 rounded-lg flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors"
+                                className="w-10 h-10 rounded-lg flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors text-white/70 hover:text-white font-bold text-lg"
                                 title="Stop"
                             >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="4" strokeLinecap="round">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
+                                ✕
                             </button>
                         </div>
                     </div>
@@ -797,41 +793,52 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
                                     </div>
 
                                     {/* Controls */}
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-4 justify-center">
                                         <button
                                             onClick={() => setIsShuffleOn(!isShuffleOn)}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10"
+                                            className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors font-bold text-xl"
+                                            style={{ color: isShuffleOn ? colors.accent : "#666" }}
+                                            title="Shuffle"
                                         >
-                                            <Shuffle size={14} color={isShuffleOn ? colors.accent : "#555"} />
+                                            🔀
                                         </button>
 
                                         <button
                                             onClick={prev}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10"
+                                            className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors text-white/70 hover:text-white font-bold text-xl"
+                                            title="Previous"
                                         >
-                                            <SkipBack size={16} color="#aaa" />
+                                            ⏮
                                         </button>
 
                                         <button
                                             onClick={toggle}
-                                            className="w-12 h-12 rounded-full flex items-center justify-center"
-                                            style={{ background: colors.accent }}
+                                            className="w-14 h-14 rounded-xl flex items-center justify-center font-bold text-2xl transition-transform hover:scale-110 active:scale-95"
+                                            style={{
+                                                background: colors.accent,
+                                                color: "#000",
+                                                boxShadow: `0 8px 24px ${colors.accent}60, 0 4px 8px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.25)`
+                                            }}
+                                            title={isPlaying ? "Pause" : "Play"}
                                         >
-                                            {isPlaying ? <Pause size={20} color="#000" /> : <Play size={20} color="#000" />}
+                                            {isPlaying ? "⏸" : "▶"}
                                         </button>
 
                                         <button
                                             onClick={next}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10"
+                                            className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors text-white/70 hover:text-white font-bold text-xl"
+                                            title="Next"
                                         >
-                                            <SkipForward size={16} color="#aaa" />
+                                            ⏭
                                         </button>
 
                                         <button
                                             onClick={() => setIsLoopOn(!isLoopOn)}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10"
+                                            className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors font-bold text-xl"
+                                            style={{ color: isLoopOn ? colors.accent : "#666" }}
+                                            title="Repeat"
                                         >
-                                            <Repeat size={14} color={isLoopOn ? colors.accent : "#555"} />
+                                            🔁
                                         </button>
 
                                         {/* Volume Controls */}
