@@ -125,21 +125,88 @@ export function SpotifySettingsView({ accent: _accent }: SpotifySettingsViewProp
                         backdropFilter: "blur(30px)"
                     }}
                 >
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 mb-2">
                         <Key size={24} className="text-green-400" />
                         <h3 className="font-black text-2xl text-white">Spotify Web API Setup</h3>
                     </div>
 
-                    <p className="text-white/60">
-                        To search Spotify and save favorites, you need to set up API credentials:
-                    </p>
+                    <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 mb-4">
+                        <p className="text-blue-300 text-sm font-medium">
+                            ℹ️ This is <strong>100% FREE</strong> and takes 3-5 minutes. See{' '}
+                            <a
+                                href="file:///Users/anweshrath/Documents/My Apps/pomodoro/API_SETUP_GUIDE.md"
+                                className="underline hover:text-blue-200"
+                                target="_blank"
+                            >
+                                detailed setup guide
+                            </a>
+                            {' '}for help.
+                        </p>
+                    </div>
 
-                    <ol className="text-white/60 space-y-2 list-decimal list-inside">
-                        <li>Go to <a href="https://developer.spotify.com/dashboard" target="_blank" className="text-green-400 hover:underline">Spotify Developer Dashboard</a></li>
-                        <li>Create a new app</li>
-                        <li>Set Redirect URI to: <code className="px-2 py-1 bg-white/10 rounded">http://localhost:3000/callback</code></li>
-                        <li>Copy your Client ID and Client Secret below</li>
-                    </ol>
+                    <div className="space-y-4">
+                        <div className="space-y-3">
+                            <div className="flex items-start gap-3">
+                                <div className="w-7 h-7 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
+                                    1
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-white font-bold mb-1">Visit Spotify Developer Dashboard</h4>
+                                    <p className="text-white/60 text-sm mb-2">
+                                        Go to{' '}
+                                        <a
+                                            href="https://developer.spotify.com/dashboard"
+                                            target="_blank"
+                                            className="text-green-400 hover:underline font-medium"
+                                        >
+                                            developer.spotify.com/dashboard
+                                        </a>
+                                        {' '}and log in with your Spotify account.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3">
+                                <div className="w-7 h-7 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
+                                    2
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-white font-bold mb-1">Create New App</h4>
+                                    <p className="text-white/60 text-sm">
+                                        Click <strong>"Create app"</strong>. Name it anything (e.g., "Zenner").
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3">
+                                <div className="w-7 h-7 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
+                                    3
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-white font-bold mb-1">Set Redirect URI</h4>
+                                    <p className="text-white/60 text-sm mb-2">
+                                        In your app settings, add this exact URI:
+                                    </p>
+                                    <code className="block px-3 py-2 bg-white/10 rounded text-green-300 text-sm font-mono">
+                                        http://localhost:3000/callback
+                                    </code>
+                                    <p className="text-white/40 text-xs mt-1">⚠️ Must be exact - including http:// (not https://)</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3">
+                                <div className="w-7 h-7 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
+                                    4
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-white font-bold mb-1">Copy Credentials</h4>
+                                    <p className="text-white/60 text-sm">
+                                        Go to Settings → Copy your <strong>Client ID</strong> and <strong>Client Secret</strong> (click "View client secret").
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     {showAuthSetup ? (
                         <div className="space-y-4">
