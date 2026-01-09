@@ -37,6 +37,7 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
     const settingsItems = [
         { id: 'settings-theme', icon: Palette, label: 'Theme', effect: 'rotate' },
         { id: 'settings-spotify', icon: Music, label: 'Spotify', effect: 'bounce' },
+        { id: 'settings-youtube', icon: Music, label: 'YouTube', effect: 'bounce' },
         { id: 'settings-timer', icon: Clock, label: 'Timer', effect: 'rotate' },
         { id: 'settings-voice', icon: Mic, label: 'Voice', effect: 'pulse' }
     ];
@@ -108,7 +109,7 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
                 {/* Settings Expandable */}
                 <ExpandableSection
                     title="Settings"
-                    count={5}
+                    count={6}
                     icon={Settings2}
                     expanded={expandedSections.settings}
                     onToggle={() => toggleSection('settings')}

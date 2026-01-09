@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Play, Pause, SkipForward, SkipBack, Music, Search, Plus, Trash2, Key, LogOut } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Play, Search, Plus, Trash2, LogOut, ExternalLink } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { spotifyService, FOCUS_PLAYLISTS, BREAK_PLAYLISTS } from '../services/spotify/SpotifyService';
 import type { SpotifyState, SpotifySearchResult } from '../services/spotify/SpotifyService';
+
+const SPOTIFY_GREEN = '#1DB954';
 
 interface SpotifySettingsViewProps {
     accent: string;
@@ -26,7 +28,6 @@ export function SpotifySettingsView({ accent: _accent }: SpotifySettingsViewProp
             setSpotifyState(state);
         };
 
-        // Check authentication
         setIsAuthenticated(spotifyService.isAuthenticated());
         setFavorites(spotifyService.getFavorites());
 
@@ -45,12 +46,8 @@ export function SpotifySettingsView({ accent: _accent }: SpotifySettingsViewProp
     };
 
     const handleAuth = async () => {
-        if (!clientId || !clientSecret) {
-            alert('Please enter both Client ID and Client Secret');
-            return;
-        }
+        if (!clientId || !clientSecret) return;
         await spotifyService.authenticate(clientId, clientSecret);
-        alert('Authorization window opened! After authorizing, copy the code from the URL and paste it below.');
     };
 
     const handleCodeSubmit = async () => {
@@ -59,10 +56,8 @@ export function SpotifySettingsView({ accent: _accent }: SpotifySettingsViewProp
             await spotifyService.exchangeCode(authCode);
             setIsAuthenticated(true);
             setShowAuthSetup(false);
-            setAuthCode('');
-            alert('Successfully authenticated!');
         } catch (error) {
-            alert('Failed to authenticate. Please try again.');
+            console.error('Auth failed:', error);
         }
     };
 
@@ -73,7 +68,7 @@ export function SpotifySettingsView({ accent: _accent }: SpotifySettingsViewProp
             const results = await spotifyService.search(searchQuery);
             setSearchResults(results);
         } catch (error) {
-            alert('Search failed. Make sure you\'re authenticated.');
+            console.error('Search failed:', error);
         } finally {
             setIsSearching(false);
         }
@@ -89,454 +84,286 @@ export function SpotifySettingsView({ accent: _accent }: SpotifySettingsViewProp
         setFavorites(spotifyService.getFavorites());
     };
 
-    const handleLogout = () => {
-        spotifyService.logout();
-        setIsAuthenticated(false);
-        setSearchResults([]);
-    };
-
     return (
-        <div className="p-12 max-w-5xl mx-auto space-y-10" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <span className="px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-wider bg-white/[0.08] text-white/60 border border-white/[0.15] inline-block">
-                    Spotify Integration
-                </span>
-                {isAuthenticated && (
-                    <button
-                        onClick={handleLogout}
-                        className="px-4 py-2 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-2 hover:bg-red-500/30 transition-colors"
-                    >
-                        <LogOut size={16} />
-                        Logout
-                    </button>
-                )}
-            </div>
+        <div className="min-h-screen p-16" style={{ background: 'linear-gradient(to bottom, #0a0a0a, #121212)' }}>
+            <div className="max-w-6xl mx-auto space-y-16">
 
-            {/* Authentication Setup */}
-            {!isAuthenticated && (
+                {/* Hero Header */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-8 rounded-[28px] space-y-6"
-                    style={{
-                        background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
-                        border: "1px solid rgba(255,255,255,0.12)",
-                        backdropFilter: "blur(30px)"
-                    }}
+                    className="text-center space-y-6"
                 >
-                    <div className="flex items-center gap-4 mb-2">
-                        <Key size={24} className="text-green-400" />
-                        <h3 className="font-black text-2xl text-white">Spotify Web API Setup</h3>
+                    <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl mb-6"
+                        style={{ background: `${SPOTIFY_GREEN}15` }}
+                    >
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill={SPOTIFY_GREEN}>
+                            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+                        </svg>
                     </div>
-
-                    <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 mb-4">
-                        <p className="text-blue-300 text-sm font-medium">
-                            ℹ️ This is <strong>100% FREE</strong> and takes 3-5 minutes. See{' '}
-                            <a
-                                href="file:///Users/anweshrath/Documents/My Apps/pomodoro/API_SETUP_GUIDE.md"
-                                className="underline hover:text-blue-200"
-                                target="_blank"
-                            >
-                                detailed setup guide
-                            </a>
-                            {' '}for help.
-                        </p>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="space-y-3">
-                            <div className="flex items-start gap-3">
-                                <div className="w-7 h-7 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
-                                    1
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="text-white font-bold mb-1">Visit Spotify Developer Dashboard</h4>
-                                    <p className="text-white/60 text-sm mb-2">
-                                        Go to{' '}
-                                        <a
-                                            href="https://developer.spotify.com/dashboard"
-                                            target="_blank"
-                                            className="text-green-400 hover:underline font-medium"
-                                        >
-                                            developer.spotify.com/dashboard
-                                        </a>
-                                        {' '}and log in with your Spotify account.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-3">
-                                <div className="w-7 h-7 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
-                                    2
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="text-white font-bold mb-1">Create New App</h4>
-                                    <p className="text-white/60 text-sm">
-                                        Click <strong>"Create app"</strong>. Name it anything (e.g., "Zenner").
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-3">
-                                <div className="w-7 h-7 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
-                                    3
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="text-white font-bold mb-1">Set Redirect URI</h4>
-                                    <p className="text-white/60 text-sm mb-2">
-                                        In your app settings, add this exact URI:
-                                    </p>
-                                    <code className="block px-3 py-2 bg-white/10 rounded text-green-300 text-sm font-mono">
-                                        http://localhost:3000/callback
-                                    </code>
-                                    <p className="text-white/40 text-xs mt-1">⚠️ Must be exact - including http:// (not https://)</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-3">
-                                <div className="w-7 h-7 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
-                                    4
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="text-white font-bold mb-1">Copy Credentials</h4>
-                                    <p className="text-white/60 text-sm">
-                                        Go to Settings → Copy your <strong>Client ID</strong> and <strong>Client Secret</strong> (click "View client secret").
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {showAuthSetup ? (
-                        <div className="space-y-4">
-                            <input
-                                type="text"
-                                placeholder="Client ID"
-                                value={clientId}
-                                onChange={(e) => setClientId(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/20 text-white placeholder-white/40"
-                            />
-                            <input
-                                type="password"
-                                placeholder="Client Secret"
-                                value={clientSecret}
-                                onChange={(e) => setClientSecret(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/20 text-white placeholder-white/40"
-                            />
-                            <button
-                                onClick={handleAuth}
-                                className="w-full px-6 py-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-colors"
-                            >
-                                Authorize with Spotify
-                            </button>
-
-                            <div className="space-y-2">
-                                <label className="text-white/60 text-sm">After authorizing, paste the code from the URL:</label>
-                                <input
-                                    type="text"
-                                    placeholder="Authorization code"
-                                    value={authCode}
-                                    onChange={(e) => setAuthCode(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/20 text-white placeholder-white/40"
-                                />
-                                <button
-                                    onClick={handleCodeSubmit}
-                                    disabled={!authCode}
-                                    className="w-full px-6 py-3 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-colors disabled:opacity-50"
-                                >
-                                    Complete Setup
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
+                    <h1 className="text-5xl font-black text-white tracking-tight">Spotify</h1>
+                    <p className="text-xl text-white/40 max-w-2xl mx-auto leading-relaxed">
+                        Search millions of tracks, save your favorites, and play them instantly
+                    </p>
+                    {isAuthenticated && (
                         <button
-                            onClick={() => setShowAuthSetup(true)}
-                            className="w-full px-6 py-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-colors"
+                            onClick={() => { spotifyService.logout(); setIsAuthenticated(false); }}
+                            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/5 text-white/60 hover:bg-white/10 transition-all"
                         >
-                            Set Up Spotify API
+                            <LogOut size={16} />
+                            Sign Out
                         </button>
                     )}
                 </motion.div>
-            )}
 
-            {/* Connection Status */}
-            <motion.div
-                whileHover={{ scale: 1.01 }}
-                className="p-8 rounded-[28px]"
-                style={{
-                    background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    backdropFilter: "blur(30px)",
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
-                }}
-            >
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-6">
-                        <div
-                            className="w-20 h-20 rounded-[22px] flex items-center justify-center"
-                            style={{ background: spotifyState?.is_running ? '#1DB95425' : 'rgba(255,255,255,0.06)' }}
+                {/* Auth Setup */}
+                {!isAuthenticated && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="max-w-3xl mx-auto"
+                    >
+                        <div className="p-12 rounded-[32px] space-y-10"
+                            style={{
+                                background: 'linear-gradient(135deg, rgba(29, 185, 84, 0.05), rgba(29, 185, 84, 0.02))',
+                                border: `1px solid ${SPOTIFY_GREEN}20`
+                            }}
                         >
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill={spotifyState?.is_running ? '#1DB954' : '#666'}>
-                                <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 className="font-black text-2xl mb-2 text-white leading-none">
-                                {spotifyState?.is_running ? 'Connected' : 'Not Connected'}
-                            </h3>
-                            <p className="text-base font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>
-                                {spotifyState?.is_running
-                                    ? (spotifyState.track?.name ? `Playing: ${spotifyState.track.name}` : 'Spotify is running')
-                                    : 'Open Spotify to connect'}
-                            </p>
-                        </div>
-                    </div>
-                    <div
-                        className="w-4 h-4 rounded-full"
-                        style={{
-                            background: spotifyState?.is_running ? '#1DB954' : '#666',
-                            boxShadow: spotifyState?.is_running ? '0 0 16px #1DB954' : 'none'
-                        }}
-                    />
-                </div>
+                            <div className="space-y-4">
+                                <h2 className="text-3xl font-black text-white">Get Started</h2>
+                                <p className="text-lg text-white/50">
+                                    Free setup • Takes 3 minutes •{' '}
+                                    <a href="file:///Users/anweshrath/Documents/My Apps/pomodoro/API_SETUP_GUIDE.md"
+                                        target="_blank"
+                                        className="text-green-400 hover:text-green-300 inline-flex items-center gap-1">
+                                        Full guide <ExternalLink size={14} />
+                                    </a>
+                                </p>
+                            </div>
 
-                <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => spotifyService.open()}
-                    className="w-full px-8 py-5 rounded-[20px] font-black text-base transition-all"
-                    style={{
-                        background: spotifyState?.is_running ? 'rgba(29, 185, 84, 0.2)' : '#1DB954',
-                        color: spotifyState?.is_running ? '#1DB954' : 'white',
-                        border: spotifyState?.is_running ? '1.5px solid #1DB95460' : 'none',
-                        boxShadow: spotifyState?.is_running ? 'none' : '0 8px 24px rgba(29, 185, 84, 0.4)'
-                    }}
-                >
-                    {spotifyState?.is_running ? '✓ Spotify Connected' : 'Open Spotify'}
-                </motion.button>
-            </motion.div>
-
-            {/* Search Section - Only show if authenticated */}
-            {isAuthenticated && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-6"
-                >
-                    <h3 className="font-black text-2xl text-white flex items-center gap-3">
-                        <Search size={24} />
-                        Search Spotify
-                    </h3>
-
-                    <div className="flex gap-3">
-                        <input
-                            type="text"
-                            placeholder="Search albums, playlists, or tracks..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                            className="flex-1 px-6 py-4 rounded-xl bg-white/5 border border-white/20 text-white placeholder-white/40 font-medium"
-                        />
-                        <button
-                            onClick={handleSearch}
-                            disabled={isSearching || !searchQuery.trim()}
-                            className="px-8 py-4 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-colors disabled:opacity-50 flex items-center gap-2"
-                        >
-                            {isSearching ? 'Searching...' : <><Search size={20} /> Search</>}
-                        </button>
-                    </div>
-
-                    {/* Search Results */}
-                    {searchResults.length > 0 && (
-                        <div className="grid grid-cols-2 gap-4">
-                            {searchResults.map((result) => (
-                                <div
-                                    key={result.id}
-                                    className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-4 hover:bg-white/10 transition-colors"
+                            {!showAuthSetup ? (
+                                <button
+                                    onClick={() => setShowAuthSetup(true)}
+                                    className="w-full py-6 rounded-2xl font-bold text-lg text-black transition-all hover:scale-[1.02]"
+                                    style={{
+                                        background: SPOTIFY_GREEN,
+                                        boxShadow: `0 8px 32px ${SPOTIFY_GREEN}40`
+                                    }}
                                 >
-                                    {result.image && (
-                                        <img src={result.image} alt={result.name} className="w-16 h-16 rounded-lg" />
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-white truncate">{result.name}</p>
-                                        <p className="text-sm text-white/60 truncate">
-                                            {result.type === 'track' ? result.artists : result.description || result.type}
-                                        </p>
+                                    Connect Spotify
+                                </button>
+                            ) : (
+                                <div className="space-y-6">
+                                    <input
+                                        type="text"
+                                        placeholder="Client ID"
+                                        value={clientId}
+                                        onChange={(e) => setClientId(e.target.value)}
+                                        className="w-full px-6 py-5 rounded-2xl bg-white/5 border border-white/10 text-white text-lg placeholder-white/30 focus:outline-none focus:border-green-500/50"
+                                    />
+                                    <input
+                                        type="password"
+                                        placeholder="Client Secret"
+                                        value={clientSecret}
+                                        onChange={(e) => setClientSecret(e.target.value)}
+                                        className="w-full px-6 py-5 rounded-2xl bg-white/5 border border-white/10 text-white text-lg placeholder-white/30 focus:outline-none focus:border-green-500/50"
+                                    />
+                                    <button
+                                        onClick={handleAuth}
+                                        disabled={!clientId || !clientSecret}
+                                        className="w-full py-5 rounded-2xl font-bold text-lg disabled:opacity-50"
+                                        style={{ background: SPOTIFY_GREEN, color: '#000' }}
+                                    >
+                                        Authorize
+                                    </button>
+
+                                    <div className="pt-6 border-t border-white/10 space-y-4">
+                                        <input
+                                            type="text"
+                                            placeholder="Paste authorization code here..."
+                                            value={authCode}
+                                            onChange={(e) => setAuthCode(e.target.value)}
+                                            className="w-full px-6 py-5 rounded-2xl bg-white/5 border border-white/10 text-white text-lg placeholder-white/30 font-mono text-sm focus:outline-none focus:border-green-500/50"
+                                        />
+                                        <button
+                                            onClick={handleCodeSubmit}
+                                            disabled={!authCode}
+                                            className="w-full py-5 rounded-2xl font-bold text-white bg-white/10 hover:bg-white/20 disabled:opacity-50 transition-all"
+                                        >
+                                            Complete Setup
+                                        </button>
                                     </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => playPlaylist(result.uri)}
-                                            className="p-2 rounded-lg bg-green-500 hover:bg-green-600 transition-colors"
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Search */}
+                {isAuthenticated && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="space-y-8"
+                    >
+                        <div className="max-w-3xl mx-auto">
+                            <div className="relative">
+                                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-white/30" size={24} />
+                                <input
+                                    type="text"
+                                    placeholder="Search albums, playlists, tracks..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                                    className="w-full pl-16 pr-40 py-6 rounded-3xl bg-white/5 border border-white/10 text-white text-lg placeholder-white/30 focus:outline-none focus:border-green-500/50 transition-all"
+                                />
+                                <button
+                                    onClick={handleSearch}
+                                    disabled={isSearching || !searchQuery.trim()}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 px-8 py-3 rounded-2xl font-bold disabled:opacity-50 transition-all hover:scale-105"
+                                    style={{ background: SPOTIFY_GREEN, color: '#000' }}
+                                >
+                                    {isSearching ? 'Searching...' : 'Search'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Search Results */}
+                        <AnimatePresence>
+                            {searchResults.length > 0 && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="grid grid-cols-2 gap-6"
+                                >
+                                    {searchResults.map((result, i) => (
+                                        <motion.div
+                                            key={result.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: i * 0.05 }}
+                                            className="group p-6 rounded-3xl bg-white/[0.02] border border-white/10 hover:bg-white/[0.05] hover:border-green-500/30 transition-all cursor-pointer"
                                         >
-                                            <Play size={16} className="text-white" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleAddFavorite(result)}
-                                            className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-                                        >
-                                            <Plus size={16} className="text-white" />
-                                        </button>
+                                            <div className="flex items-center gap-6">
+                                                {result.image && (
+                                                    <img src={result.image} alt="" className="w-20 h-20 rounded-2xl object-cover" />
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="font-bold text-white text-lg mb-2 truncate group-hover:text-green-400 transition-colors">{result.name}</h4>
+                                                    <p className="text-white/40 text-sm truncate">{result.artists || result.description}</p>
+                                                    <p className="text-white/20 text-xs mt-1 uppercase">{result.type}</p>
+                                                </div>
+                                                <div className="flex gap-3">
+                                                    <button
+                                                        onClick={() => playPlaylist(result.uri)}
+                                                        className="w-12 h-12 rounded-xl flex items-center justify-center transition-all hover:scale-110"
+                                                        style={{ background: SPOTIFY_GREEN }}
+                                                    >
+                                                        <Play size={20} fill="#000" color="#000" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleAddFavorite(result)}
+                                                        className="w-12 h-12 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all hover:scale-110"
+                                                    >
+                                                        <Plus size={20} color="#fff" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </motion.div>
+                )}
+
+                {/* Favorites */}
+                {favorites.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-8"
+                    >
+                        <h2 className="text-3xl font-black text-white">Your Library</h2>
+                        <div className="grid grid-cols-2 gap-6">
+                            {favorites.map((fav) => (
+                                <div key={fav.id} className="group p-6 rounded-3xl bg-white/[0.02] border border-white/10 hover:bg-white/[0.05] hover:border-green-500/30 transition-all">
+                                    <div className="flex items-center gap-6">
+                                        {fav.image && (<img src={fav.image} alt="" className="w-20 h-20 rounded-2xl" />)}
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-bold text-white text-lg mb-2 truncate">{fav.name}</h4>
+                                            <p className="text-white/40 text-sm truncate">{fav.artists || fav.description}</p>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <button onClick={() => playPlaylist(fav.uri)} className="w-12 h-12 rounded-xl flex items-center justify-center hover:scale-110 transition-transform" style={{ background: SPOTIFY_GREEN }}>
+                                                <Play size={20} fill="#000" color="#000" />
+                                            </button>
+                                            <button onClick={() => handleRemoveFavorite(fav.uri)} className="w-12 h-12 rounded-xl bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center hover:scale-110 transition-all">
+                                                <Trash2 size={20} color="#ff5555" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
-                    )}
-                </motion.div>
-            )}
+                    </motion.div>
+                )}
 
-            {/* My Favorites */}
-            {favorites.length > 0 && (
-                <div className="space-y-6">
-                    <h3 className="font-black text-2xl text-white flex items-center gap-3">
-                        ❤️ My Favorites
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        {favorites.map((fav) => (
-                            <div
-                                key={fav.id}
-                                className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-4 hover:bg-white/10 transition-colors"
-                            >
-                                {fav.image && (
-                                    <img src={fav.image} alt={fav.name} className="w-16 h-16 rounded-lg" />
-                                )}
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-white truncate">{fav.name}</p>
-                                    <p className="text-sm text-white/60 truncate">
-                                        {fav.type === 'track' ? fav.artists : fav.description || fav.type}
-                                    </p>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => playPlaylist(fav.uri)}
-                                        className="p-2 rounded-lg bg-green-500 hover:bg-green-600 transition-colors"
-                                    >
-                                        <Play size={16} className="text-white" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleRemoveFavorite(fav.uri)}
-                                        className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 transition-colors"
-                                    >
-                                        <Trash2 size={16} className="text-red-400" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Now Playing */}
-            {spotifyState?.is_running && spotifyState.track && (
+                {/* Curated Playlists */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-8 rounded-[28px]"
-                    style={{
-                        background: 'linear-gradient(135deg, rgba(29, 185, 84, 0.12) 0%, rgba(29, 185, 84, 0.05) 100%)',
-                        border: '1.5px solid rgba(29, 185, 84, 0.3)',
-                        boxShadow: '0 8px 32px rgba(29, 185, 84, 0.2)'
-                    }}
+                    className="space-y-12"
                 >
-                    <p className="text-sm font-bold uppercase tracking-wider text-green-400/70 mb-6">NOW PLAYING</p>
-                    <h4 className="font-black text-2xl text-white mb-3 leading-tight">{spotifyState.track.name}</h4>
-                    <p className="text-lg font-medium mb-8" style={{ color: "rgba(255,255,255,0.6)" }}>{spotifyState.track.artist}</p>
+                    <div>
+                        <h2 className="text-3xl font-black text-white mb-8">Focus Playlists</h2>
+                        <div className="grid grid-cols-3 gap-6">
+                            {FOCUS_PLAYLISTS.map((playlist, i) => (
+                                <motion.button
+                                    key={i}
+                                    whileHover={{ scale: 1.02, y: -4 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => playPlaylist(playlist.uri)}
+                                    className="p-8 rounded-3xl text-left transition-all group"
+                                    style={{
+                                        background: 'linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
+                                        border: '1px solid rgba(255,255,255,0.1)'
+                                    }}
+                                >
+                                    <div className="text-5xl mb-6">{playlist.mood}</div>
+                                    <h3 className="text-xl font-bold text-white mb-3 group-hover:text-green-400 transition-colors">{playlist.name}</h3>
+                                    <p className="text-white/40 text-sm leading-relaxed">{playlist.description}</p>
+                                </motion.button>
+                            ))}
+                        </div>
+                    </div>
 
-                    <div className="flex items-center justify-center gap-4">
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => spotifyService.previous()}
-                            className="p-4 rounded-[18px] bg-white/10 hover:bg-white/20 transition-all"
-                        >
-                            <SkipBack size={20} className="text-white" />
-                        </motion.button>
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => spotifyService.toggle()}
-                            className="p-5 rounded-[20px]"
-                            style={{ background: '#1DB954', boxShadow: '0 8px 24px rgba(29, 185, 84, 0.4)' }}
-                        >
-                            {spotifyState.is_playing ? <Pause size={24} color="#000" /> : <Play size={24} color="#000" />}
-                        </motion.button>
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => spotifyService.next()}
-                            className="p-4 rounded-[18px] bg-white/10 hover:bg-white/20 transition-all"
-                        >
-                            <SkipForward size={20} className="text-white" />
-                        </motion.button>
+                    <div>
+                        <h2 className="text-3xl font-black text-white mb-8">Break Music</h2>
+                        <div className="grid grid-cols-3 gap-6">
+                            {BREAK_PLAYLISTS.map((playlist, i) => (
+                                <motion.button
+                                    key={i}
+                                    whileHover={{ scale: 1.02, y: -4 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => playPlaylist(playlist.uri)}
+                                    className="p-8 rounded-3xl text-left transition-all group"
+                                    style={{
+                                        background: 'linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
+                                        border: '1px solid rgba(255,255,255,0.1)'
+                                    }}
+                                >
+                                    <div className="text-5xl mb-6">{playlist.mood}</div>
+                                    <h3 className="text-xl font-bold text-white mb-3 group-hover:text-green-400 transition-colors">{playlist.name}</h3>
+                                    <p className="text-white/40 text-sm leading-relaxed">{playlist.description}</p>
+                                </motion.button>
+                            ))}
+                        </div>
                     </div>
                 </motion.div>
-            )}
-
-            {/* Default Playlists */}
-            <div className="space-y-6">
-                <h3 className="font-black text-2xl text-white leading-none flex items-center gap-3">
-                    <span>🎯</span> Focus Playlists
-                </h3>
-                <div className="grid grid-cols-2 gap-5">
-                    {FOCUS_PLAYLISTS.map((playlist, index) => (
-                        <motion.button
-                            key={index}
-                            whileHover={{ scale: 1.03, y: -4 }}
-                            whileTap={{ scale: 0.97 }}
-                            onClick={() => playPlaylist(playlist.uri)}
-                            className="p-6 rounded-[24px] text-left group transition-all"
-                            style={{
-                                background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
-                                border: "1px solid rgba(255,255,255,0.12)",
-                                boxShadow: "0 4px 16px rgba(0,0,0,0.1)"
-                            }}
-                        >
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-14 h-14 rounded-[18px] bg-gradient-to-br from-purple-500 to-fuchsia-600 flex items-center justify-center text-2xl shadow-xl">
-                                    <Music size={24} color="#fff" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="font-black text-lg text-white leading-none mb-2">{playlist.name}</p>
-                                    <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>{playlist.description}</p>
-                                </div>
-                            </div>
-                            <span className="text-2xl">{playlist.mood}</span>
-                        </motion.button>
-                    ))}
-                </div>
-            </div>
-
-            <div className="space-y-6">
-                <h3 className="font-black text-2xl text-white leading-none flex items-center gap-3">
-                    <span>☕</span> Break Playlists
-                </h3>
-                <div className="grid grid-cols-2 gap-5">
-                    {BREAK_PLAYLISTS.map((playlist, index) => (
-                        <motion.button
-                            key={index}
-                            whileHover={{ scale: 1.03, y: -4 }}
-                            whileTap={{ scale: 0.97 }}
-                            onClick={() => playPlaylist(playlist.uri)}
-                            className="p-6 rounded-[24px] text-left group transition-all"
-                            style={{
-                                background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
-                                border: "1px solid rgba(255,255,255,0.12)",
-                                boxShadow: "0 4px 16px rgba(0,0,0,0.1)"
-                            }}
-                        >
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-14 h-14 rounded-[18px] bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-2xl shadow-xl">
-                                    <Music size={24} color="#fff" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="font-black text-lg text-white leading-none mb-2">{playlist.name}</p>
-                                    <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>{playlist.description}</p>
-                                </div>
-                            </div>
-                            <span className="text-2xl">{playlist.mood}</span>
-                        </motion.button>
-                    ))}
-                </div>
             </div>
         </div>
     );

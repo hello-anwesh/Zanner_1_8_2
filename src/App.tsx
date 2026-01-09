@@ -22,6 +22,7 @@ import { AIIdentityView } from "./components/AIIdentityView";
 import { AICognitionView } from "./components/AICognitionView";
 import { VoiceSettingsView } from "./components/VoiceSettingsView";
 import { SpotifySettingsView } from "./components/SpotifySettingsView";
+import { YouTubeSettingsView } from "./components/YouTubeSettingsView";
 import { TimerSettingsView } from "./components/TimerSettingsView";
 import { eventBus } from "./services";
 import { musicController } from "./services/music/MusicController";
@@ -53,7 +54,7 @@ import { AISettingsView } from "./components/AISettingsView";
 // ============================================================================
 
 type View = "home" | "stats" | "integrations" | "frequencies" | "philosophy" | "journal" |
-  "settings-ai" | "settings-theme" | "settings-spotify" | "settings-timer" | "settings-voice" |
+  "settings-ai" | "settings-theme" | "settings-spotify" | "settings-youtube" | "settings-timer" | "settings-voice" |
   "ai-identity" | "ai-cognition" | "ai-rhythms" | "ai-training" |
   "voice-speech" | "voice-tts";
 type TimerMode = "focus" | "shortBreak" | "longBreak";
@@ -999,6 +1000,9 @@ function App() {
 
                   {/* SETTINGS - SPOTIFY */}
                   {view === "settings-spotify" && <SpotifySettingsView accent={accent} />}
+
+                  {/* SETTINGS - YOUTUBE */}
+                  {view === "settings-youtube" && <YouTubeSettingsView accent={accent} />}
 
                   {/* SETTINGS - TIMER */}
                   {view === "settings-timer" && (
