@@ -167,10 +167,14 @@ export function ZennerCoach({ accent, onClose }: ZennerCoachProps) {
             setMessages(prev => [...prev, assistantMessage]);
         } catch (error) {
             console.error('Chat error:', error);
+
+            // Show the ACTUAL error to the user
+            const errorMessage = error instanceof Error ? error.message : String(error);
+
             setMessages(prev => [...prev, {
                 id: (Date.now() + 1).toString(),
                 role: "assistant",
-                content: "I encountered an error. Please try again.",
+                content: `❌ ERROR:\n\n${errorMessage}`,
                 timestamp: Date.now()
             }]);
         } finally {
