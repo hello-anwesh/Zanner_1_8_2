@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Plus, Sparkles, RotateCcw, Copy, Check, X, Bot, User, Mic, Clock, Trash2, MessageSquare, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css';
 import { coachService } from "../services/ai/CoachService";
 
 interface Message {
@@ -529,9 +533,45 @@ export function ZennerCoach({ accent, onClose }: ZennerCoachProps) {
                                                     wordBreak: 'break-word'
                                                 }}
                                             >
-                                                <div className="whitespace-pre-wrap break-words w-full min-w-0 font-normal opacity-95">
+                                                <ReactMarkdown
+                                                    className="markdown-content whitespace-normal break-words w-full min-w-0 font-normal opacity-95"
+                                                    remarkPlugins={[remarkGfm]}
+                                                    rehypePlugins={[rehypeHighlight]}
+                                                    components={{
+                                                        code: ({ node, inline, className, children, ...props }: any) => {
+                                                            return inline ? (
+                                                                <code className="px-1.5 py-0.5 rounded bg-white/10 text-sm font-mono" {...props}>
+                                                                    {children}
+                                                                </code>
+                                                            ) : (
+                                                                <code className={`block p-4 rounded-lg bg-black/40 text-sm font-mono overflow-x-auto ${className}`} {...props}>
+                                                                    {children}
+                                                                </code>
+                                                            );
+                                                        },
+                                                        p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                                                        ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-1">{children}</ul>,
+                                                        ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-1">{children}</ol>,
+                                                        li: ({ children }) => <li className="ml-2">{children}</li>,
+                                                        h1: ({ children }) => <h1 className="text-2xl font-bold mb-3 mt-4 first:mt-0">{children}</h1>,
+                                                        h2: ({ children }) => <h2 className="text-xl font-bold mb-2 mt-3 first:mt-0">{children}</h2>,
+                                                        h3: ({ children }) => <h3 className="text-lg font-bold mb-2 mt-2 first:mt-0">{children}</h3>,
+                                                        a: ({ children, href }) => (
+                                                            <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">
+                                                                {children}
+                                                            </a>
+                                                        ),
+                                                        blockquote: ({ children }) => (
+                                                            <blockquote className="border-l-4 border-white/20 pl-4 italic my-3 text-white/70">
+                                                                {children}
+                                                            </blockquote>
+                                                        ),
+                                                        strong: ({ children }) => <strong className="font-bold text-white">{children}</strong>,
+                                                        em: ({ children }) => <em className="italic">{children}</em>,
+                                                    }}
+                                                >
                                                     {message.content}
-                                                </div>
+                                                </ReactMarkdown>
                                             </div>
 
                                             {/* Actions Bar - visible on hover */}
