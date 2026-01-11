@@ -205,60 +205,96 @@ class AIService {
     // ============================================================
 
     async chat(userMessage: string, context?: Record<string, any>): Promise<string> {
-        const provider = this.getActiveProvider();
-        if (!provider) throw new Error("No active provider");
+        const errors: { provider: AIProviderType; error: string }[] = [];
 
-        // Force re-configuration to ensure API keys are fresh
-        const pConfig = this.config.providers[this.config.activeProvider];
-        if (pConfig) {
-            provider.configure({
-                apiKey: pConfig.apiKey,
-                model: pConfig.model,
-                baseUrl: (pConfig as any).baseUrl
-            });
-        }
-
-        // Build context-aware system message
-        let systemPrompt = this.config.systemPrompt;
-
-        // precise override if provided in context
-        if (context && typeof context.systemPrompt === 'string') {
-            systemPrompt = context.systemPrompt;
-        } else if (context) {
-            // Append context if it's not an override
-            systemPrompt += `\n\nCurrent context: ${JSON.stringify(context)}`;
-        }
-
-        // Add user message to history
-        this.conversationHistory.push({ role: "user", content: userMessage });
-
-        // Build messages array
-        const messages: Message[] = [
-            { role: "system", content: systemPrompt },
-            ...this.conversationHistory,
+        // Build list of providers to try (active first, then fallbacks)
+        const providersToTry = [
+            this.config.activeProvider,
+            ...this.config.fallbackPriority.filter(p => p !== this.config.activeProvider)
         ];
 
-        try {
-            const response = await provider.chat(messages, {
-                temperature: this.config.temperature,
-                maxTokens: this.config.maxTokens || 1000, // Increased default
-                model: this.config.providers[this.config.activeProvider].model,
-            });
+        console.log('[AIService] Providers to try:', providersToTry);
 
-            // Add assistant response to history
-            this.conversationHistory.push({ role: "assistant", content: response });
+        for (const providerType of providersToTry) {
+            const provider = this.providers.get(providerType);
+            const pConfig = this.config.providers[providerType];
 
-            // Keep history manageable
-            if (this.conversationHistory.length > 20) {
-                this.conversationHistory = this.conversationHistory.slice(-16);
+            // Skip if provider not available or not configured
+            if (!provider) {
+                console.log(`[AIService] Skipping ${providerType}: not initialized`);
+                continue;
             }
 
-            return response;
-        } catch (error) {
-            // Remove the failed user message
-            this.conversationHistory.pop();
-            throw error;
+            if (!pConfig || (providerType !== 'ollama' && !pConfig.apiKey)) {
+                console.log(`[AIService] Skipping ${providerType}: no API key`);
+                continue;
+            }
+
+            try {
+                console.log(`[AIService] Trying provider: ${providerType}`);
+
+                // Configure provider with latest settings
+                provider.configure({
+                    apiKey: pConfig.apiKey,
+                    model: pConfig.model,
+                    baseUrl: (pConfig as any).baseUrl
+                });
+
+                // Build context-aware system message
+                let systemPrompt = this.config.systemPrompt;
+
+                // precise override if provided in context
+                if (context && typeof context.systemPrompt === 'string') {
+                    systemPrompt = context.systemPrompt;
+                } else if (context) {
+                    // Append context if it's not an override
+                    systemPrompt += `\n\nCurrent context: ${JSON.stringify(context)}`;
+                }
+
+                // Add user message to history
+                this.conversationHistory.push({ role: "user", content: userMessage });
+
+                // Build messages array
+                const messages: Message[] = [
+                    { role: "system", content: systemPrompt },
+                    ...this.conversationHistory,
+                ];
+
+                // Attempt chat
+                const response = await provider.chat(messages, {
+                    temperature: this.config.temperature,
+                    maxTokens: this.config.maxTokens || 2000,
+                    model: pConfig.model,
+                });
+
+                // Success!
+                console.log(`[AIService] Success with ${providerType}`);
+
+                // Add assistant response to history
+                this.conversationHistory.push({ role: "assistant", content: response });
+
+                // Keep history manageable
+                if (this.conversationHistory.length > 20) {
+                    this.conversationHistory = this.conversationHistory.slice(-16);
+                }
+
+                return response;
+
+            } catch (error) {
+                const errorMsg = error instanceof Error ? error.message : String(error);
+                console.error(`[AIService] ${providerType} failed:`, errorMsg);
+                errors.push({ provider: providerType, error: errorMsg });
+
+                // Remove the failed user message before trying next provider
+                this.conversationHistory.pop();
+                continue;
+            }
         }
+
+        // All providers failed
+        console.error('[AIService] All providers failed:', errors);
+        const errorSummary = errors.map(e => `${e.provider}: ${e.error}`).join('\n');
+        throw new Error(`All AI providers failed:\n${errorSummary}\n\nCheck your API keys in Settings → AI Engine.`);
     }
 
     async *streamChat(userMessage: string, context?: Record<string, any>): AsyncGenerator<string, void, unknown> {

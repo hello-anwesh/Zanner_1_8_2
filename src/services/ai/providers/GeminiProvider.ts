@@ -100,6 +100,15 @@ export class GeminiProvider implements AIProvider {
         }));
 
         const model = options?.model || this.model;
+
+        console.log('[Gemini] Request:', {
+            model,
+            messageCount: contents.length,
+            hasSystemPrompt: !!systemMessage,
+            temperature: options?.temperature ?? 0.7,
+            maxTokens: options?.maxTokens ?? 2000
+        });
+
         const response = await fetch(
             `${this.baseUrl}/models/${model}:generateContent?key=${this.apiKey}`,
             {
@@ -110,19 +119,50 @@ export class GeminiProvider implements AIProvider {
                     systemInstruction: systemMessage ? { parts: [{ text: systemMessage }] } : undefined,
                     generationConfig: {
                         temperature: options?.temperature ?? 0.7,
-                        maxOutputTokens: options?.maxTokens ?? 500,
+                        maxOutputTokens: options?.maxTokens ?? 2000, // Increased from 500
                     },
                 }),
             }
         );
 
         if (!response.ok) {
-            const error = await response.json().catch(() => ({}));
-            throw new Error(error.error?.message || `Gemini error: ${response.status}`);
+            const errorText = await response.text();
+            console.error('[Gemini] API Error Response:', errorText);
+            let errorData;
+            try {
+                errorData = JSON.parse(errorText);
+            } catch {
+                throw new Error(`Gemini HTTP ${response.status}: ${errorText}`);
+            }
+            throw new Error(errorData.error?.message || `Gemini error: ${response.status}`);
         }
 
         const data = await response.json();
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        console.log('[Gemini] Full Response:', JSON.stringify(data, null, 2));
+
+        // Validate response structure
+        if (!data.candidates || data.candidates.length === 0) {
+            console.error('[Gemini] No candidates in response');
+            throw new Error('Gemini returned no response candidates. This may be due to safety filters or API issues.');
+        }
+
+        const candidate = data.candidates[0];
+
+        // Check for safety blocks
+        if (candidate.finishReason === 'SAFETY') {
+            console.error('[Gemini] Response blocked by safety filters:', candidate.safetyRatings);
+            throw new Error('Response blocked by Gemini safety filters. Try rephrasing your message.');
+        }
+
+        const text = candidate?.content?.parts?.[0]?.text;
+
+        if (!text || text.trim() === "") {
+            console.error('[Gemini] Empty text in response:', candidate);
+            throw new Error('Gemini returned an empty response. Check the model and prompt.');
+        }
+
+        console.log('[Gemini] Extracted text length:', text.length);
+        return text;
     }
 
     async *streamChat(messages: Message[], options?: AIOptions): AsyncGenerator<string, void, unknown> {

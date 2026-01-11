@@ -55,6 +55,7 @@ export interface AIProviderConfig {
 
 export interface AIConfig {
     activeProvider: AIProviderType;
+    fallbackPriority: AIProviderType[]; // Order of providers to try if active fails
     systemPrompt: string;
     temperature: number;
     maxTokens: number;
@@ -68,6 +69,7 @@ export interface AIConfig {
 
 export const DEFAULT_AI_CONFIG: AIConfig = {
     activeProvider: "gemini",
+    fallbackPriority: ["gemini", "openai", "claude", "ollama"], // Try in this order
     systemPrompt: "You are Chronos, a helpful AI focus companion. Be supportive, concise, and practical. Help users stay focused and suggest productive break activities.",
     temperature: 0.7,
     maxTokens: 1000,

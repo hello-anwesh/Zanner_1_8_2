@@ -183,30 +183,38 @@ Provide an intelligent, contextual response. Be helpful, concise, and specific t
             // Add to conversation history
             this.conversationHistory.push({ role: "user", content: userMessage });
 
+            console.log('[Coach] Sending to AI service...');
             const response = await aiService.chat(fullPrompt, {
                 systemPrompt: await this.getAdvancedPersonaPrompt(analytics),
                 conversationHistory: this.conversationHistory.slice(-10) // Last 5 exchanges
             });
 
-            // Add coach response to history
-            if (response) {
-                this.conversationHistory.push({ role: "assistant", content: response });
-                // Trigger Background Memory Consolidation
-                this.analyzeInteraction(userMessage, response);
+            console.log('[Coach] AI Response:', response);
+
+            // Validate response
+            if (!response || response.trim() === "") {
+                console.error('[Coach] AI returned empty response');
+                throw new Error('AI service returned an empty response. Check AI provider configuration and API key.');
             }
 
+            // Add coach response to history
+            this.conversationHistory.push({ role: "assistant", content: response });
+
+            // Trigger Background Memory Consolidation
+            this.analyzeInteraction(userMessage, response);
+
             return {
-                message: response || "I'm here. What do you need?",
-                tone: this.detectTone(response || "")
+                message: response,
+                tone: this.detectTone(response)
             };
         } catch (error) {
-            console.error("Coach chat error:", error);
-            // RAW ERROR MODE - requested by user
+            console.error("[Coach] Chat error:", error);
+            // Remove failed user message from history
+            this.conversationHistory.pop();
+
+            // Return the actual error to the user
             const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
-            return {
-                message: `[SYSTEM ERROR]: ${errorMessage}`,
-                tone: "practical"
-            };
+            throw new Error(`AI Chat Failed: ${errorMessage}`);
         }
     }
 
