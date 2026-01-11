@@ -119,7 +119,7 @@ export class GeminiProvider implements AIProvider {
                     systemInstruction: systemMessage ? { parts: [{ text: systemMessage }] } : undefined,
                     generationConfig: {
                         temperature: options?.temperature ?? 0.7,
-                        maxOutputTokens: options?.maxTokens ?? 2000, // Increased from 500
+                        maxOutputTokens: options?.maxTokens ?? 8000, // Increased for thinking models
                     },
                 }),
             }
