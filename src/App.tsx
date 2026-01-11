@@ -36,7 +36,6 @@ import { PresetEditor } from "./components/settings/PresetEditor";
 import { CommandCenter } from "./components/CommandCenter/CommandCenter";
 import { FrequencyGenerator } from "./components/frequency";
 import { ZennerCoach } from "./components/ZennerCoach";
-import { IntegrationsHub } from "./components/IntegrationsHub";
 import { CompactTimer } from "./components/CompactTimer";
 import { TitleBar } from "./components/TitleBar";
 import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
@@ -942,10 +941,7 @@ function App() {
                     </div>
                   )}
 
-                  {/* INTEGRATIONS */}
-                  {view === "integrations" && (
-                    <IntegrationsHub accent={accent} />
-                  )}
+
 
                   {/* PHILOSOPHY / ABOUT */}
                   {view === "philosophy" && (
