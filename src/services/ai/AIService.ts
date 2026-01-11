@@ -40,6 +40,13 @@ class AIService {
                         ...(parsed.providers || {})
                     }
                 };
+
+                // Migrate old configs with low maxTokens to new minimum
+                if (!this.config.maxTokens || this.config.maxTokens < 32768) {
+                    console.log(`[AIService] Migrating maxTokens from ${this.config.maxTokens} to 32768`);
+                    this.config.maxTokens = 32768;
+                    this.saveConfig(); // Persist the migration
+                }
             }
         } catch (error) {
             console.error('Failed to load AI config:', error);
