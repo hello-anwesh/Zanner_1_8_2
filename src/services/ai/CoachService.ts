@@ -169,23 +169,18 @@ ${context.userEnergy ? `- Energy Level: ${context.userEnergy}` : ""}`;
             const ragContext = await ragService.retrieve(userMessage);
             const contextString = this.buildContextString(context);
 
-            // Build enhanced prompt with all context
-            const fullPrompt = `${contextString}
+            // Build enhanced prompt with context ONLY (no user message - AIService handles that)
+            const contextPrompt = `${contextString}
 
 ${memoryContext ? `RELEVANT USER MEMORY:\n${memoryContext}\n` : ""}
 
 ${ragContext ? `KNOWLEDGE BASE:\n${ragContext}\n` : ""}
 
-User Message: "${userMessage}"
-
 Provide an intelligent, contextual response. Be helpful, concise, and specific to their situation.`;
 
-            // Add to conversation history
-            this.conversationHistory.push({ role: "user", content: userMessage });
-
             console.log('[Coach] Sending to AI service...');
-            const response = await aiService.chat(fullPrompt, {
-                systemPrompt: await this.getAdvancedPersonaPrompt(analytics),
+            const response = await aiService.chat(userMessage, {
+                systemPrompt: await this.getAdvancedPersonaPrompt(analytics) + '\n\n' + contextPrompt,
                 conversationHistory: this.conversationHistory.slice(-10) // Last 5 exchanges
             });
 
@@ -197,7 +192,8 @@ Provide an intelligent, contextual response. Be helpful, concise, and specific t
                 throw new Error('AI service returned an empty response. Check AI provider configuration and API key.');
             }
 
-            // Add coach response to history
+            // Add BOTH user message and assistant response to history AFTER successful response
+            this.conversationHistory.push({ role: "user", content: userMessage });
             this.conversationHistory.push({ role: "assistant", content: response });
 
             // Trigger Background Memory Consolidation
@@ -209,8 +205,6 @@ Provide an intelligent, contextual response. Be helpful, concise, and specific t
             };
         } catch (error) {
             console.error("[Coach] Chat error:", error);
-            // Remove failed user message from history
-            this.conversationHistory.pop();
 
             // Return the actual error to the user
             const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
