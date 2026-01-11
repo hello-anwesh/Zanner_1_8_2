@@ -96,7 +96,7 @@ export class OpenAIProvider implements AIProvider {
                 model: options?.model || this.model,
                 messages: messages.map(m => ({ role: m.role, content: m.content })),
                 temperature: options?.temperature ?? 0.7,
-                max_tokens: options?.maxTokens ?? 500,
+                max_tokens: options?.maxTokens ?? 16384, // Maximum for GPT-4
             }),
         });
 
@@ -122,7 +122,7 @@ export class OpenAIProvider implements AIProvider {
                 model: options?.model || this.model,
                 messages: messages.map(m => ({ role: m.role, content: m.content })),
                 temperature: options?.temperature ?? 0.7,
-                max_tokens: options?.maxTokens ?? 500,
+                max_tokens: options?.maxTokens ?? 16384,
                 stream: true,
             }),
         });

@@ -71,7 +71,7 @@ export class OllamaProvider implements AIProvider {
                 stream: false,
                 options: {
                     temperature: options?.temperature ?? 0.7,
-                    num_predict: options?.maxTokens ?? 500,
+                    num_predict: options?.maxTokens ?? 32768, // Maximum for most local models
                 },
             }),
         });
@@ -94,7 +94,7 @@ export class OllamaProvider implements AIProvider {
                 stream: true,
                 options: {
                     temperature: options?.temperature ?? 0.7,
-                    num_predict: options?.maxTokens ?? 500,
+                    num_predict: options?.maxTokens ?? 32768,
                 },
             }),
         });

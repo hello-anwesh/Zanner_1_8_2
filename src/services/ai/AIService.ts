@@ -263,7 +263,7 @@ class AIService {
                 // Attempt chat
                 const response = await provider.chat(messages, {
                     temperature: this.config.temperature,
-                    maxTokens: this.config.maxTokens || 2000,
+                    maxTokens: this.config.maxTokens || 32768,
                     model: pConfig.model,
                 });
 

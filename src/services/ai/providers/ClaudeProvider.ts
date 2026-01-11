@@ -113,7 +113,7 @@ export class ClaudeProvider implements AIProvider {
             },
             body: JSON.stringify({
                 model: options?.model || this.model,
-                max_tokens: options?.maxTokens ?? 500,
+                max_tokens: options?.maxTokens ?? 8192, // Maximum for Claude 3
                 system: systemMessage,
                 messages: chatMessages.map(m => ({ role: m.role, content: m.content })),
             }),
@@ -144,7 +144,7 @@ export class ClaudeProvider implements AIProvider {
             },
             body: JSON.stringify({
                 model: options?.model || this.model,
-                max_tokens: options?.maxTokens ?? 500,
+                max_tokens: options?.maxTokens ?? 8192,
                 system: systemMessage,
                 messages: chatMessages.map(m => ({ role: m.role, content: m.content })),
                 stream: true,
