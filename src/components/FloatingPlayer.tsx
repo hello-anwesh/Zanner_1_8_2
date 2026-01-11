@@ -152,7 +152,7 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
     }, [activeCategory]);
 
     // Play a track
-    const play = useCallback((track: SoundTrack) => {
+    const play = useCallback(async (track: SoundTrack) => {
         setError(null);
         setIsLoading(true);
 
@@ -175,8 +175,8 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
             const mix = allMixes.find(m => m.id === mixId);
 
             if (mix) {
-                // Get frequency engine and play the mix
-                mix.frequencies.forEach(f => engine.startFrequency(f.hz, f.volume));
+                // Get frequency engine and play the mix - AWAIT all frequencies
+                await Promise.all(mix.frequencies.map(f => engine.startFrequency(f.hz, f.volume)));
                 setCurrentTrack(track);
                 setIsPlaying(true);
                 setIsLoading(false);
