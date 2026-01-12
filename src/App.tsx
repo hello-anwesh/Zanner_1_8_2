@@ -480,8 +480,9 @@ function App() {
                             <div
                               className="w-full aspect-square rounded-lg border-2 transition-all hover:scale-110"
                               style={{
-                                background: t.accent,
-                                borderColor: themeName === key ? '#FFF' : 'rgba(255,255,255,0.2)'
+                                background: t.colors.accent,
+                                borderColor: themeName === key ? '#FFF' : 'rgba(255,255,255,0.2)',
+                                boxShadow: themeName === key ? `0 0 20px ${t.colors.accent}60` : 'none'
                               }}
                             />
                             <span className="text-[10px] text-white/60 font-medium text-center">{t.name}</span>
