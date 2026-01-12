@@ -46,6 +46,7 @@ import { PhilosophyView } from "./components/PhilosophyView";
 import { JournalView } from "./components/JournalView";
 import { AISettingsView } from "./components/AISettingsView";
 import { AIBrainView } from "./components/AIBrainView";
+import { PostSessionJournal } from "./components/PostSessionJournal";
 
 
 
@@ -93,6 +94,17 @@ function App() {
       role: "Productivity Expert"
     }
   });
+
+  // Post-Session Journal state
+  const [showPostSessionJournal, setShowPostSessionJournal] = useState(false);
+  const [completedSessionData, setCompletedSessionData] = useState<{
+    sessionNumber: number;
+    duration: number;
+    startTime: Date;
+    endTime: Date;
+    type: 'focus' | 'break';
+  } | null>(null);
+  const sessionStartTimeRef = useRef<Date>(new Date());
 
   // Timer State
   const [showCommandCenter, setShowCommandCenter] = useState(false);
@@ -293,7 +305,21 @@ function App() {
     if (timeLeft === 0 && isRunning) {
       setIsRunning(false);
       eventBus.emit({ type: "SESSION_END", mode });
-      if (mode === "focus") setSessions(s => s + 1);
+
+      // Track session completion and show post-session journal for focus sessions
+      if (mode === "focus") {
+        setSessions(s => s + 1);
+
+        // Show post-session journal modal
+        setCompletedSessionData({
+          sessionNumber: sessions + 1,
+          duration: durations.focus,
+          startTime: sessionStartTimeRef.current,
+          endTime: new Date(),
+          type: 'focus'
+        });
+        setShowPostSessionJournal(true);
+      }
 
       // Auto-transition to next mode after 2 seconds
 
@@ -320,6 +346,7 @@ function App() {
         }
 
         setIsRunning(true); // Auto-start the next session
+        sessionStartTimeRef.current = new Date(); // Track session start
         eventBus.emit({ type: "SESSION_START", mode: nextMode });
       }, 2000);
     }
@@ -1342,6 +1369,18 @@ function App() {
           />
         )
       }
+
+      {/* Post-Session Journal Modal */}
+      {completedSessionData && (
+        <PostSessionJournal
+          isOpen={showPostSessionJournal}
+          onClose={() => {
+            setShowPostSessionJournal(false);
+            setCompletedSessionData(null);
+          }}
+          sessionData={completedSessionData}
+        />
+      )}
     </div >
   );
 }

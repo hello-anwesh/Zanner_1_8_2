@@ -197,8 +197,8 @@ CREATE TABLE journal_templates (
 - [ ] Summary view
 
 ### Phase 3: Smart Features
-- [ ] Template selector
-- [ ] Built-in templates (5)
+- [x] Template selector ✅
+- [x] Built-in templates (5) ✅
 - [ ] Custom templates
 - [x] Gratitude Mode ✅
 - [ ] Gratitude streak
