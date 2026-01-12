@@ -153,6 +153,33 @@ class AIService {
         // Save to localStorage - this is the KEY part
         this.saveConfig();
         this.notifyListeners();
+
+        // If Ollama became the active provider, preload the model in the background
+        if (updates.activeProvider === 'ollama' ||
+            (updates.fallbackPriority && updates.fallbackPriority[0] === 'ollama')) {
+            this.preloadOllamaModel();
+        }
+    }
+
+    /**
+     * Preload Ollama model in the background.
+     * This warms up the model so the first chat request is fast.
+     */
+    private async preloadOllamaModel(): Promise<void> {
+        const ollamaProvider = this.providers.get('ollama') as OllamaProvider | undefined;
+        if (!ollamaProvider) return;
+
+        // Configure with saved settings first
+        this.configureProvider('ollama');
+
+        console.log('[AIService] Preloading Ollama model in background...');
+        const result = await ollamaProvider.preloadModel();
+
+        if (result.success) {
+            console.log('[AIService] Ollama model ready for fast responses');
+        } else {
+            console.warn('[AIService] Ollama preload failed:', result.error);
+        }
     }
 
     getConfig(): AIConfig {
