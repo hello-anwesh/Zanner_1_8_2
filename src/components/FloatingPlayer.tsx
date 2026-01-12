@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { motion, useDragControls } from "framer-motion";
 import {
     Pause, Play, X, Heart, SkipForward, SkipBack,
     Volume2, VolumeX, Music, Music2, AlertCircle
@@ -40,6 +41,14 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
 
     // Spotify state
     const [spotifyState, setSpotifyState] = useState<SpotifyState | null>(null);
+
+    // Drag position state - persisted
+    const [position, setPosition] = useState(() => {
+        const saved = localStorage.getItem('floatingPlayerPosition');
+        return saved ? JSON.parse(saved) : { x: 0, y: 0 };
+    });
+    const dragControls = useDragControls();
+    const constraintsRef = useRef<HTMLDivElement>(null);
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -367,8 +376,23 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
                 />
             )}
 
-            {/* Main Container */}
-            <div className="fixed bottom-8 right-8 z-50">
+            {/* Drag Constraints Container */}
+            <div ref={constraintsRef} className="fixed inset-0 pointer-events-none z-40" />
+
+            {/* Main Container - Draggable */}
+            <motion.div
+                drag
+                dragControls={dragControls}
+                dragMomentum={false}
+                dragElastic={0.1}
+                dragConstraints={constraintsRef}
+                initial={position}
+                onDragEnd={(_, info) => {
+                    const newPos = { x: position.x + info.offset.x, y: position.y + info.offset.y };
+                    setPosition(newPos);
+                    localStorage.setItem('floatingPlayerPosition', JSON.stringify(newPos));
+                }}
+                className="fixed bottom-8 right-8 z-50 cursor-grab active:cursor-grabbing">
 
                 {/* === TRIGGER BUTTON - CLEAN FLAT === */}
                 {!showLibrary && !currentTrack && (
@@ -906,7 +930,7 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
                     </div >
                 )
                 }
-            </div >
+            </motion.div>
         </>
     );
 }
