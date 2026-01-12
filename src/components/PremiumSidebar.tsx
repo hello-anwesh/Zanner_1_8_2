@@ -34,10 +34,6 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
         { id: 'journal', icon: Book, label: 'Journal', gradient: 'from-amber-500 to-yellow-600' },
     ];
 
-    const bottomItems = [
-        { id: 'profile', icon: User, label: 'Profile', gradient: 'from-pink-500 to-rose-600' }
-    ];
-
     const settingsItems = [
         { id: 'settings-brain', icon: Brain, label: 'Memory', effect: 'pulse' },
         { id: 'settings-ai', icon: Settings2, label: 'AI Engine', effect: 'rotate' },
@@ -60,29 +56,8 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
                 boxShadow: '0 20px 50px rgba(0,0,0,0.3)'
             }}
         >
-            {/* Premium Header with Logo */}
-            <div className="flex items-center justify-between px-4 pt-7 mb-28 mx-2">
-                <div className="flex items-center gap-3">
-                    <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden group"
-                        style={{
-                            boxShadow: `0 6px 20px ${accent}40`
-                        }}
-                    >
-                        <img
-                            src="/zenner-logo.png"
-                            alt="Zenner Logo"
-                            className="w-full h-full object-cover"
-                        />
-                    </div>
-                    {!collapsed && (
-                        <div>
-                            <h1 className="text-base font-black tracking-tight text-white" style={{ fontFamily: 'Space Mono' }}>Zenner</h1>
-                        </div>
-                    )}
-                </div>
-
-                {/* Collapse/Expand Toggle */}
+            {/* Collapse Toggle - Top Right */}
+            <div className="absolute top-4 right-3 z-10">
                 <button
                     onClick={() => onCollapsedChange(!collapsed)}
                     className="p-2 rounded-lg transition-all duration-300 hover:bg-white/10 hover:scale-110"
@@ -98,6 +73,74 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
                     </svg>
                 </button>
             </div>
+
+            {/* Centered Brand Section */}
+            {!collapsed && (
+                <div className="flex flex-col items-center pt-8 pb-6 px-4">
+                    {/* Logo */}
+                    <div
+                        className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4 overflow-hidden"
+                        style={{
+                            boxShadow: `0 8px 32px ${accent}30`
+                        }}
+                    >
+                        <img
+                            src="/zenner-logo.png"
+                            alt="Zenner"
+                            className="w-full h-full object-contain"
+                        />
+                    </div>
+
+                    {/* Tagline */}
+                    <p
+                        className="text-xs font-bold tracking-[0.15em] text-white/50 uppercase mb-6"
+                        style={{ fontFamily: "'Space Mono', monospace" }}
+                    >
+                        Focus · Amplify · Thrive
+                    </p>
+
+                    {/* Profile & Settings Quick Access */}
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => onViewChange('profile')}
+                            className={`p-3 rounded-xl transition-all duration-200 ${view === 'profile'
+                                ? 'bg-white/10'
+                                : 'bg-white/[0.03] hover:bg-white/[0.08]'
+                                }`}
+                            title="Profile"
+                        >
+                            <User
+                                size={18}
+                                className={view === 'profile' ? 'text-white' : 'text-white/50'}
+                                style={view === 'profile' ? { color: accent } : {}}
+                            />
+                        </button>
+                        <button
+                            onClick={() => onViewChange('settings-theme')}
+                            className={`p-3 rounded-xl transition-all duration-200 ${view.startsWith('settings')
+                                ? 'bg-white/10'
+                                : 'bg-white/[0.03] hover:bg-white/[0.08]'
+                                }`}
+                            title="Settings"
+                        >
+                            <Settings2
+                                size={18}
+                                className={view.startsWith('settings') ? 'text-white' : 'text-white/50'}
+                                style={view.startsWith('settings') ? { color: accent } : {}}
+                            />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Collapsed state - just logo */}
+            {collapsed && (
+                <div className="flex flex-col items-center pt-16 pb-4">
+                    <div className="w-10 h-10 rounded-xl overflow-hidden">
+                        <img src="/zenner-logo.png" alt="Z" className="w-full h-full object-contain" />
+                    </div>
+                </div>
+            )}
 
             {/* Main Items */}
             <nav className="flex-1 px-4 flex flex-col justify-center gap-2 overflow-y-auto overflow-x-hidden custom-scrollbar pb-5">
@@ -129,21 +172,6 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
 
                 {/* Frequencies Button */}
                 <NavButton id="frequencies" icon={Waves} label="Frequencies" gradient="from-pink-500 to-rose-600" view={view} onClick={onFrequencyClick} collapsed={collapsed} accent={accent} />
-
-                {/* Spacer */}
-                <div className="flex-1" />
-
-                {/* Bottom Items (Profile) */}
-                {bottomItems.map(item => (
-                    <NavButton
-                        key={item.id}
-                        {...item}
-                        view={view}
-                        onClick={() => onViewChange(item.id)}
-                        collapsed={collapsed}
-                        accent={accent}
-                    />
-                ))}
             </nav>
 
 
