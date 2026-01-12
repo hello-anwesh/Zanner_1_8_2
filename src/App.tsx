@@ -49,6 +49,7 @@ import { AIBrainView } from "./components/AIBrainView";
 import { PostSessionJournal } from "./components/PostSessionJournal";
 import { CommandDashboard } from "./components/CommandDashboard";
 import { ProfileView } from "./components/profile/ProfileView";
+import { SettingsHub } from "./components/SettingsHub";
 
 
 
@@ -56,8 +57,8 @@ import { ProfileView } from "./components/profile/ProfileView";
 // TYPES & CONSTANTS
 // ============================================================================
 
-type View = "home" | "dashboard" | "stats" | "integrations" | "frequencies" | "philosophy" | "journal" | "profile" |
-  "settings-ai" | "settings-theme" | "settings-spotify" | "settings-youtube" | "settings-timer" | "settings-voice" |
+type View = "home" | "dashboard" | "stats" | "integrations" | "frequencies" | "philosophy" | "journal" | "profile" | "settings" |
+  "settings-ai" | "settings-theme" | "settings-spotify" | "settings-youtube" | "settings-timer" | "settings-voice" | "settings-brain" |
   "ai-identity" | "ai-cognition" | "ai-rhythms" | "ai-training" |
   "voice-speech" | "voice-tts";
 type TimerMode = "focus" | "shortBreak" | "longBreak";
@@ -1015,6 +1016,15 @@ function App() {
                   {/* PROFILE */}
                   {view === "profile" && (
                     <ProfileView accent={accent} />
+                  )}
+
+                  {/* SETTINGS HUB */}
+                  {view === "settings" && (
+                    <SettingsHub
+                      accent={accent}
+                      onNavigate={(v) => setView(v as View)}
+                      currentView={view}
+                    />
                   )}
 
                   {/* SETTINGS - AI */}

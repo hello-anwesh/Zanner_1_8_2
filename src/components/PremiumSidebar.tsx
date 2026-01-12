@@ -154,21 +154,17 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
                         accent={accent}
                     />
                 ))}
-
-                {/* Settings Expandable */}
-                <ExpandableSection
-                    title="Settings"
-                    count={6}
+                {/* Settings - Now a single button to Settings Hub */}
+                <NavButton
+                    id="settings"
                     icon={Settings2}
-                    expanded={expandedSections.settings}
-                    onToggle={() => toggleSection('settings')}
+                    label="Settings"
+                    gradient="from-gray-500 to-slate-600"
+                    view={view}
+                    onClick={() => onViewChange('settings')}
                     collapsed={collapsed}
                     accent={accent}
-                >
-                    {settingsItems.map(item => (
-                        <SubItem key={item.id} {...item} view={view} onClick={() => onViewChange(item.id)} accent={accent} />
-                    ))}
-                </ExpandableSection>
+                />
 
                 {/* Frequencies Button */}
                 <NavButton id="frequencies" icon={Waves} label="Frequencies" gradient="from-pink-500 to-rose-600" view={view} onClick={onFrequencyClick} collapsed={collapsed} accent={accent} />
