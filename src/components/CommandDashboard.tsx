@@ -1,14 +1,9 @@
-/**
- * Command Dashboard - State of the Art Bento Grid
- * The central nervous system of your productivity
- */
-
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Play, Pause, SkipForward, Flame, Target, Brain, Sparkles,
     Calendar, PenLine, Music, TrendingUp, Zap,
-    ChevronRight, BarChart3, Heart, Moon, Sun, Coffee
+    ChevronRight, BarChart3, Heart, Moon, Sun, Coffee, ChevronDown
 } from 'lucide-react';
 import { journalService } from '../services/journal/JournalService';
 import { journalPromptService } from '../services/journal/JournalPromptService';
@@ -22,6 +17,7 @@ interface DashboardProps {
     sessions: number;
     onToggleTimer: () => void;
     onSkip: () => void;
+    onModeChange?: (mode: 'focus' | 'shortBreak' | 'longBreak') => void;
     accent: string;
     // Navigation
     onNavigate: (view: string) => void;
@@ -55,6 +51,7 @@ export function CommandDashboard({
     sessions,
     onToggleTimer,
     onSkip,
+    onModeChange,
     accent,
     onNavigate,
     streakDays = 0,
@@ -66,6 +63,7 @@ export function CommandDashboard({
     const [dailyPrompt, setDailyPrompt] = useState({ text: '', icon: '💭' });
     const [currentTime, setCurrentTime] = useState(new Date());
     const [animatedProgress, setAnimatedProgress] = useState(0);
+    const [showModeSelector, setShowModeSelector] = useState(false);
 
     // Update time every second
     useEffect(() => {
@@ -177,18 +175,65 @@ export function CommandDashboard({
                     />
 
                     <div className="relative h-full flex flex-col items-center justify-center p-8">
-                        {/* Mode indicator */}
-                        <div
-                            className="flex items-center gap-2 px-4 py-2 rounded-full mb-6"
-                            style={{ background: `${modeColors[mode]}20`, border: `1px solid ${modeColors[mode]}30` }}
-                        >
-                            <div
-                                className={`w-2 h-2 rounded-full ${isRunning ? 'animate-pulse' : ''}`}
-                                style={{ background: modeColors[mode] }}
-                            />
-                            <span className="text-sm font-medium" style={{ color: modeColors[mode] }}>
-                                {modeLabels[mode]}
-                            </span>
+                        {/* Mode Selector Dropdown */}
+                        <div className="relative mb-6">
+                            <button
+                                onClick={() => setShowModeSelector(!showModeSelector)}
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-full transition-all hover:scale-105"
+                                style={{
+                                    background: `${modeColors[mode]}20`,
+                                    border: `1px solid ${modeColors[mode]}40`
+                                }}
+                            >
+                                <div
+                                    className={`w-2 h-2 rounded-full ${isRunning ? 'animate-pulse' : ''}`}
+                                    style={{ background: modeColors[mode] }}
+                                />
+                                <span className="text-sm font-medium" style={{ color: modeColors[mode] }}>
+                                    {modeLabels[mode]}
+                                </span>
+                                <ChevronDown
+                                    size={14}
+                                    style={{ color: modeColors[mode] }}
+                                    className={`transition-transform ${showModeSelector ? 'rotate-180' : ''}`}
+                                />
+                            </button>
+
+                            {/* Dropdown */}
+                            <AnimatePresence>
+                                {showModeSelector && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                        transition={{ duration: 0.15 }}
+                                        className="absolute top-full left-1/2 -translate-x-1/2 mt-2 p-2 rounded-2xl bg-[#1a1a1a] border border-white/10 shadow-2xl z-50 min-w-[180px]"
+                                    >
+                                        {(['focus', 'shortBreak', 'longBreak'] as const).map((m) => (
+                                            <button
+                                                key={m}
+                                                onClick={() => {
+                                                    onModeChange?.(m);
+                                                    setShowModeSelector(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${mode === m ? 'bg-white/10' : 'hover:bg-white/5'
+                                                    }`}
+                                            >
+                                                <div
+                                                    className="w-3 h-3 rounded-full"
+                                                    style={{ background: modeColors[m] }}
+                                                />
+                                                <span className="text-sm font-medium text-white">
+                                                    {modeLabels[m]}
+                                                </span>
+                                                {mode === m && (
+                                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white" />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
                         {/* Timer Ring */}

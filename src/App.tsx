@@ -994,6 +994,11 @@ function App() {
                         setMode(nextMode);
                         setTimeLeft(durations[nextMode] * 60);
                       }}
+                      onModeChange={(newMode) => {
+                        setMode(newMode);
+                        setTimeLeft(durations[newMode] * 60);
+                        setIsRunning(false);
+                      }}
                       accent={accent}
                       onNavigate={(v) => setView(v as View)}
                       streakDays={7}
