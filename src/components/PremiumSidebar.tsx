@@ -26,12 +26,15 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
     };
 
     const mainItems = [
-        { id: 'home', icon: Home, label: 'Timer', gradient: 'from-violet-500 to-purple-600' },
         { id: 'dashboard', icon: LayoutGrid, label: 'Dashboard', gradient: 'from-indigo-500 to-violet-600' },
+        { id: 'home', icon: Home, label: 'Timer', gradient: 'from-violet-500 to-purple-600' },
         { id: 'zeni', icon: Brain, label: 'Zeni', gradient: 'from-fuchsia-500 to-pink-600' },
         { id: 'stats', icon: BarChart2, label: 'Analytics', gradient: 'from-cyan-500 to-blue-600' },
         { id: 'philosophy', icon: Book, label: 'Philosophy', gradient: 'from-emerald-500 to-teal-600' },
         { id: 'journal', icon: Book, label: 'Journal', gradient: 'from-amber-500 to-yellow-600' },
+    ];
+
+    const bottomItems = [
         { id: 'profile', icon: User, label: 'Profile', gradient: 'from-pink-500 to-rose-600' }
     ];
 
@@ -126,6 +129,21 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
 
                 {/* Frequencies Button */}
                 <NavButton id="frequencies" icon={Waves} label="Frequencies" gradient="from-pink-500 to-rose-600" view={view} onClick={onFrequencyClick} collapsed={collapsed} accent={accent} />
+
+                {/* Spacer */}
+                <div className="flex-1" />
+
+                {/* Bottom Items (Profile) */}
+                {bottomItems.map(item => (
+                    <NavButton
+                        key={item.id}
+                        {...item}
+                        view={view}
+                        onClick={() => onViewChange(item.id)}
+                        collapsed={collapsed}
+                        accent={accent}
+                    />
+                ))}
             </nav>
 
 

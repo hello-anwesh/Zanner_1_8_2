@@ -1,5 +1,6 @@
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Pause, Maximize2, X } from 'lucide-react';
+import { Play, Pause, Maximize2, X, GripVertical } from 'lucide-react';
 
 interface CompactTimerProps {
     timeLeft: number;
@@ -28,149 +29,166 @@ export function CompactTimer({
     onExpand,
     onClose
 }: CompactTimerProps) {
-    const modeConfig: { [key: string]: { label: string; emoji: string; bg: string } } = {
-        work: { label: 'Focus', emoji: '🎯', bg: '#7C3AED' },
-        focus: { label: 'Focus', emoji: '🎯', bg: '#7C3AED' },
-        shortBreak: { label: 'Break', emoji: '☕', bg: '#10B981' },
-        longBreak: { label: 'Long Break', emoji: '🌴', bg: '#3B82F6' }
+    // Drag state for browser/electron
+    const [position, setPosition] = useState(() => {
+        const saved = localStorage.getItem('compactTimerPosition');
+        return saved ? JSON.parse(saved) : { x: 0, y: 0 };
+    });
+    const constraintsRef = useRef<HTMLDivElement>(null);
+
+    const modeConfig: { [key: string]: { label: string; emoji: string; color: string } } = {
+        work: { label: 'Focus', emoji: '🎯', color: '#7C3AED' },
+        focus: { label: 'Focus', emoji: '🎯', color: '#7C3AED' },
+        shortBreak: { label: 'Short Break', emoji: '☕', color: '#10B981' },
+        longBreak: { label: 'Long Break', emoji: '🌴', color: '#3B82F6' }
     };
 
-    const config = modeConfig[mode] || { label: mode, emoji: '⏱️', bg: accent };
-    const percentage = mode === 'work' || mode === 'focus' ? (timeLeft / (25 * 60)) * 100 : (timeLeft / (5 * 60)) * 100;
+    const config = modeConfig[mode] || { label: mode, emoji: '⏱️', color: accent };
+
+    // Calculate progress based on mode
+    const getTotalSeconds = () => {
+        if (mode === 'focus' || mode === 'work') return 25 * 60;
+        if (mode === 'shortBreak') return 5 * 60;
+        if (mode === 'longBreak') return 15 * 60;
+        return 25 * 60;
+    };
+    const progress = ((getTotalSeconds() - timeLeft) / getTotalSeconds()) * 100;
 
     return (
-        <div
-            className="w-full h-full flex items-center justify-center"
-            style={{ background: '#1E1E1E' }}
-        >
-            <div
-                data-tauri-drag-region
-                className="w-full h-full max-w-[400px] max-h-[200px] rounded-2xl border flex flex-col overflow-hidden"
-                style={{
-                    background: '#1E1E1E',
-                    borderColor: 'rgba(255,255,255,0.1)',
+        <>
+            {/* Drag Constraints */}
+            <div ref={constraintsRef} className="fixed inset-0 pointer-events-none z-[9998]" />
+
+            <motion.div
+                drag
+                dragMomentum={false}
+                dragElastic={0.1}
+                dragConstraints={constraintsRef}
+                initial={position}
+                onDragEnd={(_, info) => {
+                    const newPos = { x: position.x + info.offset.x, y: position.y + info.offset.y };
+                    setPosition(newPos);
+                    localStorage.setItem('compactTimerPosition', JSON.stringify(newPos));
                 }}
+                className="fixed top-8 left-1/2 -translate-x-1/2 z-[9999] cursor-grab active:cursor-grabbing"
+                data-tauri-drag-region
             >
-                {/* Header - Flat Design */}
                 <div
-                    data-tauri-drag-region
-                    className="px-6 py-4 flex items-center justify-between border-b shrink-0"
-                    style={{ borderColor: 'rgba(255,255,255,0.1)' }}
+                    className="rounded-3xl overflow-hidden shadow-2xl"
+                    style={{
+                        background: 'linear-gradient(180deg, rgba(30,30,30,0.98) 0%, rgba(20,20,20,0.98) 100%)',
+                        border: `2px solid ${config.color}30`,
+                        backdropFilter: 'blur(20px)',
+                        boxShadow: `0 25px 60px rgba(0,0,0,0.5), 0 0 40px ${config.color}20`
+                    }}
                 >
-                    <div data-tauri-drag-region className="flex items-center gap-3">
-                        <div
-                            className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-                            style={{ background: `${config.bg}20`, border: `1px solid ${config.bg}40` }}
-                        >
-                            {config.emoji}
-                        </div>
-                        <div data-tauri-drag-region>
-                            <p data-tauri-drag-region className="text-sm font-bold text-white uppercase tracking-wider leading-none">
-                                {config.label}
-                            </p>
-                            <p data-tauri-drag-region className="text-xs font-medium text-white/40 mt-1">
-                                Session {sessions + 1}
-                            </p>
+                    {/* Drag Handle */}
+                    <div
+                        className="flex items-center justify-center py-2 cursor-grab active:cursor-grabbing"
+                        data-tauri-drag-region
+                    >
+                        <div className="flex items-center gap-1 opacity-30 hover:opacity-60 transition-opacity">
+                            <GripVertical size={14} className="text-white" />
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={onExpand}
-                            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-                            title="Expand"
-                        >
-                            <Maximize2 size={16} className="text-white/60" strokeWidth={2} />
-                        </button>
-                        <button
-                            onClick={onClose}
-                            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-                            title="Close"
-                        >
-                            <X size={16} className="text-white/60" strokeWidth={2} />
-                        </button>
-                    </div>
-                </div>
 
-                {/* Main Content - Clean Layout */}
-                <div data-tauri-drag-region className="flex-1 flex items-center justify-between px-8 py-6">
-                    {/* Timer Display */}
-                    <div data-tauri-drag-region className="flex flex-col gap-3">
-                        <span
-                            data-tauri-drag-region
-                            className="text-6xl font-black tracking-tight select-none"
-                            style={{
-                                fontVariantNumeric: 'tabular-nums',
-                                color: accent,
-                                fontFamily: "'Inter', -apple-system, sans-serif"
-                            }}
-                        >
-                            {formatTime(timeLeft)}
-                        </span>
+                    {/* Main Content */}
+                    <div className="px-8 pb-6 pt-2">
+                        {/* Mode & Session */}
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                                <span className="text-2xl">{config.emoji}</span>
+                                <div>
+                                    <p
+                                        className="text-sm font-bold uppercase tracking-wider"
+                                        style={{ color: config.color }}
+                                    >
+                                        {config.label}
+                                    </p>
+                                    <p className="text-xs text-white/40">
+                                        Session {sessions + 1}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={onExpand}
+                                    className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                                    title="Expand"
+                                >
+                                    <Maximize2 size={14} className="text-white/50 hover:text-white" />
+                                </button>
+                                <button
+                                    onClick={onClose}
+                                    className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                                    title="Close"
+                                >
+                                    <X size={14} className="text-white/50 hover:text-white" />
+                                </button>
+                            </div>
+                        </div>
 
-                        {/* Status Indicator */}
-                        <div data-tauri-drag-region className="flex items-center gap-2">
-                            <div
-                                className="relative w-2 h-2 rounded-full"
+                        {/* Timer Display */}
+                        <div className="flex items-center justify-between gap-8">
+                            <div className="flex flex-col items-start">
+                                <span
+                                    className="text-6xl font-black tracking-tighter tabular-nums"
+                                    style={{
+                                        color: '#fff',
+                                        textShadow: `0 0 40px ${config.color}40`,
+                                        fontFamily: "'Inter', system-ui, sans-serif"
+                                    }}
+                                >
+                                    {formatTime(timeLeft)}
+                                </span>
+
+                                {/* Status */}
+                                <div className="flex items-center gap-2 mt-2">
+                                    <div
+                                        className={`w-2 h-2 rounded-full ${isRunning ? 'animate-pulse' : ''}`}
+                                        style={{ background: isRunning ? '#10B981' : '#6B7280' }}
+                                    />
+                                    <span
+                                        className="text-xs font-semibold uppercase tracking-wider"
+                                        style={{ color: isRunning ? '#10B981' : '#6B7280' }}
+                                    >
+                                        {isRunning ? 'Running' : 'Paused'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Play/Pause Button */}
+                            <motion.button
+                                whileHover={{ scale: 1.08 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={onToggleTimer}
+                                className="w-16 h-16 rounded-2xl flex items-center justify-center transition-all"
                                 style={{
-                                    background: isRunning ? '#10B981' : '#6B7280',
+                                    background: `linear-gradient(135deg, ${config.color}, ${config.color}DD)`,
+                                    boxShadow: `0 8px 32px ${config.color}50`
                                 }}
                             >
-                                {isRunning && (
-                                    <motion.div
-                                        className="absolute inset-0 rounded-full"
-                                        style={{ background: '#10B981' }}
-                                        animate={{
-                                            scale: [1, 1.5, 1],
-                                            opacity: [0.5, 0, 0.5]
-                                        }}
-                                        transition={{
-                                            duration: 2,
-                                            repeat: Infinity,
-                                            ease: "easeInOut"
-                                        }}
-                                    />
+                                {isRunning ? (
+                                    <Pause size={26} color="#fff" strokeWidth={2.5} />
+                                ) : (
+                                    <Play size={26} color="#fff" strokeWidth={2.5} className="ml-1" />
                                 )}
-                            </div>
-                            <span
-                                data-tauri-drag-region
-                                className="text-xs font-bold uppercase tracking-wider"
-                                style={{ color: isRunning ? '#10B981' : '#6B7280' }}
-                            >
-                                {isRunning ? 'Active' : 'Paused'}
-                            </span>
+                            </motion.button>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="mt-5 h-1 bg-white/10 rounded-full overflow-hidden">
+                            <motion.div
+                                className="h-full rounded-full"
+                                style={{ background: config.color }}
+                                initial={{ width: '0%' }}
+                                animate={{ width: `${progress}%` }}
+                                transition={{ duration: 0.3 }}
+                            />
                         </div>
                     </div>
-
-                    {/* Control Button - Flat Design */}
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={onToggleTimer}
-                        className="w-16 h-16 rounded-xl shadow-lg flex items-center justify-center transition-all"
-                        style={{
-                            background: accent,
-                            border: '1px solid rgba(255,255,255,0.1)'
-                        }}
-                    >
-                        {isRunning ? (
-                            <Pause size={24} color="#000" strokeWidth={2.5} />
-                        ) : (
-                            <Play size={24} color="#000" strokeWidth={2.5} fill="#000" />
-                        )}
-                    </motion.button>
                 </div>
-
-                {/* Progress Bar - Minimal */}
-                <div className="h-1 bg-white/5 shrink-0 relative overflow-hidden">
-                    <motion.div
-                        className="absolute inset-y-0 left-0"
-                        style={{ background: accent }}
-                        initial={{ width: '0%' }}
-                        animate={{ width: `${100 - percentage}%` }}
-                        transition={{ duration: 0.5 }}
-                    />
-                </div>
-            </div>
-        </div>
+            </motion.div>
+        </>
     );
 }
