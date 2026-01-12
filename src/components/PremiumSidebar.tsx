@@ -85,7 +85,7 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
                         }}
                     >
                         <img
-                            src="/zenner-logo.png"
+                            src="/zenner-logo.png?v=1736720000"
                             alt="Zenner"
                             className="w-full h-full object-contain"
                         />
@@ -93,7 +93,7 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
 
                     {/* Tagline */}
                     <p
-                        className="text-xs font-bold tracking-[0.15em] text-white/50 uppercase mb-6"
+                        className="text-[9px] font-bold tracking-[0.12em] text-white/40 uppercase mb-6 whitespace-nowrap"
                         style={{ fontFamily: "'Space Mono', monospace" }}
                     >
                         Focus · Amplify · Thrive
@@ -137,7 +137,7 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
             {collapsed && (
                 <div className="flex flex-col items-center pt-16 pb-4">
                     <div className="w-10 h-10 rounded-xl overflow-hidden">
-                        <img src="/zenner-logo.png" alt="Z" className="w-full h-full object-contain" />
+                        <img src="/zenner-logo.png?v=1736720000" alt="Z" className="w-full h-full object-contain" />
                     </div>
                 </div>
             )}
