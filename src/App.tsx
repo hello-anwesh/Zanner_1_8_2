@@ -56,7 +56,7 @@ import { ProfileView } from "./components/profile/ProfileView";
 // TYPES & CONSTANTS
 // ============================================================================
 
-type View = "home" | "stats" | "integrations" | "frequencies" | "philosophy" | "journal" | "profile" |
+type View = "home" | "dashboard" | "stats" | "integrations" | "frequencies" | "philosophy" | "journal" | "profile" |
   "settings-ai" | "settings-theme" | "settings-spotify" | "settings-youtube" | "settings-timer" | "settings-voice" |
   "ai-identity" | "ai-cognition" | "ai-rhythms" | "ai-training" |
   "voice-speech" | "voice-tts";
@@ -88,7 +88,6 @@ function App() {
   const [showTraining, setShowTraining] = useState(false);
   const [isCompactMode, setIsCompactMode] = useState(false);
   const [showCoach, setShowCoach] = useState(false); // Coach starts collapsed
-  const [useDashboard, setUseDashboard] = useState(true); // New Bento Dashboard by default
 
   // Profile state
   const [profile, setProfile] = useState({
@@ -497,488 +496,453 @@ function App() {
               {/* Content */}
               <div className="flex-1 flex overflow-hidden">
                 <div className="flex-1 overflow-y-auto">
-                  {/* HOME */}
+                  {/* HOME - Classic Timer */}
                   {view === "home" && (
-                    <div className="min-h-full flex flex-col items-center justify-center p-8 animate-fade-in relative">
+                    <div className="min-h-full flex flex-col items-center justify-center p-8 animate-fade-in">
+                      {/* Preset & Mode Selection */}
+                      <div className="flex flex-col items-center gap-6 mb-16">
+                        {/* Preset Picker Button */}
+                        <div className="relative flex items-center gap-2">
+                          <button
+                            onClick={() => setShowPresetPicker(!showPresetPicker)}
+                            className="flex-1 flex items-center gap-4 px-6 py-3 rounded-2xl glass transition-all duration-300 hover:scale-[1.02]"
+                            style={{ borderColor: activePreset.color + "40" }}
+                          >
+                            <span className="text-2xl">{activePreset.icon}</span>
+                            <div className="text-left">
+                              <p className="text-sm font-semibold">{activePreset.name}</p>
+                              <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                                {activePreset.sequence ? (
+                                  activePreset.sequence.map((step, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide"
+                                      style={{
+                                        background: step.type === 'focus' ? `${activePreset.color}20` : 'rgba(255,255,255,0.05)',
+                                        color: step.type === 'focus' ? activePreset.color : '#999',
+                                        border: `1px solid ${step.type === 'focus' ? activePreset.color + '30' : 'rgba(255,255,255,0.1)'}`
+                                      }}
+                                    >
+                                      {step.label || `${step.type === 'focus' ? 'F' : 'B'}${step.duration}m`}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <>
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ background: `${activePreset.color}20`, color: activePreset.color }}>
+                                      F{activePreset.focus}m
+                                    </span>
+                                    <span className="text-[9px] text-white/30">→</span>
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 text-white/50">
+                                      B{activePreset.shortBreak}m
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <ChevronLeft
+                              size={16}
+                              className="opacity-50 transition-transform duration-300 ml-auto"
+                              style={{ transform: showPresetPicker ? "rotate(90deg)" : "rotate(-90deg)" }}
+                            />
+                          </button>
 
-                      {/* View Toggle Button */}
-                      <button
-                        onClick={() => setUseDashboard(!useDashboard)}
-                        className="absolute top-4 right-4 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 text-sm font-medium hover:bg-white/10 hover:text-white transition-all z-10"
-                      >
-                        {useDashboard ? '⏱ Classic Timer' : '🎛 Dashboard'}
-                      </button>
+                          <button
+                            onClick={() => setShowPresetEditor(true)}
+                            className="p-3.5 rounded-2xl glass transition-all duration-300 hover:scale-105 hover:bg-white/10"
+                            style={{ borderColor: activePreset.color + "40" }}
+                            title="Edit Preset"
+                          >
+                            <Edit2 size={18} className="opacity-70" />
+                          </button>
 
-                      {/* New Command Dashboard */}
-                      {useDashboard ? (
-                        <CommandDashboard
-                          timeLeft={timeLeft}
-                          totalSeconds={durations[mode] * 60}
-                          isRunning={isRunning}
-                          mode={mode}
-                          sessions={sessions}
-                          onToggleTimer={() => setIsRunning(!isRunning)}
-                          onSkip={() => {
-                            let nextMode: typeof mode = mode === "focus"
-                              ? (sessions > 0 && (sessions + 1) % 4 === 0 ? "longBreak" : "shortBreak")
-                              : "focus";
-                            setMode(nextMode);
-                            setTimeLeft(durations[nextMode] * 60);
-                          }}
-                          accent={accent}
-                          onNavigate={(v) => setView(v as View)}
-                          streakDays={7}
-                          aiReady={true}
-                          musicPlaying={false}
-                        />
-                      ) : (
-                        <>
-                          {/* Preset & Mode Selection - Classic View */}
-                          <div className="flex flex-col items-center gap-6 mb-16">
-                            {/* Preset Picker Button */}
-                            <div className="relative flex items-center gap-2">
-                              <button
-                                onClick={() => setShowPresetPicker(!showPresetPicker)}
-                                className="flex-1 flex items-center gap-4 px-6 py-3 rounded-2xl glass transition-all duration-300 hover:scale-[1.02]"
-                                style={{ borderColor: activePreset.color + "40" }}
-                              >
-                                <span className="text-2xl">{activePreset.icon}</span>
-                                <div className="text-left">
-                                  <p className="text-sm font-semibold">{activePreset.name}</p>
-                                  <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                                    {activePreset.sequence ? (
-                                      activePreset.sequence.map((step, idx) => (
-                                        <span
-                                          key={idx}
-                                          className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide"
-                                          style={{
-                                            background: step.type === 'focus' ? `${activePreset.color}20` : 'rgba(255,255,255,0.05)',
-                                            color: step.type === 'focus' ? activePreset.color : '#999',
-                                            border: `1px solid ${step.type === 'focus' ? activePreset.color + '30' : 'rgba(255,255,255,0.1)'}`
-                                          }}
-                                        >
-                                          {step.label || `${step.type === 'focus' ? 'F' : 'B'}${step.duration}m`}
-                                        </span>
-                                      ))
-                                    ) : (
-                                      <>
-                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ background: `${activePreset.color}20`, color: activePreset.color }}>
-                                          F{activePreset.focus}m
-                                        </span>
-                                        <span className="text-[9px] text-white/30">→</span>
-                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 text-white/50">
-                                          B{activePreset.shortBreak}m
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                                <ChevronLeft
-                                  size={16}
-                                  className="opacity-50 transition-transform duration-300 ml-auto"
-                                  style={{ transform: showPresetPicker ? "rotate(90deg)" : "rotate(-90deg)" }}
-                                />
-                              </button>
+                          {/* Preset Dropdown */}
+                          {showPresetPicker && (
+                            <div
+                              className="absolute top-full left-1/2 -translate-x-1/2 mt-4 p-4 rounded-3xl z-50 animate-fade-in"
+                              style={{
+                                width: 480,
+                                background: "rgba(10,10,15,0.98)",
+                                backdropFilter: "blur(40px)",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                                boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+                              }}
+                            >
+                              <div className="flex items-center justify-between mb-4 px-2">
+                                <h3 className="font-bold">Choose Preset</h3>
+                                <button onClick={() => setShowPresetPicker(false)} className="p-2 rounded-lg hover:bg-white/10">
+                                  <X size={14} className="opacity-50" />
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2">
+                                {allPresets.map(preset => (
+                                  <button
+                                    key={preset.id}
+                                    onClick={() => {
+                                      setActivePreset(preset);
+                                      // Reset to start of sequence or focus
+                                      if (preset.sequence) {
+                                        setSequenceIndex(0);
+                                        setMode(preset.sequence[0].type);
+                                        setTimeLeft(preset.sequence[0].duration * 60);
+                                      } else {
+                                        setMode("focus");
+                                        setTimeLeft(preset.focus * 60);
+                                      }
+                                      setShowPresetPicker(false);
+                                    }}
+                                    className={`text - left p - 4 rounded - 2xl transition - all duration - 200 hover: scale - [1.02] ${activePreset.id === preset.id ? "ring-2" : ""} `}
+                                    style={{
+                                      background: activePreset.id === preset.id ? preset.color + "15" : "rgba(255,255,255,0.03)",
+                                      border: `1px solid ${activePreset.id === preset.id ? preset.color + "40" : "rgba(255,255,255,0.06)"} `,
+                                      outline: activePreset.id === preset.id ? `2px solid ${preset.color} ` : "none",
+                                      outlineOffset: "2px",
+                                    }}
+                                  >
+                                    <div className="flex items-center gap-3 mb-2">
+                                      <span className="text-xl">{preset.icon}</span>
+                                      <span className="font-semibold text-sm">{preset.name}</span>
+                                    </div>
+                                    <p className="text-xs opacity-50 mb-2 line-clamp-2">{preset.description}</p>
+                                    <div className="flex gap-2">
+                                      <span className="text-[10px] px-2 py-1 rounded-full bg-white/5">{preset.focus}m focus</span>
+                                      <span className="text-[10px] px-2 py-1 rounded-full bg-white/5">{preset.shortBreak}m break</span>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                              {/* Active preset tip */}
+                              <div className="mt-4 p-4 rounded-xl" style={{ background: activePreset.color + "10", border: `1px solid ${activePreset.color} 20` }}>
+                                <p className="text-xs font-medium mb-1" style={{ color: activePreset.color }}>💡 Tip</p>
+                                <p className="text-xs opacity-70 leading-relaxed">{activePreset.tip}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
 
-                              <button
-                                onClick={() => setShowPresetEditor(true)}
-                                className="p-3.5 rounded-2xl glass transition-all duration-300 hover:scale-105 hover:bg-white/10"
-                                style={{ borderColor: activePreset.color + "40" }}
-                                title="Edit Preset"
-                              >
-                                <Edit2 size={18} className="opacity-70" />
-                              </button>
+                        {/* Mode Selector - 3 Elegant Theme-Aware Badges */}
+                        <div className="flex items-center gap-2 justify-center">
+                          {([
+                            { id: "focus", label: "Focus", time: durations.focus },
+                            { id: "shortBreak", label: "Short", time: durations.shortBreak },
+                            { id: "longBreak", label: "Long", time: durations.longBreak },
+                          ] as const).map(({ id, label, time }) => (
+                            <button
+                              key={id}
+                              onClick={() => switchMode(id)}
+                              className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
+                              style={{
+                                background: mode === id ? `${activePreset.color}20` : 'rgba(255,255,255,0.03)',
+                                color: mode === id ? activePreset.color : '#888',
+                                border: `1px solid ${mode === id ? activePreset.color + '40' : 'rgba(255,255,255,0.08)'}`,
+                                boxShadow: mode === id ? `0 4px 12px ${activePreset.color}30` : 'none'
+                              }}
+                            >
+                              {label} {time}m
+                            </button>
+                          ))}
+                        </div>
 
-                              {/* Preset Dropdown */}
-                              {showPresetPicker && (
-                                <div
-                                  className="absolute top-full left-1/2 -translate-x-1/2 mt-4 p-4 rounded-3xl z-50 animate-fade-in"
-                                  style={{
-                                    width: 480,
-                                    background: "rgba(10,10,15,0.98)",
-                                    backdropFilter: "blur(40px)",
-                                    border: "1px solid rgba(255,255,255,0.1)",
-                                    boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
-                                  }}
-                                >
-                                  <div className="flex items-center justify-between mb-4 px-2">
-                                    <h3 className="font-bold">Choose Preset</h3>
-                                    <button onClick={() => setShowPresetPicker(false)} className="p-2 rounded-lg hover:bg-white/10">
-                                      <X size={14} className="opacity-50" />
-                                    </button>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2">
-                                    {allPresets.map(preset => (
-                                      <button
-                                        key={preset.id}
-                                        onClick={() => {
-                                          setActivePreset(preset);
-                                          // Reset to start of sequence or focus
-                                          if (preset.sequence) {
-                                            setSequenceIndex(0);
-                                            setMode(preset.sequence[0].type);
-                                            setTimeLeft(preset.sequence[0].duration * 60);
-                                          } else {
-                                            setMode("focus");
-                                            setTimeLeft(preset.focus * 60);
-                                          }
-                                          setShowPresetPicker(false);
-                                        }}
-                                        className={`text - left p - 4 rounded - 2xl transition - all duration - 200 hover: scale - [1.02] ${activePreset.id === preset.id ? "ring-2" : ""} `}
-                                        style={{
-                                          background: activePreset.id === preset.id ? preset.color + "15" : "rgba(255,255,255,0.03)",
-                                          border: `1px solid ${activePreset.id === preset.id ? preset.color + "40" : "rgba(255,255,255,0.06)"} `,
-                                          outline: activePreset.id === preset.id ? `2px solid ${preset.color} ` : "none",
-                                          outlineOffset: "2px",
-                                        }}
-                                      >
-                                        <div className="flex items-center gap-3 mb-2">
-                                          <span className="text-xl">{preset.icon}</span>
-                                          <span className="font-semibold text-sm">{preset.name}</span>
-                                        </div>
-                                        <p className="text-xs opacity-50 mb-2 line-clamp-2">{preset.description}</p>
-                                        <div className="flex gap-2">
-                                          <span className="text-[10px] px-2 py-1 rounded-full bg-white/5">{preset.focus}m focus</span>
-                                          <span className="text-[10px] px-2 py-1 rounded-full bg-white/5">{preset.shortBreak}m break</span>
-                                        </div>
-                                      </button>
-                                    ))}
-                                  </div>
-                                  {/* Active preset tip */}
-                                  <div className="mt-4 p-4 rounded-xl" style={{ background: activePreset.color + "10", border: `1px solid ${activePreset.color} 20` }}>
-                                    <p className="text-xs font-medium mb-1" style={{ color: activePreset.color }}>💡 Tip</p>
-                                    <p className="text-xs opacity-70 leading-relaxed">{activePreset.tip}</p>
+                        {/* Timer Display - REDESIGNED CLEAN & MODERN */}
+                        {(() => {
+                          const size = 360;
+                          const stroke = 6;
+                          const radius = size / 2 - stroke / 2 - 20;
+                          const circ = 2 * Math.PI * radius;
+                          const totalSeconds = durations[mode] * 60;
+                          const progress = 1 - timeLeft / totalSeconds;
+                          const offset = circ * (1 - progress);
+
+                          return (
+                            <div className="relative mb-20 w-full flex justify-center">
+                              {/* 1. CLEAN RING (formerly 3D) */}
+                              {timerStyle === '3d' && (
+                                <div className="flex flex-col items-center justify-center py-12 relative">
+                                  <svg width={size} height={size} className="-rotate-90">
+                                    {/* Background ring */}
+                                    <circle
+                                      cx={size / 2}
+                                      cy={size / 2}
+                                      r={radius}
+                                      fill="none"
+                                      stroke="rgba(255,255,255,0.08)"
+                                      strokeWidth={stroke}
+                                    />
+                                    {/* Progress ring */}
+                                    <circle
+                                      cx={size / 2}
+                                      cy={size / 2}
+                                      r={radius}
+                                      fill="none"
+                                      stroke={accent}
+                                      strokeWidth={stroke}
+                                      strokeLinecap="round"
+                                      strokeDasharray={circ}
+                                      strokeDashoffset={offset}
+                                      style={{ transition: "stroke-dashoffset 0.5s ease" }}
+                                    />
+                                    {/* Inner decorative circle */}
+                                    <circle
+                                      cx={size / 2}
+                                      cy={size / 2}
+                                      r={radius - 40}
+                                      fill="none"
+                                      stroke="rgba(255,255,255,0.04)"
+                                      strokeWidth={1}
+                                    />
+                                  </svg>
+
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span className="text-8xl font-light tracking-tight text-white tabular-nums">
+                                      {formatTime(timeLeft)}
+                                    </span>
+                                    <div className="mt-6 flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
+                                      <div className={`w-2 h-2 rounded-full transition-colors ${isRunning ? 'bg-green-400' : 'bg-white/30'}`} />
+                                      <span className="text-xs font-medium uppercase tracking-wider text-white/50">
+                                        {isRunning ? "Active" : "Paused"}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                               )}
-                            </div>
 
-                            {/* Mode Selector - 3 Elegant Theme-Aware Badges */}
-                            <div className="flex items-center gap-2 justify-center">
-                              {([
-                                { id: "focus", label: "Focus", time: durations.focus },
-                                { id: "shortBreak", label: "Short", time: durations.shortBreak },
-                                { id: "longBreak", label: "Long", time: durations.longBreak },
-                              ] as const).map(({ id, label, time }) => (
-                                <button
-                                  key={id}
-                                  onClick={() => switchMode(id)}
-                                  className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
-                                  style={{
-                                    background: mode === id ? `${activePreset.color}20` : 'rgba(255,255,255,0.03)',
-                                    color: mode === id ? activePreset.color : '#888',
-                                    border: `1px solid ${mode === id ? activePreset.color + '40' : 'rgba(255,255,255,0.08)'}`,
-                                    boxShadow: mode === id ? `0 4px 12px ${activePreset.color}30` : 'none'
-                                  }}
-                                >
-                                  {label} {time}m
-                                </button>
-                              ))}
-                            </div>
+                              {/* 2. MINIMAL - Keep clean as is */}
+                              {timerStyle === 'minimal' && (
+                                <div className="flex flex-col items-center justify-center py-20">
+                                  <div className="text-[10rem] font-light tracking-tight tabular-nums text-white">
+                                    {formatTime(timeLeft)}
+                                  </div>
+                                  <div className="mt-8">
+                                    <span className={`text-sm font-medium uppercase tracking-wider px-5 py-2.5 rounded-lg ${isRunning ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-white/5 text-white/40 border border-white/10'}`}>
+                                      {isRunning ? "Focus Mode" : "Ready"}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
 
-                            {/* Timer Display - REDESIGNED CLEAN & MODERN */}
-                            {(() => {
-                              const size = 360;
-                              const stroke = 6;
-                              const radius = size / 2 - stroke / 2 - 20;
-                              const circ = 2 * Math.PI * radius;
-                              const totalSeconds = durations[mode] * 60;
-                              const progress = 1 - timeLeft / totalSeconds;
-                              const offset = circ * (1 - progress);
+                              {/* 3. CIRCULAR - Clean flat version */}
+                              {timerStyle === 'circular' && (
+                                <div className="relative py-12">
+                                  <svg width={size} height={size} className="-rotate-90">
+                                    <circle
+                                      cx={size / 2}
+                                      cy={size / 2}
+                                      r={radius}
+                                      fill="none"
+                                      stroke="rgba(255,255,255,0.08)"
+                                      strokeWidth={stroke}
+                                    />
+                                    <circle
+                                      cx={size / 2}
+                                      cy={size / 2}
+                                      r={radius}
+                                      fill="none"
+                                      stroke={accent}
+                                      strokeWidth={stroke}
+                                      strokeLinecap="round"
+                                      strokeDasharray={circ}
+                                      strokeDashoffset={offset}
+                                      style={{ transition: "stroke-dashoffset 0.5s ease" }}
+                                    />
+                                  </svg>
 
-                              return (
-                                <div className="relative mb-20 w-full flex justify-center">
-                                  {/* 1. CLEAN RING (formerly 3D) */}
-                                  {timerStyle === '3d' && (
-                                    <div className="flex flex-col items-center justify-center py-12 relative">
-                                      <svg width={size} height={size} className="-rotate-90">
-                                        {/* Background ring */}
-                                        <circle
-                                          cx={size / 2}
-                                          cy={size / 2}
-                                          r={radius}
-                                          fill="none"
-                                          stroke="rgba(255,255,255,0.08)"
-                                          strokeWidth={stroke}
-                                        />
-                                        {/* Progress ring */}
-                                        <circle
-                                          cx={size / 2}
-                                          cy={size / 2}
-                                          r={radius}
-                                          fill="none"
-                                          stroke={accent}
-                                          strokeWidth={stroke}
-                                          strokeLinecap="round"
-                                          strokeDasharray={circ}
-                                          strokeDashoffset={offset}
-                                          style={{ transition: "stroke-dashoffset 0.5s ease" }}
-                                        />
-                                        {/* Inner decorative circle */}
-                                        <circle
-                                          cx={size / 2}
-                                          cy={size / 2}
-                                          r={radius - 40}
-                                          fill="none"
-                                          stroke="rgba(255,255,255,0.04)"
-                                          strokeWidth={1}
-                                        />
-                                      </svg>
-
-                                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-8xl font-light tracking-tight text-white tabular-nums">
-                                          {formatTime(timeLeft)}
-                                        </span>
-                                        <div className="mt-6 flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
-                                          <div className={`w-2 h-2 rounded-full transition-colors ${isRunning ? 'bg-green-400' : 'bg-white/30'}`} />
-                                          <span className="text-xs font-medium uppercase tracking-wider text-white/50">
-                                            {isRunning ? "Active" : "Paused"}
-                                          </span>
-                                        </div>
-                                      </div>
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span className="text-8xl font-light tracking-tight text-white tabular-nums">
+                                      {formatTime(timeLeft)}
+                                    </span>
+                                    <div className="mt-4">
+                                      <span className="text-sm font-medium uppercase tracking-wider" style={{ color: `${accent}` }}>
+                                        {Math.round(progress * 100)}%
+                                      </span>
                                     </div>
-                                  )}
-
-                                  {/* 2. MINIMAL - Keep clean as is */}
-                                  {timerStyle === 'minimal' && (
-                                    <div className="flex flex-col items-center justify-center py-20">
-                                      <div className="text-[10rem] font-light tracking-tight tabular-nums text-white">
-                                        {formatTime(timeLeft)}
-                                      </div>
-                                      <div className="mt-8">
-                                        <span className={`text-sm font-medium uppercase tracking-wider px-5 py-2.5 rounded-lg ${isRunning ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-white/5 text-white/40 border border-white/10'}`}>
-                                          {isRunning ? "Focus Mode" : "Ready"}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* 3. CIRCULAR - Clean flat version */}
-                                  {timerStyle === 'circular' && (
-                                    <div className="relative py-12">
-                                      <svg width={size} height={size} className="-rotate-90">
-                                        <circle
-                                          cx={size / 2}
-                                          cy={size / 2}
-                                          r={radius}
-                                          fill="none"
-                                          stroke="rgba(255,255,255,0.08)"
-                                          strokeWidth={stroke}
-                                        />
-                                        <circle
-                                          cx={size / 2}
-                                          cy={size / 2}
-                                          r={radius}
-                                          fill="none"
-                                          stroke={accent}
-                                          strokeWidth={stroke}
-                                          strokeLinecap="round"
-                                          strokeDasharray={circ}
-                                          strokeDashoffset={offset}
-                                          style={{ transition: "stroke-dashoffset 0.5s ease" }}
-                                        />
-                                      </svg>
-
-                                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-8xl font-light tracking-tight text-white tabular-nums">
-                                          {formatTime(timeLeft)}
-                                        </span>
-                                        <div className="mt-4">
-                                          <span className="text-sm font-medium uppercase tracking-wider" style={{ color: `${accent}` }}>
-                                            {Math.round(progress * 100)}%
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
+                                  </div>
+                                </div>
+                              )}
 
 
-                                  {/* 4. ANALOG - Clean modern clock */}
-                                  {timerStyle === 'analog' && (
-                                    <div className="relative py-12">
-                                      <svg width={size} height={size}>
-                                        {/* Clock face */}
-                                        <circle
-                                          cx={size / 2}
-                                          cy={size / 2}
-                                          r={radius}
-                                          fill="rgba(255,255,255,0.02)"
-                                          stroke="rgba(255,255,255,0.08)"
-                                          strokeWidth={2}
-                                        />
+                              {/* 4. ANALOG - Clean modern clock */}
+                              {timerStyle === 'analog' && (
+                                <div className="relative py-12">
+                                  <svg width={size} height={size}>
+                                    {/* Clock face */}
+                                    <circle
+                                      cx={size / 2}
+                                      cy={size / 2}
+                                      r={radius}
+                                      fill="rgba(255,255,255,0.02)"
+                                      stroke="rgba(255,255,255,0.08)"
+                                      strokeWidth={2}
+                                    />
 
-                                        {/* Hour markers - simplified */}
-                                        {Array.from({ length: 12 }).map((_, i) => {
-                                          const angle = (i * 30 - 90) * (Math.PI / 180);
-                                          const x1 = size / 2 + (radius - 12) * Math.cos(angle);
-                                          const y1 = size / 2 + (radius - 12) * Math.sin(angle);
-                                          const x2 = size / 2 + (radius - 4) * Math.cos(angle);
-                                          const y2 = size / 2 + (radius - 4) * Math.sin(angle);
-                                          return (
-                                            <line
-                                              key={i}
-                                              x1={x1} y1={y1} x2={x2} y2={y2}
-                                              stroke="rgba(255,255,255,0.2)"
-                                              strokeWidth={i % 3 === 0 ? 2 : 1}
-                                            />
-                                          );
-                                        })}
-
-                                        {/* Progress arc */}
-                                        <circle
-                                          cx={size / 2}
-                                          cy={size / 2}
-                                          r={radius - 10}
-                                          fill="none"
-                                          stroke={accent}
-                                          strokeWidth={3}
-                                          strokeLinecap="round"
-                                          strokeDasharray={circ}
-                                          strokeDashoffset={offset}
-                                          className="-rotate-90 origin-center"
-                                          style={{ transition: "stroke-dashoffset 0.5s ease", transformOrigin: '50% 50%' }}
-                                        />
-
-                                        {/* Clock hand */}
+                                    {/* Hour markers - simplified */}
+                                    {Array.from({ length: 12 }).map((_, i) => {
+                                      const angle = (i * 30 - 90) * (Math.PI / 180);
+                                      const x1 = size / 2 + (radius - 12) * Math.cos(angle);
+                                      const y1 = size / 2 + (radius - 12) * Math.sin(angle);
+                                      const x2 = size / 2 + (radius - 4) * Math.cos(angle);
+                                      const y2 = size / 2 + (radius - 4) * Math.sin(angle);
+                                      return (
                                         <line
-                                          x1={size / 2}
-                                          y1={size / 2}
-                                          x2={size / 2 + (radius - 50) * Math.cos((progress * 360 - 90) * (Math.PI / 180))}
-                                          y2={size / 2 + (radius - 50) * Math.sin((progress * 360 - 90) * (Math.PI / 180))}
-                                          stroke={accent}
-                                          strokeWidth={2}
-                                          strokeLinecap="round"
-                                          style={{ transition: "all 0.5s ease" }}
+                                          key={i}
+                                          x1={x1} y1={y1} x2={x2} y2={y2}
+                                          stroke="rgba(255,255,255,0.2)"
+                                          strokeWidth={i % 3 === 0 ? 2 : 1}
                                         />
+                                      );
+                                    })}
 
-                                        {/* Center dot */}
-                                        <circle cx={size / 2} cy={size / 2} r={4} fill={accent} />
-                                      </svg>
+                                    {/* Progress arc */}
+                                    <circle
+                                      cx={size / 2}
+                                      cy={size / 2}
+                                      r={radius - 10}
+                                      fill="none"
+                                      stroke={accent}
+                                      strokeWidth={3}
+                                      strokeLinecap="round"
+                                      strokeDasharray={circ}
+                                      strokeDashoffset={offset}
+                                      className="-rotate-90 origin-center"
+                                      style={{ transition: "stroke-dashoffset 0.5s ease", transformOrigin: '50% 50%' }}
+                                    />
 
-                                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-7xl font-light tracking-tight text-white tabular-nums">
-                                          {formatTime(timeLeft)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  )}
+                                    {/* Clock hand */}
+                                    <line
+                                      x1={size / 2}
+                                      y1={size / 2}
+                                      x2={size / 2 + (radius - 50) * Math.cos((progress * 360 - 90) * (Math.PI / 180))}
+                                      y2={size / 2 + (radius - 50) * Math.sin((progress * 360 - 90) * (Math.PI / 180))}
+                                      stroke={accent}
+                                      strokeWidth={2}
+                                      strokeLinecap="round"
+                                      style={{ transition: "all 0.5s ease" }}
+                                    />
 
-                                  {/* 5. BAR - Clean progress bar */}
-                                  {timerStyle === 'bar' && (
-                                    <div className="flex flex-col items-center gap-12 py-16">
-                                      {/* Time display */}
-                                      <div className="text-9xl font-light tracking-tight text-white tabular-nums">
-                                        {formatTime(timeLeft)}
-                                      </div>
+                                    {/* Center dot */}
+                                    <circle cx={size / 2} cy={size / 2} r={4} fill={accent} />
+                                  </svg>
 
-                                      {/* Progress bar */}
-                                      <div className="w-full max-w-2xl">
-                                        <div className="h-3 rounded-full bg-white/5 overflow-hidden">
-                                          <div
-                                            className="h-full rounded-full transition-all duration-500 ease-out"
-                                            style={{
-                                              width: `${progress * 100}%`,
-                                              background: accent,
-                                            }}
-                                          />
-                                        </div>
-
-                                        {/* Percentage */}
-                                        <div className="mt-4 text-center">
-                                          <span className="text-xl font-medium tracking-wide" style={{ color: accent }}>
-                                            {Math.round(progress * 100)}%
-                                          </span>
-                                        </div>
-                                      </div>
-
-                                      {/* Status badge */}
-                                      <div className={`px-6 py-2.5 rounded-lg text-sm font-medium uppercase tracking-wider ${isRunning ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-white/5 text-white/40 border border-white/10'}`}>
-                                        {isRunning ? "In Progress" : "Paused"}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                </div>
-                              );
-                            })()}
-
-                            {/* Controls */}
-                            <div className="flex items-center gap-6 mb-28">
-                              <button
-                                onClick={toggleTimer}
-                                className="relative p-12 rounded-[36px] transition-all duration-300 hover:scale-105 active:scale-95"
-                                style={{
-                                  background: `linear-gradient(135deg, ${accent}0%, ${accent}cc 100%)`,
-                                  boxShadow: `0 12px 40px ${accent}50, inset 0 2px 0 rgba(255, 255, 255, 0.25)`,
-                                }}
-                              >
-                                {isRunning ? <Pause size={36} fill="#000" color="#000" /> : <Play size={36} fill="#000" color="#000" className="ml-1" />}
-                              </button>
-
-                              <button
-                                onClick={() => {
-                                  const newState = !metronomeService.getState().enabled;
-                                  metronomeService.setEnabled(newState);
-                                  // Force re-render
-                                  setTimeLeft(prev => prev);
-                                }}
-                                className={`p-4 rounded-xl transition-all duration-300 hover:scale-105 ${metronomeService.getState().enabled
-                                  ? 'bg-white/10'
-                                  : 'hover:bg-white/5'
-                                  }`}
-                                title={metronomeService.getState().enabled ? "Metronome: ON" : "Metronome: OFF"}
-                                style={{
-                                  border: `1px solid ${metronomeService.getState().enabled ? accent : accent + '30'}`,
-                                  boxShadow: metronomeService.getState().enabled ? `0 0 20px ${accent}40` : 'none'
-                                }}
-                              >
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={metronomeService.getState().enabled ? accent : accent + '80'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M16 6l-4 14M8 6l4 14M6 12h12" />
-                                </svg>
-                              </button>
-
-                              <button
-                                onClick={() => setIsCompactMode(true)}
-                                className="p-4 rounded-xl transition-all duration-300 hover:scale-105 hover:bg-white/5"
-                                title="Compact Mode"
-                                style={{ border: `1px solid ${accent}30` }}
-                              >
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                                  <path d="M9 3v18" />
-                                  <path d="m14 9 3 3-3 3" />
-                                </svg>
-                              </button>
-                            </div>
-
-                            {/* Stats */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-12 w-full max-w-5xl px-4">
-                              {[
-                                { label: "Today", value: sessions, icon: Target, suffix: "sessions" },
-                                { label: "Streak", value: 7, icon: Flame, suffix: "days" },
-                                { label: "Focus", value: sessions * 25, icon: TrendingUp, suffix: "min" },
-                              ].map(({ label, value, icon: Icon, suffix }, i) => (
-                                <div
-                                  key={label}
-                                  className="card-premium animate-fade-in"
-                                  style={{ animationDelay: `${i * 0.1} s` }}
-                                >
-                                  <div className="flex items-center gap-5 mb-6">
-                                    <div className="p-4 rounded-2xl" style={{ background: `${accent}15` }}>
-                                      <Icon size={20} style={{ color: accent }} />
-                                    </div>
-                                    <span className="text-xs font-semibold uppercase tracking-wider opacity-50">{label}</span>
-                                  </div>
-                                  <div className="flex items-baseline gap-3">
-                                    <span className="text-5xl font-bold gradient-text">{value}</span>
-                                    <span className="text-sm opacity-50">{suffix}</span>
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span className="text-7xl font-light tracking-tight text-white tabular-nums">
+                                      {formatTime(timeLeft)}
+                                    </span>
                                   </div>
                                 </div>
-                              ))}
+                              )}
+
+                              {/* 5. BAR - Clean progress bar */}
+                              {timerStyle === 'bar' && (
+                                <div className="flex flex-col items-center gap-12 py-16">
+                                  {/* Time display */}
+                                  <div className="text-9xl font-light tracking-tight text-white tabular-nums">
+                                    {formatTime(timeLeft)}
+                                  </div>
+
+                                  {/* Progress bar */}
+                                  <div className="w-full max-w-2xl">
+                                    <div className="h-3 rounded-full bg-white/5 overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full transition-all duration-500 ease-out"
+                                        style={{
+                                          width: `${progress * 100}%`,
+                                          background: accent,
+                                        }}
+                                      />
+                                    </div>
+
+                                    {/* Percentage */}
+                                    <div className="mt-4 text-center">
+                                      <span className="text-xl font-medium tracking-wide" style={{ color: accent }}>
+                                        {Math.round(progress * 100)}%
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Status badge */}
+                                  <div className={`px-6 py-2.5 rounded-lg text-sm font-medium uppercase tracking-wider ${isRunning ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-white/5 text-white/40 border border-white/10'}`}>
+                                    {isRunning ? "In Progress" : "Paused"}
+                                  </div>
+                                </div>
+                              )}
+
                             </div>
-                          </div>
-                        </>
-                      )}
+                          );
+                        })()}
+
+                        {/* Controls */}
+                        <div className="flex items-center gap-6 mb-28">
+                          <button
+                            onClick={toggleTimer}
+                            className="relative p-12 rounded-[36px] transition-all duration-300 hover:scale-105 active:scale-95"
+                            style={{
+                              background: `linear-gradient(135deg, ${accent}0%, ${accent}cc 100%)`,
+                              boxShadow: `0 12px 40px ${accent}50, inset 0 2px 0 rgba(255, 255, 255, 0.25)`,
+                            }}
+                          >
+                            {isRunning ? <Pause size={36} fill="#000" color="#000" /> : <Play size={36} fill="#000" color="#000" className="ml-1" />}
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              const newState = !metronomeService.getState().enabled;
+                              metronomeService.setEnabled(newState);
+                              // Force re-render
+                              setTimeLeft(prev => prev);
+                            }}
+                            className={`p-4 rounded-xl transition-all duration-300 hover:scale-105 ${metronomeService.getState().enabled
+                              ? 'bg-white/10'
+                              : 'hover:bg-white/5'
+                              }`}
+                            title={metronomeService.getState().enabled ? "Metronome: ON" : "Metronome: OFF"}
+                            style={{
+                              border: `1px solid ${metronomeService.getState().enabled ? accent : accent + '30'}`,
+                              boxShadow: metronomeService.getState().enabled ? `0 0 20px ${accent}40` : 'none'
+                            }}
+                          >
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={metronomeService.getState().enabled ? accent : accent + '80'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M16 6l-4 14M8 6l4 14M6 12h12" />
+                            </svg>
+                          </button>
+
+                          <button
+                            onClick={() => setIsCompactMode(true)}
+                            className="p-4 rounded-xl transition-all duration-300 hover:scale-105 hover:bg-white/5"
+                            title="Compact Mode"
+                            style={{ border: `1px solid ${accent}30` }}
+                          >
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="3" width="18" height="18" rx="2" />
+                              <path d="M9 3v18" />
+                              <path d="m14 9 3 3-3 3" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-12 w-full max-w-5xl px-4">
+                          {[
+                            { label: "Today", value: sessions, icon: Target, suffix: "sessions" },
+                            { label: "Streak", value: 7, icon: Flame, suffix: "days" },
+                            { label: "Focus", value: sessions * 25, icon: TrendingUp, suffix: "min" },
+                          ].map(({ label, value, icon: Icon, suffix }, i) => (
+                            <div
+                              key={label}
+                              className="card-premium animate-fade-in"
+                              style={{ animationDelay: `${i * 0.1} s` }}
+                            >
+                              <div className="flex items-center gap-5 mb-6">
+                                <div className="p-4 rounded-2xl" style={{ background: `${accent}15` }}>
+                                  <Icon size={20} style={{ color: accent }} />
+                                </div>
+                                <span className="text-xs font-semibold uppercase tracking-wider opacity-50">{label}</span>
+                              </div>
+                              <div className="flex items-baseline gap-3">
+                                <span className="text-5xl font-bold gradient-text">{value}</span>
+                                <span className="text-sm opacity-50">{suffix}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -1011,6 +975,30 @@ function App() {
                   {/* PHILOSOPHY / ABOUT */}
                   {view === "philosophy" && (
                     <PhilosophyView accent={accent} />
+                  )}
+
+                  {/* DASHBOARD */}
+                  {view === "dashboard" && (
+                    <CommandDashboard
+                      timeLeft={timeLeft}
+                      totalSeconds={durations[mode] * 60}
+                      isRunning={isRunning}
+                      mode={mode}
+                      sessions={sessions}
+                      onToggleTimer={() => setIsRunning(!isRunning)}
+                      onSkip={() => {
+                        let nextMode: typeof mode = mode === "focus"
+                          ? (sessions > 0 && (sessions + 1) % 4 === 0 ? "longBreak" : "shortBreak")
+                          : "focus";
+                        setMode(nextMode);
+                        setTimeLeft(durations[nextMode] * 60);
+                      }}
+                      accent={accent}
+                      onNavigate={(v) => setView(v as View)}
+                      streakDays={7}
+                      aiReady={true}
+                      musicPlaying={false}
+                    />
                   )}
 
                   {/* JOURNAL */}
