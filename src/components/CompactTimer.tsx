@@ -49,9 +49,30 @@ export function CompactTimer({
 
     const config = MODES[mode] || { label: 'FOCUS', color: accent };
 
+    const containerStyle: React.CSSProperties = {
+        position: 'fixed',
+        top: 20,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 99999,
+        cursor: 'grab',
+    };
+
+    const cardStyle: React.CSSProperties = {
+        backgroundColor: '#0a0a0c',
+        background: '#0a0a0c',
+        borderRadius: 20,
+        border: '1px solid rgba(255,255,255,0.1)',
+        boxShadow: `0 25px 50px -12px rgba(0,0,0,0.9), 0 0 60px -10px ${config.color}25`,
+        padding: '14px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+    };
+
     return (
         <>
-            <div ref={constraintsRef} className="fixed inset-0 pointer-events-none z-[9998]" />
+            <div ref={constraintsRef} style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 99998 }} />
 
             <motion.div
                 drag
@@ -64,8 +85,7 @@ export function CompactTimer({
                     setPosition(newPos);
                     localStorage.setItem('compactTimerPosition', JSON.stringify(newPos));
                 }}
-                className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999]"
-                style={{ cursor: 'grab' }}
+                style={containerStyle}
                 whileDrag={{ cursor: 'grabbing' }}
             >
                 <motion.div
@@ -73,43 +93,18 @@ export function CompactTimer({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -30, scale: 0.9 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                    style={{
-                        background: '#0D0D0F',
-                        borderRadius: 20,
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        boxShadow: `
-                            0 25px 50px -12px rgba(0,0,0,0.8),
-                            0 0 0 1px rgba(255,255,255,0.03),
-                            0 0 60px -10px ${config.color}30
-                        `,
-                        padding: '14px 20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 16
-                    }}
+                    style={cardStyle}
                 >
                     {/* Mode Badge */}
-                    <div
-                        style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'flex-start',
-                            gap: 2
-                        }}
-                    >
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6
-                        }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <div
                                 style={{
                                     width: 8,
                                     height: 8,
                                     borderRadius: '50%',
-                                    background: config.color,
+                                    backgroundColor: config.color,
                                     boxShadow: isRunning ? `0 0 12px ${config.color}` : 'none',
-                                    animation: isRunning ? 'pulse 2s infinite' : 'none'
                                 }}
                             />
                             <span style={{
@@ -121,21 +116,13 @@ export function CompactTimer({
                                 {config.label}
                             </span>
                         </div>
-                        <span style={{
-                            fontSize: 10,
-                            color: 'rgba(255,255,255,0.35)',
-                            fontWeight: 500
-                        }}>
+                        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>
                             Session {sessions + 1}
                         </span>
                     </div>
 
                     {/* Divider */}
-                    <div style={{
-                        width: 1,
-                        height: 36,
-                        background: 'rgba(255,255,255,0.08)'
-                    }} />
+                    <div style={{ width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.1)' }} />
 
                     {/* Timer */}
                     <div style={{
@@ -161,7 +148,7 @@ export function CompactTimer({
                             height: 48,
                             borderRadius: 14,
                             border: 'none',
-                            background: config.color,
+                            backgroundColor: config.color,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -177,11 +164,7 @@ export function CompactTimer({
                     </motion.button>
 
                     {/* Divider */}
-                    <div style={{
-                        width: 1,
-                        height: 36,
-                        background: 'rgba(255,255,255,0.08)'
-                    }} />
+                    <div style={{ width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.1)' }} />
 
                     {/* Actions */}
                     <div style={{ display: 'flex', gap: 4 }}>
@@ -192,15 +175,12 @@ export function CompactTimer({
                                 height: 32,
                                 borderRadius: 8,
                                 border: 'none',
-                                background: 'rgba(255,255,255,0.05)',
+                                backgroundColor: 'rgba(255,255,255,0.05)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 cursor: 'pointer',
-                                transition: 'background 0.2s'
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                         >
                             <Maximize2 size={14} color="rgba(255,255,255,0.5)" />
                         </button>
@@ -211,28 +191,18 @@ export function CompactTimer({
                                 height: 32,
                                 borderRadius: 8,
                                 border: 'none',
-                                background: 'rgba(255,255,255,0.05)',
+                                backgroundColor: 'rgba(255,255,255,0.05)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 cursor: 'pointer',
-                                transition: 'background 0.2s'
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                         >
                             <X size={14} color="rgba(255,255,255,0.5)" />
                         </button>
                     </div>
                 </motion.div>
             </motion.div>
-
-            <style>{`
-                @keyframes pulse {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0.5; }
-                }
-            `}</style>
         </>
     );
 }

@@ -1002,6 +1002,19 @@ function App() {
                         setIsRunning(false);
                       }}
                       accent={accent}
+                      activePreset={activePreset}
+                      allPresets={allPresets}
+                      onPresetChange={(preset) => {
+                        setActivePreset(preset);
+                        if ((preset as any).sequence) {
+                          setSequenceIndex(0);
+                          setMode((preset as any).sequence[0].type);
+                          setTimeLeft((preset as any).sequence[0].duration * 60);
+                        } else {
+                          setMode("focus");
+                          setTimeLeft(preset.focus * 60);
+                        }
+                      }}
                       onNavigate={(v) => setView(v as View)}
                       streakDays={7}
                       aiReady={true}

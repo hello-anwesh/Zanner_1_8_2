@@ -85,7 +85,7 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
                         }}
                     >
                         <img
-                            src="/zenner-logo.png?v=1736720000"
+                            src="/zenner-logo.png?v=1768259200"
                             alt="Zenner"
                             className="w-full h-full object-contain"
                         />

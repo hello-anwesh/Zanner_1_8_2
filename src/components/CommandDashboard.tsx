@@ -8,6 +8,17 @@ import {
 import { journalService } from '../services/journal/JournalService';
 import { journalPromptService } from '../services/journal/JournalPromptService';
 
+interface TimerPresetBasic {
+    id: string;
+    name: string;
+    icon: string;
+    color: string;
+    focus: number;
+    shortBreak: number;
+    longBreak: number;
+    description?: string;
+}
+
 interface DashboardProps {
     // Timer
     timeLeft: number;
@@ -19,6 +30,10 @@ interface DashboardProps {
     onSkip: () => void;
     onModeChange?: (mode: 'focus' | 'shortBreak' | 'longBreak') => void;
     accent: string;
+    // Presets
+    activePreset?: TimerPresetBasic;
+    allPresets?: TimerPresetBasic[];
+    onPresetChange?: (preset: TimerPresetBasic) => void;
     // Navigation
     onNavigate: (view: string) => void;
     // Status
@@ -53,6 +68,9 @@ export function CommandDashboard({
     onSkip,
     onModeChange,
     accent,
+    activePreset,
+    allPresets,
+    onPresetChange,
     onNavigate,
     streakDays = 0,
     aiReady = true,
@@ -64,6 +82,7 @@ export function CommandDashboard({
     const [currentTime, setCurrentTime] = useState(new Date());
     const [animatedProgress, setAnimatedProgress] = useState(0);
     const [showModeSelector, setShowModeSelector] = useState(false);
+    const [showPresetPicker, setShowPresetPicker] = useState(false);
 
     // Update time every second
     useEffect(() => {
@@ -175,6 +194,83 @@ export function CommandDashboard({
                     />
 
                     <div className="relative h-full flex flex-col items-center justify-center p-8">
+                        {/* Preset Picker */}
+                        {activePreset && allPresets && onPresetChange && (
+                            <div className="relative mb-4">
+                                <button
+                                    onClick={() => setShowPresetPicker(!showPresetPicker)}
+                                    className="flex items-center gap-3 px-4 py-2 rounded-2xl transition-all hover:scale-[1.02]"
+                                    style={{
+                                        background: 'rgba(255,255,255,0.05)',
+                                        border: `1px solid ${activePreset.color}40`
+                                    }}
+                                >
+                                    <span className="text-xl">{activePreset.icon}</span>
+                                    <div className="text-left">
+                                        <p className="text-xs font-semibold text-white">{activePreset.name}</p>
+                                        <p className="text-[10px] text-white/40">
+                                            {activePreset.focus}m focus · {activePreset.shortBreak}m break
+                                        </p>
+                                    </div>
+                                    <ChevronDown
+                                        size={14}
+                                        className={`text-white/40 transition-transform ml-2 ${showPresetPicker ? 'rotate-180' : ''}`}
+                                    />
+                                </button>
+
+                                {/* Preset Dropdown */}
+                                <AnimatePresence>
+                                    {showPresetPicker && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                            transition={{ duration: 0.15 }}
+                                            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 p-3 rounded-2xl z-50"
+                                            style={{
+                                                width: 320,
+                                                background: 'rgba(15,15,18,0.98)',
+                                                backdropFilter: 'blur(40px)',
+                                                border: '1px solid rgba(255,255,255,0.1)',
+                                                boxShadow: '0 24px 60px rgba(0,0,0,0.6)'
+                                            }}
+                                        >
+                                            <div className="flex items-center justify-between mb-3 px-1">
+                                                <h3 className="text-xs font-bold text-white/60 uppercase tracking-wider">Choose Preset</h3>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2 max-h-[280px] overflow-y-auto">
+                                                {allPresets.map(preset => (
+                                                    <button
+                                                        key={preset.id}
+                                                        onClick={() => {
+                                                            onPresetChange(preset);
+                                                            setShowPresetPicker(false);
+                                                        }}
+                                                        className="text-left p-3 rounded-xl transition-all hover:scale-[1.02]"
+                                                        style={{
+                                                            background: activePreset.id === preset.id ? `${preset.color}15` : 'rgba(255,255,255,0.03)',
+                                                            border: `1px solid ${activePreset.id === preset.id ? preset.color + '40' : 'rgba(255,255,255,0.06)'}`,
+                                                            outline: activePreset.id === preset.id ? `2px solid ${preset.color}` : 'none',
+                                                            outlineOffset: '2px'
+                                                        }}
+                                                    >
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="text-base">{preset.icon}</span>
+                                                            <span className="font-semibold text-xs text-white">{preset.name}</span>
+                                                        </div>
+                                                        <div className="flex gap-1.5">
+                                                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/5 text-white/50">{preset.focus}m</span>
+                                                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/5 text-white/50">{preset.shortBreak}m</span>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        )}
+
                         {/* Mode Selector Dropdown */}
                         <div className="relative mb-6">
                             <button
