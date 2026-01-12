@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Play, Search, Plus, Trash2, LogOut, ExternalLink } from 'lucide-react';
+import { Play, Search, Plus, Trash2, LogOut, ExternalLink, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { spotifyService, FOCUS_PLAYLISTS, BREAK_PLAYLISTS } from '../services/spotify/SpotifyService';
 import type { SpotifyState, SpotifySearchResult } from '../services/spotify/SpotifyService';
@@ -8,9 +8,10 @@ const SPOTIFY_GREEN = '#1DB954';
 
 interface SpotifySettingsViewProps {
     accent: string;
+    onBack?: () => void;
 }
 
-export function SpotifySettingsView({ accent: _accent }: SpotifySettingsViewProps) {
+export function SpotifySettingsView({ accent: _accent, onBack }: SpotifySettingsViewProps) {
     const [spotifyState, setSpotifyState] = useState<SpotifyState | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [clientId, setClientId] = useState('');
@@ -87,6 +88,19 @@ export function SpotifySettingsView({ accent: _accent }: SpotifySettingsViewProp
     return (
         <div className="min-h-screen p-16" style={{ background: 'linear-gradient(to bottom, #0a0a0a, #121212)' }}>
             <div className="max-w-6xl mx-auto space-y-16">
+
+                {/* Back Button */}
+                {onBack && (
+                    <motion.button
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        onClick={onBack}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-200 group"
+                    >
+                        <ArrowLeft size={16} style={{ color: SPOTIFY_GREEN }} />
+                        <span className="text-sm font-medium text-white/60 group-hover:text-white/90">Back to Settings</span>
+                    </motion.button>
+                )}
 
                 {/* Hero Header */}
                 <motion.div

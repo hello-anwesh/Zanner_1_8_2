@@ -1029,17 +1029,27 @@ function App() {
 
                   {/* SETTINGS - AI */}
                   {view === "settings-ai" && (
-                    <AISettingsView accent={accent} />
+                    <AISettingsView accent={accent} onBack={() => setView("settings")} />
                   )}
 
                   {/* SETTINGS - BRAIN */}
                   {view === "settings-brain" && (
-                    <AIBrainView accent={accent} />
+                    <AIBrainView accent={accent} onBack={() => setView("settings")} />
                   )}
 
                   {/* SETTINGS - THEME */}
                   {view === "settings-theme" && (
                     <div className="page-container animate-fade-in">
+                      {/* Back Button */}
+                      <motion.button
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        onClick={() => setView("settings")}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-200 mb-6 group"
+                      >
+                        <ChevronLeft size={16} style={{ color: accent }} />
+                        <span className="text-sm font-medium text-white/60 group-hover:text-white/90">Back to Settings</span>
+                      </motion.button>
 
                       <div className="card-premium p-5">
                         <h3 className="text-xl font-semibold mb-6 flex items-center gap-3">
@@ -1075,10 +1085,10 @@ function App() {
                   )}
 
                   {/* SETTINGS - SPOTIFY */}
-                  {view === "settings-spotify" && <SpotifySettingsView accent={accent} />}
+                  {view === "settings-spotify" && <SpotifySettingsView accent={accent} onBack={() => setView("settings")} />}
 
                   {/* SETTINGS - YOUTUBE */}
-                  {view === "settings-youtube" && <YouTubeSettingsView accent={accent} />}
+                  {view === "settings-youtube" && <YouTubeSettingsView accent={accent} onBack={() => setView("settings")} />}
 
                   {/* SETTINGS - TIMER */}
                   {view === "settings-timer" && (
@@ -1087,11 +1097,12 @@ function App() {
                       activePreset={activePreset}
                       timerStyle={timerStyle}
                       onTimerStyleChange={(s) => setTimerStyle(s as any)}
+                      onBack={() => setView("settings")}
                     />
                   )}
 
                   {/* SETTINGS - VOICE */}
-                  {view === "settings-voice" && <VoiceSettingsView accent={accent} />}
+                  {view === "settings-voice" && <VoiceSettingsView accent={accent} onBack={() => setView("settings")} />}
 
                   {/* FREQUENCIES */}
                   {view === "frequencies" && <FrequencyGenerator isOpen={true} accent={accent} />}

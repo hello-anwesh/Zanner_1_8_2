@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Check, AlertCircle, Loader2, RefreshCw, Cpu, Sparkles, Zap } from 'lucide-react';
+import { Brain, Check, AlertCircle, Loader2, RefreshCw, Cpu, Sparkles, Zap, ArrowLeft } from 'lucide-react';
 import { aiService } from '../services/ai/AIService';
 import type { AIProviderType, ProviderStatus, ModelInfo } from '../services/ai/types';
 import { ProviderPriorityManager } from './ProviderPriorityManager';
 
 interface AISettingsViewProps {
     accent: string;
+    onBack?: () => void;
 }
 
-export function AISettingsView({ accent }: AISettingsViewProps) {
+export function AISettingsView({ accent, onBack }: AISettingsViewProps) {
     const [config, setConfig] = useState(aiService.getConfig());
     const [providerStatuses, setProviderStatuses] = useState<Map<AIProviderType, ProviderStatus>>(new Map());
     const [availableModels, setAvailableModels] = useState<Map<AIProviderType, ModelInfo[]>>(new Map());
@@ -102,6 +103,19 @@ export function AISettingsView({ accent }: AISettingsViewProps) {
 
     return (
         <div className="p-10 max-w-6xl mx-auto space-y-12 animate-fade-in font-sans">
+            {/* Back Button */}
+            {onBack && (
+                <motion.button
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    onClick={onBack}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-200 group"
+                >
+                    <ArrowLeft size={16} style={{ color: accent }} />
+                    <span className="text-sm font-medium text-white/60 group-hover:text-white/90">Back to Settings</span>
+                </motion.button>
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>

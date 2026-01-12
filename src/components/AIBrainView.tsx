@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Brain, Trash2, Plus, Clock, Sparkles, Book, Gavel, RefreshCw, X, Database, MessageSquare, Zap, Crown, BarChart2 } from "lucide-react";
+import { Brain, Trash2, Plus, Clock, Sparkles, Book, Gavel, RefreshCw, X, Database, MessageSquare, Zap, Crown, BarChart2, ArrowLeft } from "lucide-react";
 import { trainingService } from "../services/training/TrainingService";
 import { aiService } from "../services/ai/AIService";
 import { TrainingProfile, AIExperience } from "../services/training/types";
@@ -8,9 +8,10 @@ import { MemoryAnalyticsDashboard } from "./MemoryAnalyticsDashboard";
 
 interface AIBrainViewProps {
     accent: string;
+    onBack?: () => void;
 }
 
-export function AIBrainView({ accent }: AIBrainViewProps) {
+export function AIBrainView({ accent, onBack }: AIBrainViewProps) {
     const [profile, setProfile] = useState<TrainingProfile>(trainingService.getProfile());
     const [activeTab, setActiveTab] = useState<"knowledge" | "rules" | "history" | "analytics">("knowledge");
     const [newValue, setNewValue] = useState("");
@@ -69,6 +70,19 @@ export function AIBrainView({ accent }: AIBrainViewProps) {
 
     return (
         <div className="p-12 max-w-6xl mx-auto space-y-10 font-sans">
+            {/* Back Button */}
+            {onBack && (
+                <motion.button
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    onClick={onBack}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-200 group"
+                >
+                    <ArrowLeft size={16} style={{ color: accent }} />
+                    <span className="text-sm font-medium text-white/60 group-hover:text-white/90">Back to Settings</span>
+                </motion.button>
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Play, Search, Plus, Trash2, ExternalLink } from 'lucide-react';
+import { Play, Search, Plus, Trash2, ExternalLink, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { youtubeService } from '../services/youtube/YouTubeService';
 import type { YouTubeVideo } from '../services/youtube/YouTubeService';
@@ -9,9 +9,10 @@ const YOUTUBE_RED = '#FF0000';
 
 interface YouTubeSettingsViewProps {
     accent: string;
+    onBack?: () => void;
 }
 
-export function YouTubeSettingsView({ accent: _accent }: YouTubeSettingsViewProps) {
+export function YouTubeSettingsView({ accent: _accent, onBack }: YouTubeSettingsViewProps) {
     const [isConfigured, setIsConfigured] = useState(false);
     const [apiKey, setApiKey] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
@@ -73,6 +74,19 @@ export function YouTubeSettingsView({ accent: _accent }: YouTubeSettingsViewProp
     return (
         <div className="min-h-screen p-16" style={{ background: 'linear-gradient(to bottom, #0a0a0a, #1a0000)' }}>
             <div className="max-w-6xl mx-auto space-y-16">
+
+                {/* Back Button */}
+                {onBack && (
+                    <motion.button
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        onClick={onBack}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-200 group"
+                    >
+                        <ArrowLeft size={16} style={{ color: YOUTUBE_RED }} />
+                        <span className="text-sm font-medium text-white/60 group-hover:text-white/90">Back to Settings</span>
+                    </motion.button>
+                )}
 
                 {/* Hero Header */}
                 <motion.div

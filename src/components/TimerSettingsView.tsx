@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 import { metronomeService } from '../services/MetronomeService';
 import { TimerPreview } from './TimerPreview';
 
@@ -7,6 +8,7 @@ interface TimerSettingsViewProps {
     activePreset: any;
     timerStyle: string;
     onTimerStyleChange: (style: string) => void;
+    onBack?: () => void;
 }
 
 const TIMER_STYLES = [
@@ -17,9 +19,22 @@ const TIMER_STYLES = [
     { id: '3d', name: '3D', icon: '🎲', desc: 'Depth effect' }
 ];
 
-export function TimerSettingsView({ accent, activePreset, timerStyle, onTimerStyleChange }: TimerSettingsViewProps) {
+export function TimerSettingsView({ accent, activePreset, timerStyle, onTimerStyleChange, onBack }: TimerSettingsViewProps) {
     return (
         <div className="p-12 max-w-5xl mx-auto space-y-10" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+            {/* Back Button */}
+            {onBack && (
+                <motion.button
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    onClick={onBack}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-200 group"
+                >
+                    <ArrowLeft size={16} style={{ color: accent }} />
+                    <span className="text-sm font-medium text-white/60 group-hover:text-white/90">Back to Settings</span>
+                </motion.button>
+            )}
+
             {/* Header */}
             <span className="px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-wider bg-white/[0.08] text-white/60 border border-white/[0.15] inline-block">
                 Timer Settings

@@ -116,7 +116,7 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
                             />
                         </button>
                         <button
-                            onClick={() => onViewChange('settings-theme')}
+                            onClick={() => onViewChange('settings')}
                             className={`p-3 rounded-xl transition-all duration-200 ${view.startsWith('settings')
                                 ? 'bg-white/10'
                                 : 'bg-white/[0.03] hover:bg-white/[0.08]'
