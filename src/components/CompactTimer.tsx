@@ -1,6 +1,11 @@
+/**
+ * CompactTimer - Ultra-premium floating timer
+ * Minimal, dark, glass aesthetic with glowing accents
+ */
+
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Pause, Maximize2, X, GripVertical } from 'lucide-react';
+import { Play, Pause, Maximize2, X } from 'lucide-react';
 
 interface CompactTimerProps {
     timeLeft: number;
@@ -19,6 +24,13 @@ function formatTime(seconds: number): string {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
+const MODES: { [key: string]: { label: string; color: string } } = {
+    focus: { label: 'FOCUS', color: '#A855F7' },
+    work: { label: 'FOCUS', color: '#A855F7' },
+    shortBreak: { label: 'BREAK', color: '#22C55E' },
+    longBreak: { label: 'REST', color: '#3B82F6' }
+};
+
 export function CompactTimer({
     timeLeft,
     isRunning,
@@ -29,40 +41,22 @@ export function CompactTimer({
     onExpand,
     onClose
 }: CompactTimerProps) {
-    // Drag state for browser/electron
     const [position, setPosition] = useState(() => {
         const saved = localStorage.getItem('compactTimerPosition');
         return saved ? JSON.parse(saved) : { x: 0, y: 0 };
     });
     const constraintsRef = useRef<HTMLDivElement>(null);
 
-    const modeConfig: { [key: string]: { label: string; emoji: string; color: string } } = {
-        work: { label: 'Focus', emoji: '🎯', color: '#7C3AED' },
-        focus: { label: 'Focus', emoji: '🎯', color: '#7C3AED' },
-        shortBreak: { label: 'Short Break', emoji: '☕', color: '#10B981' },
-        longBreak: { label: 'Long Break', emoji: '🌴', color: '#3B82F6' }
-    };
-
-    const config = modeConfig[mode] || { label: mode, emoji: '⏱️', color: accent };
-
-    // Calculate progress based on mode
-    const getTotalSeconds = () => {
-        if (mode === 'focus' || mode === 'work') return 25 * 60;
-        if (mode === 'shortBreak') return 5 * 60;
-        if (mode === 'longBreak') return 15 * 60;
-        return 25 * 60;
-    };
-    const progress = ((getTotalSeconds() - timeLeft) / getTotalSeconds()) * 100;
+    const config = MODES[mode] || { label: 'FOCUS', color: accent };
 
     return (
         <>
-            {/* Drag Constraints */}
             <div ref={constraintsRef} className="fixed inset-0 pointer-events-none z-[9998]" />
 
             <motion.div
                 drag
                 dragMomentum={false}
-                dragElastic={0.1}
+                dragElastic={0.05}
                 dragConstraints={constraintsRef}
                 initial={position}
                 onDragEnd={(_, info) => {
@@ -70,125 +64,175 @@ export function CompactTimer({
                     setPosition(newPos);
                     localStorage.setItem('compactTimerPosition', JSON.stringify(newPos));
                 }}
-                className="fixed top-8 left-1/2 -translate-x-1/2 z-[9999] cursor-grab active:cursor-grabbing"
-                data-tauri-drag-region
+                className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999]"
+                style={{ cursor: 'grab' }}
+                whileDrag={{ cursor: 'grabbing' }}
             >
-                <div
-                    className="rounded-3xl overflow-hidden shadow-2xl"
+                <motion.div
+                    initial={{ opacity: 0, y: -30, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -30, scale: 0.9 }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                     style={{
-                        background: 'linear-gradient(180deg, rgba(30,30,30,0.98) 0%, rgba(20,20,20,0.98) 100%)',
-                        border: `2px solid ${config.color}30`,
-                        backdropFilter: 'blur(20px)',
-                        boxShadow: `0 25px 60px rgba(0,0,0,0.5), 0 0 40px ${config.color}20`
+                        background: '#0D0D0F',
+                        borderRadius: 20,
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        boxShadow: `
+                            0 25px 50px -12px rgba(0,0,0,0.8),
+                            0 0 0 1px rgba(255,255,255,0.03),
+                            0 0 60px -10px ${config.color}30
+                        `,
+                        padding: '14px 20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 16
                     }}
                 >
-                    {/* Drag Handle */}
+                    {/* Mode Badge */}
                     <div
-                        className="flex items-center justify-center py-2 cursor-grab active:cursor-grabbing"
-                        data-tauri-drag-region
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-start',
+                            gap: 2
+                        }}
                     >
-                        <div className="flex items-center gap-1 opacity-30 hover:opacity-60 transition-opacity">
-                            <GripVertical size={14} className="text-white" />
-                        </div>
-                    </div>
-
-                    {/* Main Content */}
-                    <div className="px-8 pb-6 pt-2">
-                        {/* Mode & Session */}
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                                <span className="text-2xl">{config.emoji}</span>
-                                <div>
-                                    <p
-                                        className="text-sm font-bold uppercase tracking-wider"
-                                        style={{ color: config.color }}
-                                    >
-                                        {config.label}
-                                    </p>
-                                    <p className="text-xs text-white/40">
-                                        Session {sessions + 1}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <button
-                                    onClick={onExpand}
-                                    className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-                                    title="Expand"
-                                >
-                                    <Maximize2 size={14} className="text-white/50 hover:text-white" />
-                                </button>
-                                <button
-                                    onClick={onClose}
-                                    className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-                                    title="Close"
-                                >
-                                    <X size={14} className="text-white/50 hover:text-white" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Timer Display */}
-                        <div className="flex items-center justify-between gap-8">
-                            <div className="flex flex-col items-start">
-                                <span
-                                    className="text-6xl font-black tracking-tighter tabular-nums"
-                                    style={{
-                                        color: '#fff',
-                                        textShadow: `0 0 40px ${config.color}40`,
-                                        fontFamily: "'Inter', system-ui, sans-serif"
-                                    }}
-                                >
-                                    {formatTime(timeLeft)}
-                                </span>
-
-                                {/* Status */}
-                                <div className="flex items-center gap-2 mt-2">
-                                    <div
-                                        className={`w-2 h-2 rounded-full ${isRunning ? 'animate-pulse' : ''}`}
-                                        style={{ background: isRunning ? '#10B981' : '#6B7280' }}
-                                    />
-                                    <span
-                                        className="text-xs font-semibold uppercase tracking-wider"
-                                        style={{ color: isRunning ? '#10B981' : '#6B7280' }}
-                                    >
-                                        {isRunning ? 'Running' : 'Paused'}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Play/Pause Button */}
-                            <motion.button
-                                whileHover={{ scale: 1.08 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={onToggleTimer}
-                                className="w-16 h-16 rounded-2xl flex items-center justify-center transition-all"
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6
+                        }}>
+                            <div
                                 style={{
-                                    background: `linear-gradient(135deg, ${config.color}, ${config.color}DD)`,
-                                    boxShadow: `0 8px 32px ${config.color}50`
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: '50%',
+                                    background: config.color,
+                                    boxShadow: isRunning ? `0 0 12px ${config.color}` : 'none',
+                                    animation: isRunning ? 'pulse 2s infinite' : 'none'
                                 }}
-                            >
-                                {isRunning ? (
-                                    <Pause size={26} color="#fff" strokeWidth={2.5} />
-                                ) : (
-                                    <Play size={26} color="#fff" strokeWidth={2.5} className="ml-1" />
-                                )}
-                            </motion.button>
-                        </div>
-
-                        {/* Progress Bar */}
-                        <div className="mt-5 h-1 bg-white/10 rounded-full overflow-hidden">
-                            <motion.div
-                                className="h-full rounded-full"
-                                style={{ background: config.color }}
-                                initial={{ width: '0%' }}
-                                animate={{ width: `${progress}%` }}
-                                transition={{ duration: 0.3 }}
                             />
+                            <span style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                letterSpacing: '0.1em',
+                                color: config.color
+                            }}>
+                                {config.label}
+                            </span>
                         </div>
+                        <span style={{
+                            fontSize: 10,
+                            color: 'rgba(255,255,255,0.35)',
+                            fontWeight: 500
+                        }}>
+                            Session {sessions + 1}
+                        </span>
                     </div>
-                </div>
+
+                    {/* Divider */}
+                    <div style={{
+                        width: 1,
+                        height: 36,
+                        background: 'rgba(255,255,255,0.08)'
+                    }} />
+
+                    {/* Timer */}
+                    <div style={{
+                        fontSize: 42,
+                        fontWeight: 700,
+                        color: '#FFFFFF',
+                        letterSpacing: '-0.02em',
+                        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                        fontVariantNumeric: 'tabular-nums',
+                        lineHeight: 1,
+                        textShadow: `0 0 40px ${config.color}40`
+                    }}>
+                        {formatTime(timeLeft)}
+                    </div>
+
+                    {/* Play/Pause */}
+                    <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={onToggleTimer}
+                        style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 14,
+                            border: 'none',
+                            background: config.color,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            boxShadow: `0 8px 24px ${config.color}50`
+                        }}
+                    >
+                        {isRunning ? (
+                            <Pause size={22} color="#fff" strokeWidth={2.5} />
+                        ) : (
+                            <Play size={22} color="#fff" strokeWidth={2.5} style={{ marginLeft: 2 }} />
+                        )}
+                    </motion.button>
+
+                    {/* Divider */}
+                    <div style={{
+                        width: 1,
+                        height: 36,
+                        background: 'rgba(255,255,255,0.08)'
+                    }} />
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: 4 }}>
+                        <button
+                            onClick={onExpand}
+                            style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 8,
+                                border: 'none',
+                                background: 'rgba(255,255,255,0.05)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                transition: 'background 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                        >
+                            <Maximize2 size={14} color="rgba(255,255,255,0.5)" />
+                        </button>
+                        <button
+                            onClick={onClose}
+                            style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 8,
+                                border: 'none',
+                                background: 'rgba(255,255,255,0.05)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                transition: 'background 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                        >
+                            <X size={14} color="rgba(255,255,255,0.5)" />
+                        </button>
+                    </div>
+                </motion.div>
             </motion.div>
+
+            <style>{`
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.5; }
+                }
+            `}</style>
         </>
     );
 }
