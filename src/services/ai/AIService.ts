@@ -34,8 +34,16 @@ class AIService {
     private loadConfig(): void {
         try {
             const stored = localStorage.getItem(this.STORAGE_KEY);
+            console.log('[AIService] Loading config from localStorage...');
+
             if (stored) {
                 const parsed = JSON.parse(stored);
+                console.log('[AIService] Parsed stored config:', {
+                    activeProvider: parsed.activeProvider,
+                    fallbackPriority: parsed.fallbackPriority,
+                    hasProviders: !!parsed.providers
+                });
+
                 this.config = {
                     ...DEFAULT_AI_CONFIG,
                     ...parsed,
@@ -49,11 +57,18 @@ class AIService {
                 if (!this.config.maxTokens || this.config.maxTokens < 32768) {
                     console.log(`[AIService] Migrating maxTokens from ${this.config.maxTokens} to 32768`);
                     this.config.maxTokens = 32768;
-                    this.saveConfig(); // Persist the migration
+                    this.saveConfig();
                 }
+
+                console.log('[AIService] Final loaded config:', {
+                    activeProvider: this.config.activeProvider,
+                    fallbackPriority: this.config.fallbackPriority
+                });
+            } else {
+                console.log('[AIService] No stored config found, using defaults');
             }
         } catch (error) {
-            console.error('Failed to load AI config:', error);
+            console.error('[AIService] Failed to load config:', error);
         }
     }
 
@@ -91,6 +106,12 @@ class AIService {
     }
 
     updateConfig(updates: Partial<AIConfig>): void {
+        console.log('[AIService] Updating config with:', {
+            activeProvider: updates.activeProvider,
+            fallbackPriority: updates.fallbackPriority,
+            hasProviders: !!updates.providers
+        });
+
         // Deep merge providers at the individual provider level to preserve all fields
         if (updates.providers) {
             const mergedProviders = { ...this.config.providers };
@@ -119,17 +140,15 @@ class AIService {
 
         // Re-configure providers if their config changed
         if (updates.providers) {
-            for (const [type, providerConfig] of Object.entries(updates.providers)) {
-                const provider = this.providers.get(type as AIProviderType);
-                if (provider && providerConfig) {
-                    provider.configure({
-                        apiKey: providerConfig.apiKey,
-                        baseUrl: (providerConfig as { baseUrl?: string }).baseUrl,
-                        model: providerConfig.model,
-                    });
-                }
+            for (const type of Object.keys(updates.providers)) {
+                this.configureProvider(type as AIProviderType);
             }
         }
+
+        console.log('[AIService] Config after update:', {
+            activeProvider: this.config.activeProvider,
+            fallbackPriority: this.config.fallbackPriority
+        });
 
         // Save to localStorage - this is the KEY part
         this.saveConfig();
@@ -172,11 +191,32 @@ class AIService {
     // Validation & Models
     // ============================================================
 
+    /**
+     * Configure a provider with the saved config.
+     * This MUST be called before isAvailable() or fetchModels() to ensure
+     * the provider uses the user's saved settings, not defaults.
+     */
+    private configureProvider(type: AIProviderType): void {
+        const provider = this.providers.get(type);
+        const pConfig = this.config.providers[type];
+
+        if (provider && pConfig) {
+            provider.configure({
+                apiKey: pConfig.apiKey,
+                baseUrl: (pConfig as { baseUrl?: string }).baseUrl,
+                model: pConfig.model,
+            });
+        }
+    }
+
     async checkProvider(type: AIProviderType): Promise<ProviderStatus> {
         const provider = this.providers.get(type);
         if (!provider) {
             return { available: false, error: "Provider not found" };
         }
+
+        // Configure provider with saved settings BEFORE checking availability
+        this.configureProvider(type);
 
         const status = await provider.isAvailable();
         this.providerStatus.set(type, status);
@@ -204,6 +244,9 @@ class AIService {
         const provider = this.providers.get(type);
         if (!provider) return [];
 
+        // Configure provider with saved settings BEFORE fetching models
+        this.configureProvider(type);
+
         try {
             return await provider.fetchModels();
         } catch {
@@ -218,13 +261,18 @@ class AIService {
     async chat(userMessage: string, context?: Record<string, any>): Promise<string> {
         const errors: { provider: AIProviderType; error: string }[] = [];
 
+        console.log('[AIService] Current config state:', {
+            activeProvider: this.config.activeProvider,
+            fallbackPriority: this.config.fallbackPriority
+        });
+
         // Build list of providers to try (active first, then fallbacks)
         const providersToTry = [
             this.config.activeProvider,
             ...this.config.fallbackPriority.filter(p => p !== this.config.activeProvider)
         ];
 
-        console.log('[AIService] Providers to try:', providersToTry);
+        console.log('[AIService] Providers to try (in order):', providersToTry);
 
         for (const providerType of providersToTry) {
             const provider = this.providers.get(providerType);
@@ -244,12 +292,8 @@ class AIService {
             try {
                 console.log(`[AIService] Trying provider: ${providerType}`);
 
-                // Configure provider with latest settings
-                provider.configure({
-                    apiKey: pConfig.apiKey,
-                    model: pConfig.model,
-                    baseUrl: (pConfig as any).baseUrl
-                });
+                // Configure provider with saved settings (uses centralized helper)
+                this.configureProvider(providerType);
 
                 // Build context-aware system message
                 let systemPrompt = this.config.systemPrompt;

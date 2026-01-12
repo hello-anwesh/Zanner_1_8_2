@@ -31,7 +31,7 @@ export class OllamaProvider implements AIProvider {
 
             const data = await response.json();
             const models = (data.models || []).map((m: { name: string; modified_at: string; size: number }) => ({
-                id: m.name.split(":")[0],
+                id: m.name,  // Full name including tag
                 name: m.name,
                 description: `Size: ${(m.size / 1e9).toFixed(1)}GB`,
             }));
@@ -51,8 +51,10 @@ export class OllamaProvider implements AIProvider {
             if (!response.ok) return [];
 
             const data = await response.json();
+            // Use full model name as ID (e.g., "qwen2.5-coder:7b"), NOT truncated
+            // Ollama requires the exact model name including the tag
             return (data.models || []).map((m: { name: string; size: number; details?: { parameter_size?: string } }) => ({
-                id: m.name.split(":")[0],
+                id: m.name,  // Full name: "qwen2.5-coder:7b"
                 name: m.name,
                 description: m.details?.parameter_size || `${(m.size / 1e9).toFixed(1)}GB`,
             }));

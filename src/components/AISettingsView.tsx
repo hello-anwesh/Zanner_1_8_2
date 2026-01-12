@@ -72,7 +72,19 @@ export function AISettingsView({ accent }: AISettingsViewProps) {
     };
 
     const setActiveProvider = (provider: AIProviderType) => {
-        setConfig({ ...config, activeProvider: provider });
+        // When setting active provider, also update fallbackPriority to put it first
+        // This ensures architectural consistency between activeProvider and fallbackPriority
+        const currentPriority = config.fallbackPriority || ['gemini', 'openai', 'claude', 'ollama'];
+        const newFallbackPriority = [
+            provider,
+            ...currentPriority.filter(p => p !== provider)
+        ];
+
+        setConfig({
+            ...config,
+            activeProvider: provider,
+            fallbackPriority: newFallbackPriority
+        });
     };
 
     const saveConfig = () => {
