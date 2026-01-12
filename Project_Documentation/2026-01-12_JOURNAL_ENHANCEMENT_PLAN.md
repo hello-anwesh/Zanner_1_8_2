@@ -214,10 +214,10 @@ CREATE TABLE journal_templates (
 - [ ] Session Notes tab
 
 ### Phase 5: Analytics & Insights
-- [ ] Mood chart
+- [x] Mood chart ✅
 - [ ] Mood calendar
-- [ ] Mood correlations
-- [ ] Words written stats
+- [x] Mood correlations ✅
+- [x] Words written stats ✅
 - [ ] Theme extraction
 - [ ] Sentiment timeline
 
