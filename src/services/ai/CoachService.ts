@@ -1,7 +1,7 @@
 import { aiService } from "./AIService";
 import { trainingService } from "../training/TrainingService";
 import { databaseService } from "../db/DatabaseService";
-import { ragService } from "./RAGService";
+import { memoryOrchestrator } from "./MemoryOrchestrator";
 import { journalService } from "../journal/JournalService";
 
 export interface CoachContext {
@@ -171,17 +171,14 @@ ${context.userEnergy ? `- Energy Level: ${context.userEnergy}` : ""}`;
                 console.warn("Failed to fetch analytics for chat context", e);
             }
 
-            // Retrieve Context (Hybrid - RAG + Training Memory)
-            const memoryContext = trainingService.getContext(userMessage);
-            const ragContext = await ragService.retrieve(userMessage);
+            // Retrieve Context using unified MemoryOrchestrator
+            const memoryContext = await memoryOrchestrator.buildContext(userMessage);
             const contextString = this.buildContextString(context);
 
             // Build enhanced prompt with context ONLY (no user message - AIService handles that)
             const contextPrompt = `${contextString}
 
-${memoryContext ? `RELEVANT USER MEMORY:\n${memoryContext}\n` : ""}
-
-${ragContext ? `KNOWLEDGE BASE:\n${ragContext}\n` : ""}
+${memoryContext}
 
 Provide an intelligent, contextual response. Be helpful, concise, and specific to their situation.`;
 
