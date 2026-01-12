@@ -16,6 +16,10 @@ class AIService {
     private listeners: Set<() => void> = new Set();
     private readonly STORAGE_KEY = 'ai-service-config';
 
+    // Context window management
+    private readonly MAX_HISTORY_TOKENS = 4000; // Max tokens for conversation history
+    private readonly TOKEN_ESTIMATION_CHARS_PER_TOKEN = 4; // ~4 chars per token
+
     constructor() {
         // Register all providers
         this.providers.set("ollama", new OllamaProvider());
@@ -261,10 +265,11 @@ class AIService {
                 // Add user message to history
                 this.conversationHistory.push({ role: "user", content: userMessage });
 
-                // Build messages array
+                // Build messages array with trimmed history (respects token budget)
+                const trimmedHistory = this.trimHistoryToTokenBudget();
                 const messages: Message[] = [
                     { role: "system", content: systemPrompt },
-                    ...this.conversationHistory,
+                    ...trimmedHistory,
                 ];
 
                 // Attempt chat
@@ -349,6 +354,54 @@ class AIService {
 
     clearHistory(): void {
         this.conversationHistory = [];
+    }
+
+    /**
+     * Estimate token count for a string
+     * Uses ~4 chars per token approximation (works well for English)
+     */
+    private estimateTokens(text: string): number {
+        return Math.ceil(text.length / this.TOKEN_ESTIMATION_CHARS_PER_TOKEN);
+    }
+
+    /**
+     * Trim conversation history to fit within token budget
+     * Keeps most recent messages that fit within MAX_HISTORY_TOKENS
+     */
+    private trimHistoryToTokenBudget(): Message[] {
+        let tokenCount = 0;
+        const trimmed: Message[] = [];
+
+        // Iterate from most recent to oldest
+        for (let i = this.conversationHistory.length - 1; i >= 0; i--) {
+            const msg = this.conversationHistory[i];
+            const msgTokens = this.estimateTokens(msg.content);
+
+            if (tokenCount + msgTokens > this.MAX_HISTORY_TOKENS) {
+                console.log(`[AIService] History trimmed: keeping ${trimmed.length} messages (${tokenCount} tokens)`);
+                break;
+            }
+
+            trimmed.unshift(msg);
+            tokenCount += msgTokens;
+        }
+
+        return trimmed;
+    }
+
+    /**
+     * Get current history token usage stats
+     */
+    getHistoryStats(): { messageCount: number; estimatedTokens: number; maxTokens: number } {
+        const estimatedTokens = this.conversationHistory.reduce(
+            (sum, msg) => sum + this.estimateTokens(msg.content),
+            0
+        );
+        return {
+            messageCount: this.conversationHistory.length,
+            estimatedTokens,
+            maxTokens: this.MAX_HISTORY_TOKENS
+        };
     }
 
     async embed(text: string): Promise<number[]> {
