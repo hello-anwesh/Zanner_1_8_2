@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Brain, Trash2, Plus, Clock, Sparkles, Book, Gavel, RefreshCw, X } from "lucide-react";
+import { Brain, Trash2, Plus, Clock, Sparkles, Book, Gavel, RefreshCw, X, Database, MessageSquare, Zap, Crown } from "lucide-react";
 import { trainingService } from "../services/training/TrainingService";
+import { aiService } from "../services/ai/AIService";
 import { TrainingProfile, AIExperience } from "../services/training/types";
 
 interface AIBrainViewProps {
@@ -13,14 +14,24 @@ export function AIBrainView({ accent }: AIBrainViewProps) {
     const [activeTab, setActiveTab] = useState<"knowledge" | "rules" | "history">("knowledge");
     const [newValue, setNewValue] = useState("");
     const [showAdd, setShowAdd] = useState(false);
+    const [historyStats, setHistoryStats] = useState(aiService.getHistoryStats());
 
     useEffect(() => {
-        // Refresh profile occasionally or on mount
+        // Refresh profile and stats on mount
         setProfile(trainingService.getProfile());
+        setHistoryStats(aiService.getHistoryStats());
     }, []);
 
     const refresh = () => {
         setProfile({ ...trainingService.getProfile() }); // Force new ref
+        setHistoryStats(aiService.getHistoryStats());
+    };
+
+    const handleClearHistory = () => {
+        if (confirm("Clear all conversation history? Zeni will forget the current chat context.")) {
+            aiService.clearHistory();
+            setHistoryStats(aiService.getHistoryStats());
+        }
     };
 
     const handleDelete = (id: string, type: "knowledge" | "rules" | "history") => {
@@ -51,6 +62,9 @@ export function AIBrainView({ accent }: AIBrainViewProps) {
         { id: "history", label: "Recent Memory", icon: Clock, count: profile.experiences?.length || 0 },
     ];
 
+    // Calculate token usage percentage
+    const tokenUsagePercent = Math.round((historyStats.estimatedTokens / historyStats.maxTokens) * 100);
+
     return (
         <div className="p-12 max-w-6xl mx-auto space-y-10 font-sans">
             {/* Header */}
@@ -69,6 +83,75 @@ export function AIBrainView({ accent }: AIBrainViewProps) {
                 >
                     <RefreshCw size={20} />
                 </button>
+            </div>
+
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                {/* Chat Memory */}
+                <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 rounded-lg" style={{ background: `${accent}20` }}>
+                            <MessageSquare size={18} style={{ color: accent }} />
+                        </div>
+                        <span className="text-sm text-white/50 font-medium">Chat Memory</span>
+                    </div>
+                    <p className="text-2xl font-black text-white">{historyStats.messageCount}</p>
+                    <p className="text-xs text-white/30 mt-1">messages in context</p>
+                </div>
+
+                {/* Token Usage */}
+                <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 rounded-lg" style={{ background: `${accent}20` }}>
+                            <Zap size={18} style={{ color: accent }} />
+                        </div>
+                        <span className="text-sm text-white/50 font-medium">Token Usage</span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                        <p className="text-2xl font-black text-white">{historyStats.estimatedTokens.toLocaleString()}</p>
+                        <p className="text-sm text-white/30">/ {historyStats.maxTokens.toLocaleString()}</p>
+                    </div>
+                    <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                                width: `${Math.min(tokenUsagePercent, 100)}%`,
+                                background: tokenUsagePercent > 80 ? '#ef4444' : accent
+                            }}
+                        />
+                    </div>
+                </div>
+
+                {/* Long-term Memory */}
+                <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 rounded-lg" style={{ background: `${accent}20` }}>
+                            <Database size={18} style={{ color: accent }} />
+                        </div>
+                        <span className="text-sm text-white/50 font-medium">Long-term</span>
+                    </div>
+                    <p className="text-2xl font-black text-white">
+                        {(profile.knowledgeBase?.length || 0) + (profile.rules?.length || 0)}
+                    </p>
+                    <p className="text-xs text-white/30 mt-1">facts & rules stored</p>
+                </div>
+
+                {/* Actions */}
+                <div className="p-5 rounded-2xl bg-white/5 border border-white/5 flex flex-col justify-between">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 rounded-lg bg-white/10">
+                            <Crown size={18} className="text-amber-400" />
+                        </div>
+                        <span className="text-sm text-white/50 font-medium">Free Tier</span>
+                    </div>
+                    <button
+                        onClick={handleClearHistory}
+                        className="w-full px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-sm font-bold transition-all flex items-center justify-center gap-2"
+                    >
+                        <Trash2 size={14} />
+                        Clear Chat Memory
+                    </button>
+                </div>
             </div>
 
             {/* Tabs */}
