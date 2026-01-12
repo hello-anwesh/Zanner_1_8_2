@@ -23,7 +23,7 @@ export interface CoachResponse {
 }
 
 class CoachService {
-    private conversationHistory: Array<{ role: string; content: string }> = [];
+    // Note: Conversation history is managed by AIService (single source of truth)
 
     private async getAdvancedPersonaPrompt(analytics?: any): Promise<string> {
         const fullMemoryContext = trainingService.getFullSystemContext();
@@ -180,8 +180,8 @@ Provide an intelligent, contextual response. Be helpful, concise, and specific t
 
             console.log('[Coach] Sending to AI service...');
             const response = await aiService.chat(userMessage, {
-                systemPrompt: await this.getAdvancedPersonaPrompt(analytics) + '\n\n' + contextPrompt,
-                conversationHistory: this.conversationHistory.slice(-10) // Last 5 exchanges
+                systemPrompt: await this.getAdvancedPersonaPrompt(analytics) + '\n\n' + contextPrompt
+                // Note: AIService manages conversation history internally
             });
 
             console.log('[Coach] AI Response:', response);
@@ -192,9 +192,7 @@ Provide an intelligent, contextual response. Be helpful, concise, and specific t
                 throw new Error('AI service returned an empty response. Check AI provider configuration and API key.');
             }
 
-            // Add BOTH user message and assistant response to history AFTER successful response
-            this.conversationHistory.push({ role: "user", content: userMessage });
-            this.conversationHistory.push({ role: "assistant", content: response });
+            // Note: AIService adds messages to history automatically
 
             // Trigger Background Memory Consolidation
             this.analyzeInteraction(userMessage, response);
@@ -324,7 +322,8 @@ Return JSON ONLY:
     }
 
     clearHistory() {
-        this.conversationHistory = [];
+        // Delegate to AIService (single source of truth)
+        aiService.clearHistory();
     }
 }
 
