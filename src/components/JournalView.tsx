@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Save, ChevronLeft, ChevronRight, Flame, Calendar, Tag, X, Search } from 'lucide-react';
 import { journalService, JournalEntry } from '../services/journal/JournalService';
@@ -24,6 +24,60 @@ export function JournalView() {
     const [streak, setStreak] = useState(0);
     const [viewMode, setViewMode] = useState<'today' | 'all'>('today');
 
+    // Phase 1: Auto-save states
+    const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | null>(null);
+    const [wordCount, setWordCount] = useState(0);
+    const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastSavedContentRef = useRef('');
+
+    // Calculate word count when content changes
+    useEffect(() => {
+        const words = content.trim() ? content.trim().split(/\s+/).length : 0;
+        setWordCount(words);
+    }, [content]);
+
+    // Auto-save with debounce (3 seconds after typing stops)
+    useEffect(() => {
+        // Only auto-save if content has changed from last saved version
+        if (content === lastSavedContentRef.current) {
+            return;
+        }
+
+        // Show unsaved indicator
+        if (content.trim()) {
+            setAutoSaveStatus('unsaved');
+        }
+
+        // Clear existing timeout
+        if (autoSaveTimeoutRef.current) {
+            clearTimeout(autoSaveTimeoutRef.current);
+        }
+
+        // Set new timeout for auto-save
+        autoSaveTimeoutRef.current = setTimeout(async () => {
+            if (content.trim() && content !== lastSavedContentRef.current) {
+                setAutoSaveStatus('saving');
+                try {
+                    await journalService.createOrUpdateEntry(currentDate, content, mood, tags);
+                    lastSavedContentRef.current = content;
+                    setAutoSaveStatus('saved');
+                    // Load entries to update list
+                    loadAllEntries();
+                    calculateStreak();
+                } catch (error) {
+                    console.error('Auto-save failed:', error);
+                    setAutoSaveStatus('unsaved');
+                }
+            }
+        }, 3000);
+
+        return () => {
+            if (autoSaveTimeoutRef.current) {
+                clearTimeout(autoSaveTimeoutRef.current);
+            }
+        };
+    }, [content, currentDate, mood, tags]);
+
     useEffect(() => {
         loadEntry(currentDate);
         loadAllEntries();
@@ -48,10 +102,14 @@ export function JournalView() {
             setContent(entry.content);
             setMood(entry.mood);
             setTags(entry.tags || []);
+            lastSavedContentRef.current = entry.content;
+            setAutoSaveStatus('saved');
         } else {
             setContent('');
             setMood(undefined);
             setTags([]);
+            lastSavedContentRef.current = '';
+            setAutoSaveStatus(null);
         }
     };
 
@@ -82,10 +140,16 @@ export function JournalView() {
         if (!content.trim()) return;
 
         setIsSaving(true);
+        setAutoSaveStatus('saving');
         try {
             await journalService.createOrUpdateEntry(currentDate, content, mood, tags);
+            lastSavedContentRef.current = content;
+            setAutoSaveStatus('saved');
             await loadAllEntries();
             await calculateStreak();
+        } catch (error) {
+            console.error('Save failed:', error);
+            setAutoSaveStatus('unsaved');
         } finally {
             setIsSaving(false);
         }
@@ -108,6 +172,21 @@ export function JournalView() {
     const removeTag = (tag: string) => {
         setTags(tags.filter(t => t !== tag));
     };
+
+    // Keyboard shortcuts (Cmd+S / Ctrl+S to save)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+                e.preventDefault();
+                if (content.trim() && !isSaving) {
+                    handleSave();
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [content, isSaving, currentDate, mood, tags]);
 
     const isToday = currentDate === new Date().toISOString().split('T')[0];
 
@@ -193,8 +272,8 @@ export function JournalView() {
                                         key={m.id}
                                         onClick={() => setMood(m.id)}
                                         className={`flex-1 p-6 rounded-3xl transition-all ${mood === m.id
-                                                ? 'bg-purple-500 text-white scale-105 shadow-2xl shadow-purple-500/50'
-                                                : 'bg-white/[0.02] text-white/40 hover:bg-white/[0.05] border border-white/10'
+                                            ? 'bg-purple-500 text-white scale-105 shadow-2xl shadow-purple-500/50'
+                                            : 'bg-white/[0.02] text-white/40 hover:bg-white/[0.05] border border-white/10'
                                             }`}
                                     >
                                         <div className="text-5xl mb-3">{m.emoji}</div>
@@ -205,8 +284,27 @@ export function JournalView() {
                         </div>
 
                         {/* Editor */}
-                        <div className="space-y-6">
-                            <h3 className="text-xl font-bold text-white/70">What's on your mind?</h3>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-xl font-bold text-white/70">What's on your mind?</h3>
+                                <div className="flex items-center gap-4 text-sm">
+                                    {/* Word count */}
+                                    <span className="text-white/40">
+                                        {wordCount} {wordCount === 1 ? 'word' : 'words'}
+                                    </span>
+                                    {/* Auto-save status */}
+                                    {autoSaveStatus && (
+                                        <span className={`flex items-center gap-1 ${autoSaveStatus === 'saved' ? 'text-green-400' :
+                                            autoSaveStatus === 'saving' ? 'text-yellow-400' :
+                                                'text-orange-400'
+                                            }`}>
+                                            {autoSaveStatus === 'saved' && '✓ Saved'}
+                                            {autoSaveStatus === 'saving' && '↻ Saving...'}
+                                            {autoSaveStatus === 'unsaved' && '○ Unsaved'}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
                             <textarea
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
