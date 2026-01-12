@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Brain, Trash2, Plus, Clock, Sparkles, Book, Gavel, RefreshCw, X, Database, MessageSquare, Zap, Crown } from "lucide-react";
+import { Brain, Trash2, Plus, Clock, Sparkles, Book, Gavel, RefreshCw, X, Database, MessageSquare, Zap, Crown, BarChart2 } from "lucide-react";
 import { trainingService } from "../services/training/TrainingService";
 import { aiService } from "../services/ai/AIService";
 import { TrainingProfile, AIExperience } from "../services/training/types";
+import { MemoryAnalyticsDashboard } from "./MemoryAnalyticsDashboard";
 
 interface AIBrainViewProps {
     accent: string;
@@ -11,7 +12,7 @@ interface AIBrainViewProps {
 
 export function AIBrainView({ accent }: AIBrainViewProps) {
     const [profile, setProfile] = useState<TrainingProfile>(trainingService.getProfile());
-    const [activeTab, setActiveTab] = useState<"knowledge" | "rules" | "history">("knowledge");
+    const [activeTab, setActiveTab] = useState<"knowledge" | "rules" | "history" | "analytics">("knowledge");
     const [newValue, setNewValue] = useState("");
     const [showAdd, setShowAdd] = useState(false);
     const [historyStats, setHistoryStats] = useState(aiService.getHistoryStats());
@@ -60,6 +61,7 @@ export function AIBrainView({ accent }: AIBrainViewProps) {
         { id: "knowledge", label: "Knowledge Base", icon: Book, count: profile.knowledgeBase?.length || 0 },
         { id: "rules", label: "Behavior Rules", icon: Gavel, count: profile.rules?.length || 0 },
         { id: "history", label: "Recent Memory", icon: Clock, count: profile.experiences?.length || 0 },
+        { id: "analytics", label: "Analytics", icon: BarChart2, count: null, premium: true },
     ];
 
     // Calculate token usage percentage
@@ -165,7 +167,12 @@ export function AIBrainView({ accent }: AIBrainViewProps) {
                     >
                         <tab.icon size={18} />
                         {tab.label}
-                        <span className="bg-white/10 px-2 py-0.5 rounded-full text-xs">{tab.count}</span>
+                        {tab.count !== null && (
+                            <span className="bg-white/10 px-2 py-0.5 rounded-full text-xs">{tab.count}</span>
+                        )}
+                        {(tab as any).premium && (
+                            <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[10px] font-bold">PRO</span>
+                        )}
 
                         {activeTab === tab.id && (
                             <motion.div
@@ -268,6 +275,11 @@ export function AIBrainView({ accent }: AIBrainViewProps) {
                         <EmptyState message="No recent memories yet. Start a conversation!" />
                     )}
                 </div>
+
+                {/* Analytics Tab */}
+                {activeTab === "analytics" && (
+                    <MemoryAnalyticsDashboard accent={accent} isPremium={false} />
+                )}
             </div>
         </div>
     );
