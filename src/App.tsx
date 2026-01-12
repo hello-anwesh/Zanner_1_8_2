@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import {
   Play, Pause, Sparkles,
