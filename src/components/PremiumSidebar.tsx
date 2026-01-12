@@ -122,10 +122,8 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
                     ))}
                 </ExpandableSection>
 
-                <div className="flex flex-col gap-2 mt-2">
-                    {/* Single Buttons */}
-                    <NavButton id="frequencies" icon={Waves} label="Frequencies" gradient="from-pink-500 to-rose-600" view={view} onClick={onFrequencyClick} collapsed={collapsed} accent={accent} />
-                </div>
+                {/* Frequencies Button */}
+                <NavButton id="frequencies" icon={Waves} label="Frequencies" gradient="from-pink-500 to-rose-600" view={view} onClick={onFrequencyClick} collapsed={collapsed} accent={accent} />
             </nav>
 
 
