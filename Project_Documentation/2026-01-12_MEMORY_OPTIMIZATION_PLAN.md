@@ -186,29 +186,29 @@ CREATE INDEX idx_rules_user_active ON rules(user_id, is_active);
 **Goal:** Fix critical inefficiencies, prepare for monetization
 
 #### 1.1 Database Migration
-- [ ] Create new SQLite schema
-- [ ] Write migration script from localStorage → SQLite
-- [ ] Add `DatabaseService.migrateFromLocalStorage()`
+- [x] ~~Create new SQLite schema~~
+- [x] ~~Write migration script from localStorage → SQLite~~
+- [x] ~~Add `DatabaseService.migrateFromLocalStorage()`~~
 - [ ] Test migration with existing data
-- [ ] Add rollback capability
+- [x] ~~Add rollback capability~~
 
 #### 1.2 Fix Duplicate History Bug
-- [ ] Remove `CoachService.conversationHistory`
-- [ ] Make `AIService` the single source of truth
-- [ ] Update `CoachService.chat()` to not pass history in context
+- [x] ~~Remove `CoachService.conversationHistory`~~
+- [x] ~~Make `AIService` the single source of truth~~
+- [x] ~~Update `CoachService.chat()` to not pass history in context~~
 - [ ] Add tests to verify no duplication
 
 #### 1.3 Add Context Window Management
-- [ ] Implement `AIService.trimHistory()` with token estimation
-- [ ] Add configurable `MAX_HISTORY_TOKENS` (default: 4000)
-- [ ] Add `estimateTokens()` utility function
+- [x] ~~Implement `AIService.trimHistory()` with token estimation~~
+- [x] ~~Add configurable `MAX_HISTORY_TOKENS` (default: 4000)~~
+- [x] ~~Add `estimateTokens()` utility function~~
 - [ ] Test with long conversations
 
 #### 1.4 Basic UI - Memory Settings
-- [ ] Add "Memory" section to Settings
-- [ ] Show current memory usage (messages, tokens, KB)
-- [ ] Add "Clear History" button
-- [ ] Add "Export Memory" button (Premium feature, grayed out)
+- [x] ~~Add "Memory" section to Settings~~
+- [x] ~~Show current memory usage (messages, tokens, KB)~~
+- [x] ~~Add "Clear History" button~~
+- [x] ~~Add "Export Memory" button (Premium feature, grayed out)~~
 
 **Deliverables:**
 - ✅ SQLite database with proper schema
@@ -227,29 +227,29 @@ CREATE INDEX idx_rules_user_active ON rules(user_id, is_active);
 **Goal:** Reduce costs, improve performance, add premium features
 
 #### 2.1 Batch Background Learning
-- [ ] Add `CoachService.interactionBuffer`
-- [ ] Implement batching logic (5 messages OR 5 minutes)
-- [ ] Update `analyzeInteraction()` to batch process
-- [ ] Add background job queue
+- [x] ~~Add `CoachService.interactionBuffer`~~
+- [x] ~~Implement batching logic (5 messages OR 5 minutes)~~
+- [x] ~~Update `analyzeInteraction()` to batch process~~
+- [x] ~~Add background job queue~~
 
 #### 2.2 Query Caching
-- [ ] Create `CacheService` class
-- [ ] Implement LRU cache for embeddings
-- [ ] Add cache hit/miss metrics
-- [ ] Set TTL to 5 minutes (configurable)
+- [x] ~~Create `CacheService` class~~
+- [x] ~~Implement LRU cache for embeddings~~
+- [x] ~~Add cache hit/miss metrics~~
+- [x] ~~Set TTL to 5 minutes (configurable)~~
 
 #### 2.3 Unified Memory Retrieval
-- [ ] Create `MemoryOrchestrator` class
-- [ ] Implement `retrieve()` with deduplication
-- [ ] Add token budget enforcement
-- [ ] Combine RAG + Training memory intelligently
+- [x] ~~Create `MemoryOrchestrator` class~~
+- [x] ~~Implement `retrieve()` with deduplication~~
+- [x] ~~Add token budget enforcement~~
+- [x] ~~Combine RAG + Training memory intelligently~~
 
 #### 2.4 Advanced UI - Memory Dashboard
-- [ ] Create `MemoryDashboard` component
-- [ ] Show memory breakdown (conversations, facts, rules, experiences)
+- [x] ~~Create `MemoryDashboard` component~~
+- [x] ~~Show memory breakdown (conversations, facts, rules, experiences)~~
 - [ ] Add search/filter functionality
 - [ ] Add memory timeline visualization
-- [ ] Add "Upgrade to Premium" CTA for advanced features
+- [x] ~~Add "Upgrade to Premium" CTA for advanced features~~
 
 **Deliverables:**
 - ✅ 80% reduction in background analysis costs
@@ -268,16 +268,16 @@ CREATE INDEX idx_rules_user_active ON rules(user_id, is_active);
 **Goal:** Launch premium tier with compelling features
 
 #### 3.1 Sliding Window Summaries
-- [ ] Create `ConversationManager` class
-- [ ] Implement sliding window with summaries
-- [ ] Add summary generation (every 20 messages)
-- [ ] Store summaries in database
+- [x] ~~Create `ConversationManager` class~~
+- [x] ~~Implement sliding window with summaries~~
+- [x] ~~Add summary generation (every 20 messages)~~
+- [x] ~~Store summaries in database~~
 
 #### 3.2 Memory Analytics
-- [ ] Track daily stats (messages, tokens, memory items)
-- [ ] Create analytics dashboard
-- [ ] Add charts (token usage over time, memory growth)
-- [ ] Add cost estimation (per provider)
+- [x] ~~Track daily stats (messages, tokens, memory items)~~
+- [x] ~~Create analytics dashboard~~
+- [x] ~~Add charts (token usage over time, memory growth)~~
+- [x] ~~Add cost estimation (per provider)~~
 
 #### 3.3 Advanced Memory Management
 - [ ] Add manual memory editing (Premium)
@@ -286,16 +286,16 @@ CREATE INDEX idx_rules_user_active ON rules(user_id, is_active);
 - [ ] Add memory archiving (Premium)
 
 #### 3.4 Export & Backup
-- [ ] Implement JSON export (Premium)
-- [ ] Implement CSV export (Premium)
+- [x] ~~Implement JSON export (Premium)~~
+- [x] ~~Implement CSV export (Premium)~~
 - [ ] Add automatic backups (Premium)
 - [ ] Add import functionality
 
 #### 3.5 Subscription UI
 - [ ] Create pricing page
 - [ ] Add subscription management
-- [ ] Implement feature gating
-- [ ] Add "Upgrade" prompts throughout app
+- [x] ~~Implement feature gating~~
+- [x] ~~Add "Upgrade" prompts throughout app~~
 
 **Deliverables:**
 - ✅ Sliding window summaries working
@@ -319,19 +319,19 @@ CREATE INDEX idx_rules_user_active ON rules(user_id, is_active);
 - [ ] Choose backend (Supabase, Firebase, or custom)
 - [ ] Set up authentication
 - [ ] Create sync API endpoints
-- [ ] Implement conflict resolution
+- [x] ~~Implement conflict resolution~~
 
 #### 4.2 Sync Engine
-- [ ] Create `SyncService` class
-- [ ] Implement incremental sync (track `is_synced` flag)
-- [ ] Add offline queue
-- [ ] Add sync status UI
+- [x] ~~Create `SyncService` class~~
+- [x] ~~Implement incremental sync (track `is_synced` flag)~~
+- [x] ~~Add offline queue~~
+- [x] ~~Add sync status UI~~
 
 #### 4.3 Multi-Device Support
 - [ ] Test sync across devices
 - [ ] Add device management UI
 - [ ] Implement selective sync (Premium)
-- [ ] Add sync settings
+- [x] ~~Add sync settings~~
 
 **Deliverables:**
 - ✅ Cloud sync working

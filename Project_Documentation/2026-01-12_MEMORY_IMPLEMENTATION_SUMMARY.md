@@ -2,6 +2,95 @@
 **Date:** 2026-01-12
 **Status:** Phase 1-4 Complete ✅
 
+---
+
+## 🎯 Master Task List (ADHD-Friendly Quick Glance)
+
+### Phase 1: Foundation ✅
+- [x] ~~Create SQLite schema (8 tables)~~
+- [x] ~~Create MigrationService for localStorage → SQLite~~
+- [x] ~~Update DatabaseService with new schema~~
+- [x] ~~Fix duplicate conversation history (CoachService)~~
+- [x] ~~Make AIService single source of truth for history~~
+- [x] ~~Add token estimation (4 chars per token)~~
+- [x] ~~Add history trimming to token budget (4000 max)~~
+- [x] ~~Add getHistoryStats() for UI~~
+- [x] ~~Update AIBrainView with stats overview~~
+- [x] ~~Add token usage progress bar~~
+- [x] ~~Add Clear Chat Memory button~~
+
+### Phase 2: Optimization ✅
+- [x] ~~Create batch learning system (5 messages or 5 min)~~
+- [x] ~~Add interaction buffer to CoachService~~
+- [x] ~~Create runBatchAnalysis() method~~
+- [x] ~~Create CacheService with LRU cache~~
+- [x] ~~Add embedding cache (30 min TTL)~~
+- [x] ~~Add retrieval cache (5 min TTL)~~
+- [x] ~~Integrate cache into RAGService~~
+- [x] ~~Create MemoryOrchestrator~~
+- [x] ~~Add token budgets per memory type~~
+- [x] ~~Parallel retrieval for performance~~
+- [x] ~~Integrate orchestrator into CoachService~~
+
+### Phase 3: Premium Features ✅
+- [x] ~~Create ConversationManager~~
+- [x] ~~Add sliding window summarization~~
+- [x] ~~Auto-summarize every 20 messages~~
+- [x] ~~Keep last 5 summaries~~
+- [x] ~~Create MemoryAnalyticsService~~
+- [x] ~~Track daily/weekly/monthly usage~~
+- [x] ~~Add cost estimates per provider~~
+- [x] ~~Add response time tracking~~
+- [x] ~~Create MemoryExportService~~
+- [x] ~~Add JSON export~~
+- [x] ~~Add CSV export~~
+- [x] ~~Add Markdown export~~
+- [x] ~~Add browser download function~~
+
+### Phase 4: Cloud Sync Infrastructure ✅
+- [x] ~~Create sync types (SyncState, SyncConfig, etc)~~
+- [x] ~~Create SyncService with offline queue~~
+- [x] ~~Add conflict detection~~
+- [x] ~~Add conflict resolution (local/remote/manual)~~
+- [x] ~~Add auto-sync with configurable interval~~
+- [x] ~~Add online/offline detection~~
+- [x] ~~Create SyncBackendAdapter interface~~
+- [x] ~~Create SupabaseAdapter implementation~~
+- [x] ~~Add authentication methods~~
+- [x] ~~Add CRUD operations~~
+
+### Premium UI Components ✅
+- [x] ~~Create MemoryAnalyticsDashboard component~~
+- [x] ~~Add usage stats cards~~
+- [x] ~~Add 7-day activity chart~~
+- [x] ~~Add memory breakdown visualization~~
+- [x] ~~Add cache performance display~~
+- [x] ~~Add export buttons (gated)~~
+- [x] ~~Add sync button (gated)~~
+- [x] ~~Add premium upgrade CTA~~
+- [x] ~~Create SyncSettingsPanel component~~
+- [x] ~~Add sync status display~~
+- [x] ~~Add auto-sync toggle~~
+- [x] ~~Add interval selector~~
+- [x] ~~Add conflict resolution options~~
+- [x] ~~Update AIBrainView with Analytics tab~~
+- [x] ~~Add PRO badge to Analytics tab~~
+
+### 🔲 TODO: Production Readiness
+- [ ] Set up subscription state management
+- [ ] Add Stripe integration
+- [ ] Wire `isPremium` flag to components
+- [ ] Add migration trigger in Settings UI
+- [ ] Test migration flow
+- [ ] Set up Supabase project
+- [ ] Add Supabase URL and key
+- [ ] Configure Row Level Security
+- [ ] Test cloud sync end-to-end
+- [ ] Add upgrade modal design
+- [ ] Add premium badge to user profile
+
+---
+
 ## Overview
 
 Complete implementation of an optimized, scalable memory system with premium features and cloud sync infrastructure.
@@ -208,25 +297,3 @@ src/services/
 - Team features (future)
 - API access (future)
 - Custom AI training (future)
-
----
-
-## Next Steps
-
-1. **Connect Subscription System**
-   - Add `isPremium` state management
-   - Gate premium features
-
-2. **Set Up Supabase**
-   - Create project
-   - Add URL and anon key to SupabaseAdapter
-   - Configure RLS rules
-
-3. **Database Migration UI**
-   - Add migration trigger in settings
-   - Show migration progress
-
-4. **Testing**
-   - Test batch learning triggers
-   - Test cache performance
-   - Test sync conflict resolution

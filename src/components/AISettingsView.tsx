@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, Check, AlertCircle, Loader2, RefreshCw, Cpu, Sparkles, Zap } from 'lucide-react';
 import { aiService } from '../services/ai/AIService';
 import type { AIProviderType, ProviderStatus, ModelInfo } from '../services/ai/types';
+import { ProviderPriorityManager } from './ProviderPriorityManager';
 
 interface AISettingsViewProps {
     accent: string;
@@ -127,8 +128,8 @@ export function AISettingsView({ accent }: AISettingsViewProps) {
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             className={`relative text-left p-6 rounded-3xl border transition-all duration-300 ${isActive
-                                    ? 'bg-white/10 border-white/20 shadow-2xl'
-                                    : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06] hover:border-white/10'
+                                ? 'bg-white/10 border-white/20 shadow-2xl'
+                                : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06] hover:border-white/10'
                                 }`}
                         >
                             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-colors ${isActive ? 'bg-white/20' : 'bg-white/5'
@@ -286,6 +287,24 @@ export function AISettingsView({ accent }: AISettingsViewProps) {
                     </div>
                 </motion.div>
             </AnimatePresence>
+
+            {/* Provider Priority Section */}
+            <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="p-8 rounded-3xl bg-white/[0.03] border border-white/5"
+            >
+                <ProviderPriorityManager
+                    accent={accent}
+                    onSave={() => {
+                        // Refresh config from service after priority changes
+                        setConfig(aiService.getConfig());
+                        setSaveMessage('✓ Priority Updated');
+                        setTimeout(() => setSaveMessage(''), 3000);
+                    }}
+                />
+            </motion.div>
         </div>
     );
 }
