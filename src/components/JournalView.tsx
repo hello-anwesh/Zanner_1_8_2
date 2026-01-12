@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ChevronLeft, ChevronRight, Flame, Calendar, Tag, X, Search, Lightbulb, Heart, Sparkles, Loader2 } from 'lucide-react';
+import { Save, ChevronLeft, ChevronRight, Flame, Calendar, Tag, X, Search, Lightbulb, Heart, Sparkles, Loader2, FileText } from 'lucide-react';
 import { journalService, JournalEntry } from '../services/journal/JournalService';
 import { journalPromptService, JournalPrompt } from '../services/journal/JournalPromptService';
 import { journalAIService, JournalReflection } from '../services/journal/JournalAIService';
@@ -11,6 +11,111 @@ const MOODS = [
     { id: 'okay', emoji: '😐', label: 'Okay' },
     { id: 'struggling', emoji: '😓', label: 'Struggling' },
     { id: 'exhausted', emoji: '😵', label: 'Exhausted' }
+];
+
+// Phase 3A: Journal Templates
+const JOURNAL_TEMPLATES = [
+    {
+        id: 'freewrite',
+        name: 'Freewrite',
+        emoji: '✍️',
+        description: 'Write freely without structure',
+        content: ''
+    },
+    {
+        id: 'morning',
+        name: 'Morning Check-in',
+        emoji: '🌅',
+        description: 'Start your day with intention',
+        content: `## Morning Check-in
+
+**How am I feeling this morning?**
+
+
+**My top 3 priorities for today:**
+1. 
+2. 
+3. 
+
+**I'm grateful for:**
+
+
+**One intention for today:**
+
+`
+    },
+    {
+        id: 'evening',
+        name: 'Evening Reflection',
+        emoji: '🌙',
+        description: 'Reflect on your day',
+        content: `## Evening Reflection
+
+**Today's biggest win:**
+
+
+**What did I learn today?**
+
+
+**What could I have done better?**
+
+
+**Three things I'm grateful for:**
+1. 
+2. 
+3. 
+
+**How am I feeling as the day ends?**
+
+`
+    },
+    {
+        id: 'session',
+        name: 'Session Debrief',
+        emoji: '🎯',
+        description: 'Reflect after a focus session',
+        content: `## Session Debrief
+
+**What I accomplished:**
+
+
+**What helped me focus:**
+
+
+**Distractions I noticed:**
+
+
+**Next steps:**
+
+`
+    },
+    {
+        id: 'weekly',
+        name: 'Weekly Review',
+        emoji: '📊',
+        description: 'Review your week',
+        content: `## Weekly Review
+
+**This week's highlights:**
+- 
+- 
+- 
+
+**Challenges I faced:**
+
+
+**What I learned:**
+
+
+**Goals for next week:**
+1. 
+2. 
+3. 
+
+**One thing I'm proud of:**
+
+`
+    }
 ];
 
 export function JournalView() {
@@ -40,6 +145,10 @@ export function JournalView() {
     const [showReflection, setShowReflection] = useState(false);
     const [isReflecting, setIsReflecting] = useState(false);
     const [reflection, setReflection] = useState<JournalReflection | null>(null);
+
+    // Phase 3A: Templates
+    const [showTemplates, setShowTemplates] = useState(false);
+    const [selectedTemplate, setSelectedTemplate] = useState<string>('freewrite');
 
     // Calculate word count when content changes
     useEffect(() => {
@@ -319,6 +428,54 @@ export function JournalView() {
                                     </button>
                                 ))}
                             </div>
+                        </div>
+
+                        {/* Template Selector */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-xl font-bold text-white/70">Choose a template</h3>
+                                <button
+                                    onClick={() => setShowTemplates(!showTemplates)}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70 text-sm font-medium transition-all"
+                                >
+                                    <FileText size={16} />
+                                    {showTemplates ? 'Hide templates' : 'Show templates'}
+                                </button>
+                            </div>
+
+                            <AnimatePresence>
+                                {showTemplates && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="grid grid-cols-5 gap-3 overflow-hidden"
+                                    >
+                                        {JOURNAL_TEMPLATES.map((template) => (
+                                            <motion.button
+                                                key={template.id}
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={() => {
+                                                    setSelectedTemplate(template.id);
+                                                    if (template.content) {
+                                                        setContent(template.content);
+                                                    }
+                                                    setShowTemplates(false);
+                                                }}
+                                                className={`p-4 rounded-2xl text-center transition-all ${selectedTemplate === template.id
+                                                        ? 'bg-purple-500/20 border-purple-500/50 border-2'
+                                                        : 'bg-white/[0.02] border border-white/10 hover:bg-white/[0.05] hover:border-white/20'
+                                                    }`}
+                                            >
+                                                <div className="text-2xl mb-2">{template.emoji}</div>
+                                                <div className="text-sm font-medium text-white/80">{template.name}</div>
+                                                <div className="text-xs text-white/40 mt-1">{template.description}</div>
+                                            </motion.button>
+                                        ))}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
                         {/* AI Writing Prompts */}
@@ -614,8 +771,8 @@ export function JournalView() {
                                                             </span>
                                                         )}
                                                         <span className={`px-4 py-2 rounded-full text-sm font-medium ${reflection.emotions.intensity === 'high' ? 'bg-orange-500/20 text-orange-300' :
-                                                                reflection.emotions.intensity === 'medium' ? 'bg-yellow-500/20 text-yellow-300' :
-                                                                    'bg-green-500/20 text-green-300'
+                                                            reflection.emotions.intensity === 'medium' ? 'bg-yellow-500/20 text-yellow-300' :
+                                                                'bg-green-500/20 text-green-300'
                                                             }`}>
                                                             {reflection.emotions.intensity} intensity
                                                         </span>

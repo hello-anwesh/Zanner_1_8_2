@@ -188,10 +188,10 @@ CREATE TABLE journal_templates (
 - [x] Mood-aware prompts ✅
 - [x] Session-aware prompts ✅
 - [x] Prompt UI ✅
-- [ ] "Reflect with AI" button
-- [ ] Pattern detection
-- [ ] AI feedback
-- [ ] Reflection modal
+- [x] "Reflect with AI" button ✅
+- [x] Pattern detection ✅
+- [x] AI feedback ✅
+- [x] Reflection modal ✅
 - [ ] Weekly auto-summary
 - [ ] Summary storage
 - [ ] Summary view
