@@ -1,4 +1,5 @@
 import { aiService } from "./AIService";
+import { cacheService } from "./CacheService";
 import { PRESET_MIXES } from "../../components/frequency/frequencies";
 
 interface RAGDocument {
@@ -98,6 +99,13 @@ Frequencies: ${preset.frequencies.map(f => f.hz + "Hz").join(", ")}.`;
         // If query is short or generic, maybe skip?
         if (query.length < 3) return "";
 
+        // Check cache first
+        const cached = cacheService.getRetrieval(query);
+        if (cached !== null) {
+            console.log('[RAG] Cache hit for query');
+            return cached;
+        }
+
         // If not initialized, try to load
         if (!this.documents.length) {
             const stored = localStorage.getItem(STORAGE_KEY);
@@ -108,17 +116,27 @@ Frequencies: ${preset.frequencies.map(f => f.hz + "Hz").join(", ")}.`;
         if (!this.documents.length) return "";
 
         try {
-            const queryEmbedding = await aiService.embed(query);
+            // Check embedding cache
+            let queryEmbedding = cacheService.getEmbedding(query);
+            if (!queryEmbedding) {
+                queryEmbedding = await aiService.embed(query);
+                cacheService.setEmbedding(query, queryEmbedding);
+            }
 
             const scored = this.documents.map(doc => ({
                 doc,
-                score: this.similarity(queryEmbedding, doc.embedding)
+                score: this.similarity(queryEmbedding!, doc.embedding)
             }));
 
             scored.sort((a, b) => b.score - a.score);
 
             const topK = scored.slice(0, k);
-            return topK.map(item => `[RAG KNOWLEDGE: ${item.doc.metadata.name} (Match: ${Math.round(item.score * 100)}%)]\n${item.doc.content}`).join("\n\n");
+            const result = topK.map(item => `[RAG KNOWLEDGE: ${item.doc.metadata.name} (Match: ${Math.round(item.score * 100)}%)]\n${item.doc.content}`).join("\n\n");
+
+            // Cache the result
+            cacheService.setRetrieval(query, result);
+
+            return result;
         } catch (e) {
             console.error("RAG Retrieve error:", e);
             return "";
