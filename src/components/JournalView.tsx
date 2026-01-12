@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ChevronLeft, ChevronRight, Flame, Calendar, Tag, X, Search, Lightbulb } from 'lucide-react';
+import { Save, ChevronLeft, ChevronRight, Flame, Calendar, Tag, X, Search, Lightbulb, Heart } from 'lucide-react';
 import { journalService, JournalEntry } from '../services/journal/JournalService';
 import { journalPromptService, JournalPrompt } from '../services/journal/JournalPromptService';
 
@@ -24,6 +24,10 @@ export function JournalView() {
     const [searchQuery, setSearchQuery] = useState('');
     const [streak, setStreak] = useState(0);
     const [viewMode, setViewMode] = useState<'today' | 'all'>('today');
+
+    // Phase 3B: Gratitude Mode
+    const [gratitudeMode, setGratitudeMode] = useState(false);
+    const [gratitudeItems, setGratitudeItems] = useState<[string, string, string]>(['', '', '']);
 
     // Phase 1: Auto-save states
     const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | null>(null);
@@ -358,15 +362,48 @@ export function JournalView() {
                             )}
                         </AnimatePresence>
 
-                        {/* Editor */}
+                        {/* Editor with Gratitude Mode Toggle */}
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-xl font-bold text-white/70">What's on your mind?</h3>
+                                <div className="flex items-center gap-4">
+                                    <h3 className="text-xl font-bold text-white/70">
+                                        {gratitudeMode ? 'Three things I\'m grateful for' : 'What\'s on your mind?'}
+                                    </h3>
+                                    {/* Gratitude Mode Toggle */}
+                                    <button
+                                        onClick={() => {
+                                            const newMode = !gratitudeMode;
+                                            setGratitudeMode(newMode);
+                                            if (newMode) {
+                                                // Parse existing content into gratitude items if switching to gratitude mode
+                                                setGratitudeItems(['', '', '']);
+                                                if (!tags.includes('gratitude')) {
+                                                    setTags([...tags, 'gratitude']);
+                                                }
+                                            } else {
+                                                // Convert gratitude items to content when switching off
+                                                const nonEmpty = gratitudeItems.filter(item => item.trim());
+                                                if (nonEmpty.length > 0) {
+                                                    setContent(`Today I'm grateful for:\n\n1. ${gratitudeItems[0] || '...'}\n2. ${gratitudeItems[1] || '...'}\n3. ${gratitudeItems[2] || '...'}`);
+                                                }
+                                            }
+                                        }}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${gratitudeMode
+                                                ? 'bg-pink-500 text-white'
+                                                : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
+                                            }`}
+                                    >
+                                        <Heart size={16} className={gratitudeMode ? 'fill-current' : ''} />
+                                        Gratitude
+                                    </button>
+                                </div>
                                 <div className="flex items-center gap-4 text-sm">
                                     {/* Word count */}
-                                    <span className="text-white/40">
-                                        {wordCount} {wordCount === 1 ? 'word' : 'words'}
-                                    </span>
+                                    {!gratitudeMode && (
+                                        <span className="text-white/40">
+                                            {wordCount} {wordCount === 1 ? 'word' : 'words'}
+                                        </span>
+                                    )}
                                     {/* Auto-save status */}
                                     {autoSaveStatus && (
                                         <span className={`flex items-center gap-1 ${autoSaveStatus === 'saved' ? 'text-green-400' :
@@ -380,13 +417,48 @@ export function JournalView() {
                                     )}
                                 </div>
                             </div>
-                            <textarea
-                                value={content}
-                                onChange={(e) => setContent(e.target.value)}
-                                placeholder="Write freely about your day, thoughts, wins, challenges, or anything else..."
-                                className="w-full h-96 p-8 rounded-3xl bg-white/[0.02] border border-white/10 text-white text-lg leading-relaxed placeholder-white/20 focus:outline-none focus:border-purple-500/50 focus:bg-white/[0.03] resize-none transition-all"
-                                style={{ lineHeight: '1.8' }}
-                            />
+
+                            {/* Gratitude Mode Inputs */}
+                            {gratitudeMode ? (
+                                <div className="space-y-4">
+                                    {[0, 1, 2].map((index) => (
+                                        <div key={index} className="flex items-start gap-4">
+                                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-pink-500/30 to-purple-500/30 flex items-center justify-center text-lg font-bold text-pink-300">
+                                                {index + 1}
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={gratitudeItems[index]}
+                                                onChange={(e) => {
+                                                    const newItems = [...gratitudeItems] as [string, string, string];
+                                                    newItems[index] = e.target.value;
+                                                    setGratitudeItems(newItems);
+                                                    // Update content for auto-save
+                                                    const formatted = `Today I'm grateful for:\n\n1. ${newItems[0] || '...'}\n2. ${newItems[1] || '...'}\n3. ${newItems[2] || '...'}`;
+                                                    setContent(formatted);
+                                                }}
+                                                placeholder={[
+                                                    "Something that made me smile...",
+                                                    "Someone I appreciate...",
+                                                    "A small win or moment..."
+                                                ][index]}
+                                                className="flex-1 p-4 rounded-2xl bg-white/[0.02] border border-white/10 text-white text-lg placeholder-white/20 focus:outline-none focus:border-pink-500/50 focus:bg-white/[0.03] transition-all"
+                                            />
+                                        </div>
+                                    ))}
+                                    <p className="text-sm text-white/40 text-center pt-4">
+                                        💝 Taking a moment to appreciate the good in your life
+                                    </p>
+                                </div>
+                            ) : (
+                                <textarea
+                                    value={content}
+                                    onChange={(e) => setContent(e.target.value)}
+                                    placeholder="Write freely about your day, thoughts, wins, challenges, or anything else..."
+                                    className="w-full h-96 p-8 rounded-3xl bg-white/[0.02] border border-white/10 text-white text-lg leading-relaxed placeholder-white/20 focus:outline-none focus:border-purple-500/50 focus:bg-white/[0.03] resize-none transition-all"
+                                    style={{ lineHeight: '1.8' }}
+                                />
+                            )}
                         </div>
 
                         {/* Tags */}
