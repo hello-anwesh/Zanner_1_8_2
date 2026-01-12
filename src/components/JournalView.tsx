@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ChevronLeft, ChevronRight, Flame, Calendar, Tag, X, Search, Lightbulb, Heart, Sparkles, Loader2, FileText } from 'lucide-react';
+import { Save, ChevronLeft, ChevronRight, Flame, Calendar, Tag, X, Search, Lightbulb, Heart, Sparkles, Loader2, FileText, BarChart3 } from 'lucide-react';
 import { journalService, JournalEntry } from '../services/journal/JournalService';
 import { journalPromptService, JournalPrompt } from '../services/journal/JournalPromptService';
 import { journalAIService, JournalReflection } from '../services/journal/JournalAIService';
+import { JournalAnalytics } from './JournalAnalytics';
 
 const MOODS = [
     { id: 'amazing', emoji: '🔥', label: 'Amazing' },
@@ -129,7 +130,7 @@ export function JournalView() {
     const [filteredEntries, setFilteredEntries] = useState<JournalEntry[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [streak, setStreak] = useState(0);
-    const [viewMode, setViewMode] = useState<'today' | 'all'>('today');
+    const [viewMode, setViewMode] = useState<'today' | 'all' | 'analytics'>('today');
 
     // Phase 3B: Gratitude Mode
     const [gratitudeMode, setGratitudeMode] = useState(false);
@@ -376,6 +377,14 @@ export function JournalView() {
                             >
                                 All Entries
                             </button>
+                            <button
+                                onClick={() => setViewMode('analytics')}
+                                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${viewMode === 'analytics' ? 'bg-purple-500 text-white' : 'text-white/50 hover:text-white/70'
+                                    }`}
+                            >
+                                <BarChart3 size={16} />
+                                Analytics
+                            </button>
                         </div>
                     </div>
                 </motion.div>
@@ -464,8 +473,8 @@ export function JournalView() {
                                                     setShowTemplates(false);
                                                 }}
                                                 className={`p-4 rounded-2xl text-center transition-all ${selectedTemplate === template.id
-                                                        ? 'bg-purple-500/20 border-purple-500/50 border-2'
-                                                        : 'bg-white/[0.02] border border-white/10 hover:bg-white/[0.05] hover:border-white/20'
+                                                    ? 'bg-purple-500/20 border-purple-500/50 border-2'
+                                                    : 'bg-white/[0.02] border border-white/10 hover:bg-white/[0.05] hover:border-white/20'
                                                     }`}
                                             >
                                                 <div className="text-2xl mb-2">{template.emoji}</div>
@@ -881,6 +890,11 @@ export function JournalView() {
                             </div>
                         )}
                     </div>
+                )}
+
+                {/* Analytics View */}
+                {viewMode === 'analytics' && (
+                    <JournalAnalytics />
                 )}
             </div>
         </div>
