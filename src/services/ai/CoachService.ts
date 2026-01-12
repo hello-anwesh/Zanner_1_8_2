@@ -25,6 +25,13 @@ export interface CoachResponse {
 class CoachService {
     // Note: Conversation history is managed by AIService (single source of truth)
 
+    // Batch learning configuration
+    private interactionBuffer: Array<{ user: string; ai: string; timestamp: number }> = [];
+    private lastAnalysisTime = Date.now();
+    private readonly BATCH_SIZE = 5; // Analyze every 5 interactions
+    private readonly BATCH_INTERVAL = 5 * 60 * 1000; // Or every 5 minutes
+    private analysisTimeout: ReturnType<typeof setTimeout> | null = null;
+
     private async getAdvancedPersonaPrompt(analytics?: any): Promise<string> {
         const fullMemoryContext = trainingService.getFullSystemContext();
         const journalContext = await journalService.getContextForAI(3);
@@ -259,21 +266,76 @@ Provide an intelligent, contextual response. Be helpful, concise, and specific t
         return "supportive";
     }
 
+    /**
+     * Queue interaction for batch analysis
+     * Instead of analyzing every message, we batch them for efficiency
+     */
     async analyzeInteraction(lastUserMessage: string, lastAssistantMessage: string) {
+        // Add to buffer
+        this.interactionBuffer.push({
+            user: lastUserMessage,
+            ai: lastAssistantMessage,
+            timestamp: Date.now()
+        });
+
+        // Check if we should analyze now
+        const shouldAnalyze =
+            this.interactionBuffer.length >= this.BATCH_SIZE ||
+            (Date.now() - this.lastAnalysisTime > this.BATCH_INTERVAL && this.interactionBuffer.length > 0);
+
+        if (shouldAnalyze) {
+            // Clear any pending timeout
+            if (this.analysisTimeout) {
+                clearTimeout(this.analysisTimeout);
+                this.analysisTimeout = null;
+            }
+
+            // Run batch analysis
+            this.runBatchAnalysis();
+        } else {
+            // Schedule analysis for later (in case user stops chatting)
+            if (!this.analysisTimeout) {
+                this.analysisTimeout = setTimeout(() => {
+                    if (this.interactionBuffer.length > 0) {
+                        this.runBatchAnalysis();
+                    }
+                }, this.BATCH_INTERVAL);
+            }
+        }
+    }
+
+    /**
+     * Run batch analysis on buffered interactions
+     */
+    private async runBatchAnalysis() {
+        const interactions = [...this.interactionBuffer];
+        this.interactionBuffer = []; // Clear buffer
+        this.lastAnalysisTime = Date.now();
+
+        if (interactions.length === 0) return;
+
+        console.log(`[Coach] Running batch analysis on ${interactions.length} interactions...`);
+
         // Run in background - do not block UI
         setTimeout(async () => {
             try {
                 const profile = trainingService.getProfile();
 
-                const prompt = `
-ANALYZE THIS INTERACTION for the User Profile.
-User: "${lastUserMessage}"
-AI: "${lastAssistantMessage}"
+                // Format all interactions for batch analysis
+                const interactionText = interactions.map((int, i) =>
+                    `Interaction ${i + 1}:\nUser: "${int.user}"\nAI: "${int.ai}"`
+                ).join('\n\n');
 
-EXTRACT:
+                const prompt = `
+ANALYZE THESE ${interactions.length} INTERACTIONS for the User Profile.
+
+${interactionText}
+
+EXTRACT (aggregate across all interactions):
 1. New Facts (e.g., Project names, specific goals, constraints)
 2. User Preferences (e.g., likes short answers, focused on aesthetics)
-3. Sentiment (Positive/Neutral/Negative)
+3. Overall Sentiment (Positive/Neutral/Negative)
+4. Key Themes or Patterns
 
 Existing Knowledge to avoid duplicates:
 ${profile.knowledgeBase.map(k => k.content).join('; ')}
@@ -283,11 +345,12 @@ Return JSON ONLY:
   "newFacts": ["fact1", "fact2"],
   "preferences": ["pref1"],
   "sentiment": "positive"|"neutral"|"negative",
-  "summary": "One sentence summary of this interaction"
+  "summary": "Brief summary of what was discussed across these interactions",
+  "themes": ["theme1", "theme2"]
 }
 `;
                 const analysis = await aiService.chat(prompt, {
-                    systemPrompt: "You are a background memory consolidation agent. Output strictly valid JSON."
+                    systemPrompt: "You are a background memory consolidation agent. Analyze multiple interactions efficiently. Output strictly valid JSON."
                 });
 
                 // Parse JSON safely
@@ -295,8 +358,12 @@ Return JSON ONLY:
                 if (jsonMatch) {
                     const data = JSON.parse(jsonMatch[0]);
 
-                    // 1. Record Experience
-                    trainingService.recordExperience(data.summary, data.sentiment, [...data.newFacts, ...data.preferences]);
+                    // 1. Record Experience (single summary for batch)
+                    trainingService.recordExperience(
+                        data.summary,
+                        data.sentiment,
+                        [...(data.newFacts || []), ...(data.preferences || []), ...(data.themes || [])]
+                    );
 
                     // 2. Add New Knowledge (Facts)
                     if (data.newFacts && Array.isArray(data.newFacts)) {
@@ -305,25 +372,32 @@ Return JSON ONLY:
                         });
                     }
 
-                    // 3. Add Preferences as Rules (Simple heuristic for now)
+                    // 3. Add Preferences as Rules
                     if (data.preferences && Array.isArray(data.preferences)) {
                         data.preferences.forEach((pref: string) => {
                             trainingService.addRule(pref, "learned_preference");
                         });
                     }
 
-                    console.log("[Coach Analysis] Learned:", data);
+                    console.log(`[Coach Analysis] Batch learned from ${interactions.length} interactions:`, data);
                 }
 
             } catch (e) {
-                console.warn("[Coach Analysis] Failed:", e);
+                console.warn("[Coach Analysis] Batch analysis failed:", e);
+                // Don't lose the interactions - could retry later
             }
-        }, 1000); // 1s delay
+        }, 500); // Small delay to not block
     }
 
     clearHistory() {
         // Delegate to AIService (single source of truth)
         aiService.clearHistory();
+        // Also clear pending analysis buffer
+        this.interactionBuffer = [];
+        if (this.analysisTimeout) {
+            clearTimeout(this.analysisTimeout);
+            this.analysisTimeout = null;
+        }
     }
 }
 
