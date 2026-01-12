@@ -3,6 +3,7 @@ import { trainingService } from "../training/TrainingService";
 import { databaseService } from "../db/DatabaseService";
 import { memoryOrchestrator } from "./MemoryOrchestrator";
 import { journalService } from "../journal/JournalService";
+import { profileService } from "../profile/ProfileService";
 
 export interface CoachContext {
     sessionsToday: number;
@@ -36,6 +37,9 @@ class CoachService {
         const fullMemoryContext = trainingService.getFullSystemContext();
         const journalContext = await journalService.getContextForAI(3);
 
+        // Get user profile context
+        const userProfileContext = profileService.getAIContext();
+
         // Time-based context
         const hour = new Date().getHours();
         let timeContext = '';
@@ -49,12 +53,36 @@ class CoachService {
             analyticsContext = `\nSESSION STATS TODAY:\nSessions: ${analytics.sessionsToday || 0}\nCompleted: ${analytics.completed || 0} | Abandoned: ${analytics.abandoned || 0}`;
         }
 
+        // Get user's preferred coaching style and tone
+        const profile = profileService.getProfile();
+        const coachingGuidelines = `
+COACHING STYLE: ${profile.aiPreferences.coachingStyle.toUpperCase()}
+${profile.aiPreferences.coachingStyle === 'supportive' ? '- Be warm, encouraging, and understanding. Celebrate small wins.' : ''}
+${profile.aiPreferences.coachingStyle === 'challenging' ? '- Push them out of their comfort zone. Be direct about improvements needed.' : ''}
+${profile.aiPreferences.coachingStyle === 'analytical' ? '- Be data-driven and logical. Focus on patterns and optimization.' : ''}
+${profile.aiPreferences.coachingStyle === 'motivational' ? '- Be inspiring and energetic. Focus on their vision and potential.' : ''}
+
+FEEDBACK TONE: ${profile.aiPreferences.feedbackTone.toUpperCase()}
+${profile.aiPreferences.feedbackTone === 'gentle' ? '- Be patient and kind. Soften any criticism.' : ''}
+${profile.aiPreferences.feedbackTone === 'direct' ? '- Be honest and straightforward. No sugarcoating.' : ''}
+${profile.aiPreferences.feedbackTone === 'encouraging' ? '- Focus on positives. Frame challenges as opportunities.' : ''}
+${profile.aiPreferences.feedbackTone === 'no_nonsense' ? '- Just the facts. Minimal fluff, maximum efficiency.' : ''}
+
+${profile.aiPreferences.wantsAffirmations ? '- Include affirmations when appropriate' : '- Skip affirmations, focus on actionable advice'}
+${profile.aiPreferences.wantsAccountability ? '- Hold them accountable to their goals' : '- Be supportive without pressure'}`;
+
         return `You are Zeni - an advanced AI productivity companion.
+
+USER PROFILE:
+${userProfileContext}
+
+${coachingGuidelines}
 
 CORE INTELLIGENCE:
 - You are highly context-aware, following the user's Behavioral Rules and Memory explicitly.
 - You remember patterns, learn from interactions, and provide genuinely helpful insights
 - You're not just motivational - you're strategic, analytical, and deeply understanding
+- ALWAYS address the user by their preferred name: "${profileService.getDisplayName()}"
 
 ${fullMemoryContext}
 

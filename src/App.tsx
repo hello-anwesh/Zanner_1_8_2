@@ -48,6 +48,7 @@ import { AISettingsView } from "./components/AISettingsView";
 import { AIBrainView } from "./components/AIBrainView";
 import { PostSessionJournal } from "./components/PostSessionJournal";
 import { CommandDashboard } from "./components/CommandDashboard";
+import { ProfileView } from "./components/profile/ProfileView";
 
 
 
@@ -55,7 +56,7 @@ import { CommandDashboard } from "./components/CommandDashboard";
 // TYPES & CONSTANTS
 // ============================================================================
 
-type View = "home" | "stats" | "integrations" | "frequencies" | "philosophy" | "journal" |
+type View = "home" | "stats" | "integrations" | "frequencies" | "philosophy" | "journal" | "profile" |
   "settings-ai" | "settings-theme" | "settings-spotify" | "settings-youtube" | "settings-timer" | "settings-voice" |
   "ai-identity" | "ai-cognition" | "ai-rhythms" | "ai-training" |
   "voice-speech" | "voice-tts";
@@ -1015,6 +1016,11 @@ function App() {
                   {/* JOURNAL */}
                   {view === "journal" && (
                     <JournalView />
+                  )}
+
+                  {/* PROFILE */}
+                  {view === "profile" && (
+                    <ProfileView accent={accent} />
                   )}
 
                   {/* SETTINGS - AI */}
