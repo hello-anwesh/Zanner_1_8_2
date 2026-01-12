@@ -281,6 +281,52 @@ class AIService {
         }
     }
 
+    /**
+     * Check if at least one provider is ready for chat.
+     * Call this before first chat to warn user if no providers available.
+     */
+    async healthCheck(): Promise<{
+        ready: boolean;
+        availableProviders: AIProviderType[];
+        error?: string;
+    }> {
+        const availableProviders: AIProviderType[] = [];
+
+        for (const [type, provider] of this.providers) {
+            const pConfig = this.config.providers[type];
+
+            // Check if provider is configured
+            if (!pConfig) continue;
+            if (type !== 'ollama' && !pConfig.apiKey) continue;
+            if (type === 'ollama' && !pConfig.baseUrl) continue;
+
+            // Quick check if provider is available
+            this.configureProvider(type);
+            try {
+                const status = await provider.isAvailable();
+                if (status.available) {
+                    availableProviders.push(type);
+                }
+            } catch {
+                // Provider not available
+            }
+        }
+
+        if (availableProviders.length === 0) {
+            return {
+                ready: false,
+                availableProviders: [],
+                error: 'No AI providers available. Please configure at least one provider in Settings → AI Engine.'
+            };
+        }
+
+        console.log('[AIService] Health check passed, available providers:', availableProviders);
+        return {
+            ready: true,
+            availableProviders
+        };
+    }
+
     // ============================================================
     // Chat
     // ============================================================
@@ -476,15 +522,30 @@ class AIService {
     }
 
     async embed(text: string): Promise<number[]> {
+        // First, try the active provider
         const provider = this.getActiveProvider();
-        if (!provider) throw new Error("No active provider");
-
-        // Check if provider supports embeddings
-        if ('embed' in provider && typeof (provider as any).embed === 'function') {
-            return await (provider as any).embed(text);
+        if (provider && 'embed' in provider && typeof (provider as any).embed === 'function') {
+            try {
+                return await (provider as any).embed(text);
+            } catch (e) {
+                console.warn('[AIService] Active provider embed failed, trying Gemini fallback');
+            }
         }
 
-        throw new Error("Active provider does not support embeddings. Please enable Gemini.");
+        // Fallback to Gemini (it has the best embedding support)
+        const geminiProvider = this.providers.get('gemini');
+        if (geminiProvider && 'embed' in geminiProvider) {
+            this.configureProvider('gemini');
+            try {
+                return await (geminiProvider as any).embed(text);
+            } catch (e) {
+                console.warn('[AIService] Gemini embed fallback failed:', e);
+            }
+        }
+
+        // Last resort: return empty array (RAG will gracefully skip)
+        console.warn('[AIService] No embedding provider available, RAG will be disabled');
+        return [];
     }
 
     getHistory(): Message[] {

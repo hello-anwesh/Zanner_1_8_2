@@ -13,7 +13,7 @@ export function AISettingsView({ accent }: AISettingsViewProps) {
     const [config, setConfig] = useState(aiService.getConfig());
     const [providerStatuses, setProviderStatuses] = useState<Map<AIProviderType, ProviderStatus>>(new Map());
     const [availableModels, setAvailableModels] = useState<Map<AIProviderType, ModelInfo[]>>(new Map());
-    const [validatingProvider, setValidatingProvider] = useState<AIProviderType | null>(null);
+    const [_validatingProvider, setValidatingProvider] = useState<AIProviderType | null>(null);
     const [fetchingModels, setFetchingModels] = useState<AIProviderType | null>(null);
     const [saveMessage, setSaveMessage] = useState('');
 
