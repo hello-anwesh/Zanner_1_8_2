@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ChevronLeft, ChevronRight, Flame, Calendar, Tag, X, Search, Lightbulb, Heart } from 'lucide-react';
+import { Save, ChevronLeft, ChevronRight, Flame, Calendar, Tag, X, Search, Lightbulb, Heart, Sparkles, Loader2 } from 'lucide-react';
 import { journalService, JournalEntry } from '../services/journal/JournalService';
 import { journalPromptService, JournalPrompt } from '../services/journal/JournalPromptService';
+import { journalAIService, JournalReflection } from '../services/journal/JournalAIService';
 
 const MOODS = [
     { id: 'amazing', emoji: '🔥', label: 'Amazing' },
@@ -34,6 +35,11 @@ export function JournalView() {
     const [wordCount, setWordCount] = useState(0);
     const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastSavedContentRef = useRef('');
+
+    // Phase 2B: AI Reflection
+    const [showReflection, setShowReflection] = useState(false);
+    const [isReflecting, setIsReflecting] = useState(false);
+    const [reflection, setReflection] = useState<JournalReflection | null>(null);
 
     // Calculate word count when content changes
     useEffect(() => {
@@ -389,8 +395,8 @@ export function JournalView() {
                                             }
                                         }}
                                         className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${gratitudeMode
-                                                ? 'bg-pink-500 text-white'
-                                                : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
+                                            ? 'bg-pink-500 text-white'
+                                            : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
                                             }`}
                                     >
                                         <Heart size={16} className={gratitudeMode ? 'fill-current' : ''} />
@@ -498,8 +504,8 @@ export function JournalView() {
                             </div>
                         </div>
 
-                        {/* Save Button */}
-                        <div className="flex justify-center pt-8">
+                        {/* Save & Reflect Buttons */}
+                        <div className="flex justify-center gap-4 pt-8">
                             <button
                                 onClick={handleSave}
                                 disabled={!content.trim() || isSaving}
@@ -508,7 +514,155 @@ export function JournalView() {
                                 <Save size={24} />
                                 {isSaving ? 'Saving...' : 'Save Entry'}
                             </button>
+
+                            {/* AI Reflection Button - shows when content exists */}
+                            {content.trim().length > 50 && (
+                                <button
+                                    onClick={async () => {
+                                        setIsReflecting(true);
+                                        setShowReflection(true);
+                                        try {
+                                            const entry: JournalEntry = {
+                                                id: 0,
+                                                date: currentDate,
+                                                content,
+                                                mood: mood as JournalEntry['mood'],
+                                                tags,
+                                                created_at: Date.now(),
+                                                updated_at: Date.now()
+                                            };
+                                            const result = await journalAIService.getReflection(entry);
+                                            setReflection(result);
+                                        } catch (error) {
+                                            console.error('Reflection failed:', error);
+                                        } finally {
+                                            setIsReflecting(false);
+                                        }
+                                    }}
+                                    disabled={isReflecting}
+                                    className="px-8 py-5 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 text-cyan-300 text-lg font-bold hover:shadow-2xl hover:shadow-cyan-500/20 transition-all hover:scale-105 flex items-center gap-3 disabled:opacity-50"
+                                >
+                                    {isReflecting ? (
+                                        <Loader2 size={24} className="animate-spin" />
+                                    ) : (
+                                        <Sparkles size={24} />
+                                    )}
+                                    {isReflecting ? 'Reflecting...' : 'Reflect with AI'}
+                                </button>
+                            )}
                         </div>
+
+                        {/* AI Reflection Modal */}
+                        <AnimatePresence>
+                            {showReflection && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-8"
+                                    onClick={() => setShowReflection(false)}
+                                >
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                        className="bg-gradient-to-br from-slate-900 to-slate-950 rounded-3xl p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-white/10"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        {/* Header */}
+                                        <div className="flex items-center justify-between mb-8">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/30 to-blue-500/30 flex items-center justify-center">
+                                                    <Sparkles className="text-cyan-400" size={24} />
+                                                </div>
+                                                <div>
+                                                    <h2 className="text-xl font-bold text-white">AI Reflection</h2>
+                                                    <p className="text-sm text-white/50">Insights from your entry</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => setShowReflection(false)}
+                                                className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                                            >
+                                                <X size={20} className="text-white/70" />
+                                            </button>
+                                        </div>
+
+                                        {isReflecting ? (
+                                            <div className="flex flex-col items-center justify-center py-16 gap-4">
+                                                <Loader2 size={48} className="animate-spin text-cyan-400" />
+                                                <p className="text-white/60">Analyzing your entry...</p>
+                                            </div>
+                                        ) : reflection ? (
+                                            <div className="space-y-6">
+                                                {/* Summary */}
+                                                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                                    <h3 className="text-sm font-medium text-white/50 mb-2">Summary</h3>
+                                                    <p className="text-white leading-relaxed">{reflection.summary}</p>
+                                                </div>
+
+                                                {/* Emotions */}
+                                                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                                    <h3 className="text-sm font-medium text-white/50 mb-3">Emotions Detected</h3>
+                                                    <div className="flex gap-3">
+                                                        <span className="px-4 py-2 rounded-full bg-purple-500/20 text-purple-300 text-sm font-medium">
+                                                            {reflection.emotions.primary}
+                                                        </span>
+                                                        {reflection.emotions.secondary && (
+                                                            <span className="px-4 py-2 rounded-full bg-blue-500/20 text-blue-300 text-sm font-medium">
+                                                                {reflection.emotions.secondary}
+                                                            </span>
+                                                        )}
+                                                        <span className={`px-4 py-2 rounded-full text-sm font-medium ${reflection.emotions.intensity === 'high' ? 'bg-orange-500/20 text-orange-300' :
+                                                                reflection.emotions.intensity === 'medium' ? 'bg-yellow-500/20 text-yellow-300' :
+                                                                    'bg-green-500/20 text-green-300'
+                                                            }`}>
+                                                            {reflection.emotions.intensity} intensity
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Insights */}
+                                                {reflection.insights.length > 0 && (
+                                                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                                        <h3 className="text-sm font-medium text-white/50 mb-3">Insights</h3>
+                                                        <ul className="space-y-2">
+                                                            {reflection.insights.map((insight, i) => (
+                                                                <li key={i} className="flex gap-3 text-white/80">
+                                                                    <span className="text-cyan-400">💡</span>
+                                                                    {insight}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+
+                                                {/* Affirmation */}
+                                                <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20">
+                                                    <h3 className="text-sm font-medium text-purple-300 mb-2">✨ Affirmation</h3>
+                                                    <p className="text-lg text-white font-medium leading-relaxed">{reflection.affirmation}</p>
+                                                </div>
+
+                                                {/* Suggestions */}
+                                                {reflection.suggestions.length > 0 && (
+                                                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                                        <h3 className="text-sm font-medium text-white/50 mb-3">Gentle Suggestions</h3>
+                                                        <ul className="space-y-2">
+                                                            {reflection.suggestions.map((suggestion, i) => (
+                                                                <li key={i} className="flex gap-3 text-white/80">
+                                                                    <span className="text-green-400">→</span>
+                                                                    {suggestion}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : null}
+                                    </motion.div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 )}
 

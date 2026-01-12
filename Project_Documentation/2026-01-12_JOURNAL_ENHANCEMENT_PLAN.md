@@ -174,20 +174,20 @@ CREATE TABLE journal_templates (
 ## Progress Tracking
 
 ### Phase 1: Core Improvements
-- [ ] Auto-save with debounce
+- [x] Auto-save with debounce ✅
 - [ ] Markdown rendering
-- [ ] Character/word count
+- [x] Character/word count ✅
 - [ ] Quick mood change
 - [ ] Improved empty state
-- [ ] Keyboard shortcuts
+- [x] Keyboard shortcuts (Cmd+S) ✅
 - [ ] Delete confirmation
 
 ### Phase 2: AI Integration
-- [ ] JournalPromptService
-- [ ] Time-aware prompts
-- [ ] Mood-aware prompts
-- [ ] Session-aware prompts
-- [ ] Prompt UI
+- [x] JournalPromptService ✅
+- [x] Time-aware prompts ✅
+- [x] Mood-aware prompts ✅
+- [x] Session-aware prompts ✅
+- [x] Prompt UI ✅
 - [ ] "Reflect with AI" button
 - [ ] Pattern detection
 - [ ] AI feedback
@@ -200,7 +200,7 @@ CREATE TABLE journal_templates (
 - [ ] Template selector
 - [ ] Built-in templates (5)
 - [ ] Custom templates
-- [ ] Gratitude Mode
+- [x] Gratitude Mode ✅
 - [ ] Gratitude streak
 - [ ] Tag suggestions
 - [ ] Popular tags
