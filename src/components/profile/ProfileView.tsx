@@ -1,14 +1,14 @@
 /**
  * ProfileView - User Profile Management
- * A comprehensive, beautiful profile editor
+ * Premium, airy design with proper spacing
  */
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     User, Briefcase, Target, Clock, Brain, Heart,
-    ChevronRight, Check, Plus, X, Sparkles, Save,
-    Sun, Moon, Zap, MessageSquare, Bell, Shield,
+    ChevronRight, Check, Plus, X, Sparkles,
+    Sun, Moon, Zap, MessageSquare, Bell,
     Coffee, Sunrise, CircleDot
 } from 'lucide-react';
 import { profileService } from '../../services/profile/ProfileService';
@@ -40,20 +40,15 @@ const SECTIONS: { id: Section; label: string; icon: typeof User; description: st
 export function ProfileView({ accent }: ProfileViewProps) {
     const [profile, setProfile] = useState<UserProfile>(profileService.getProfile());
     const [activeSection, setActiveSection] = useState<Section>('identity');
-    const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
     useEffect(() => {
         const unsub = profileService.subscribe(setProfile);
         return () => unsub();
     }, []);
 
-    const handleSave = () => {
-        setSaveStatus('saving');
-        setTimeout(() => {
-            setSaveStatus('saved');
-            setTimeout(() => setSaveStatus('idle'), 2000);
-        }, 500);
-    };
+    // ============================================================
+    // REUSABLE COMPONENTS
+    // ============================================================
 
     // Chip multi-select component
     const ChipSelector = ({
@@ -89,55 +84,61 @@ export function ProfileView({ accent }: ProfileViewProps) {
         };
 
         return (
-            <div className="space-y-3">
-                <div className="flex flex-wrap gap-2">
+            <div className="space-y-4">
+                <div className="flex flex-wrap gap-2.5">
                     {options.map(option => (
                         <button
                             key={option}
                             onClick={() => toggle(option)}
-                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${selected.includes(option)
-                                    ? 'text-black'
-                                    : 'bg-white/5 text-white/60 hover:bg-white/10 border border-white/10'
+                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${selected.includes(option)
+                                    ? 'text-black shadow-lg'
+                                    : 'bg-white/[0.03] text-white/50 hover:bg-white/[0.06] hover:text-white/70 border border-white/[0.06]'
                                 }`}
-                            style={selected.includes(option) ? { background: accent } : {}}
+                            style={selected.includes(option) ? {
+                                background: accent,
+                                boxShadow: `0 4px 20px ${accent}40`
+                            } : {}}
                         >
-                            {selected.includes(option) && <Check size={12} className="inline mr-1" />}
+                            {selected.includes(option) && <Check size={12} className="inline mr-1.5 -mt-0.5" />}
                             {option}
                         </button>
                     ))}
                     {customizable && !showCustom && (
                         <button
                             onClick={() => setShowCustom(true)}
-                            className="px-3 py-1.5 rounded-full text-sm font-medium bg-white/5 text-white/40 hover:bg-white/10 border border-dashed border-white/20 flex items-center gap-1"
+                            className="px-4 py-2 rounded-xl text-sm font-medium bg-transparent text-white/30 hover:text-white/50 border border-dashed border-white/10 hover:border-white/20 flex items-center gap-1.5 transition-all"
                         >
-                            <Plus size={14} /> Add custom
+                            <Plus size={14} /> Add
                         </button>
                     )}
                 </div>
-                {showCustom && (
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            value={customInput}
-                            onChange={(e) => setCustomInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && addCustom()}
-                            placeholder="Type and press Enter"
-                            className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm outline-none focus:border-white/20"
-                            autoFocus
-                        />
-                        <button onClick={addCustom} className="px-3 py-2 rounded-lg bg-white/10 text-white/60 hover:bg-white/15">
-                            <Check size={16} />
-                        </button>
-                        <button onClick={() => setShowCustom(false)} className="px-3 py-2 rounded-lg bg-white/5 text-white/40 hover:bg-white/10">
-                            <X size={16} />
-                        </button>
-                    </div>
-                )}
-                {selected.length > 0 && (
-                    <div className="text-xs text-white/40">
-                        {selected.length} selected {maxItems < 20 && `(max ${maxItems})`}
-                    </div>
-                )}
+
+                <AnimatePresence>
+                    {showCustom && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="flex gap-3"
+                        >
+                            <input
+                                type="text"
+                                value={customInput}
+                                onChange={(e) => setCustomInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && addCustom()}
+                                placeholder="Type and press Enter"
+                                className="flex-1 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white text-sm outline-none focus:border-white/20 transition-all"
+                                autoFocus
+                            />
+                            <button onClick={addCustom} className="px-4 py-3 rounded-xl bg-white/[0.06] text-white/60 hover:bg-white/[0.1] transition-all">
+                                <Check size={18} />
+                            </button>
+                            <button onClick={() => setShowCustom(false)} className="px-4 py-3 rounded-xl bg-white/[0.03] text-white/30 hover:bg-white/[0.06] transition-all">
+                                <X size={18} />
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         );
     };
@@ -154,46 +155,46 @@ export function ProfileView({ accent }: ProfileViewProps) {
         onChange: (value: string) => void;
         columns?: number;
     }) => (
-        <div className={`grid gap-3`} style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+        <div className={`grid gap-4`} style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
             {options.map(option => {
                 const Icon = option.icon;
                 const isSelected = value === option.id;
                 return (
                     <motion.button
                         key={option.id}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
                         onClick={() => onChange(option.id)}
-                        className={`p-4 rounded-2xl text-left transition-all ${isSelected
+                        className={`p-5 rounded-2xl text-left transition-all duration-200 ${isSelected
                                 ? 'border-2'
-                                : 'bg-white/5 border border-white/10 hover:bg-white/8'
+                                : 'bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]'
                             }`}
                         style={isSelected ? {
-                            background: `${accent}15`,
-                            borderColor: accent
+                            background: `${accent}08`,
+                            borderColor: `${accent}60`
                         } : {}}
                     >
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-start gap-4">
                             {Icon && (
                                 <div
-                                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                                    style={{ background: isSelected ? `${accent}30` : 'rgba(255,255,255,0.05)' }}
+                                    className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                                    style={{ background: isSelected ? `${accent}20` : 'rgba(255,255,255,0.03)' }}
                                 >
-                                    <Icon size={20} style={{ color: isSelected ? accent : 'rgba(255,255,255,0.5)' }} />
+                                    <Icon size={20} style={{ color: isSelected ? accent : 'rgba(255,255,255,0.4)' }} />
                                 </div>
                             )}
-                            <div className="flex-1">
-                                <div className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-white/70'}`}>
+                            <div className="flex-1 min-w-0">
+                                <div className={`text-sm font-semibold mb-1 ${isSelected ? 'text-white' : 'text-white/60'}`}>
                                     {option.label}
                                 </div>
-                                <div className="text-xs text-white/40 mt-0.5">{option.description}</div>
+                                <div className="text-xs text-white/35 leading-relaxed">{option.description}</div>
                             </div>
                             {isSelected && (
                                 <div
-                                    className="w-5 h-5 rounded-full flex items-center justify-center"
+                                    className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
                                     style={{ background: accent }}
                                 >
-                                    <Check size={12} className="text-black" />
+                                    <Check size={14} className="text-black" />
                                 </div>
                             )}
                         </div>
@@ -219,15 +220,15 @@ export function ProfileView({ accent }: ProfileViewProps) {
         multiline?: boolean;
         hint?: string;
     }) => (
-        <div className="space-y-2">
-            <label className="block text-sm font-bold text-white/70">{label}</label>
+        <div className="space-y-3">
+            <label className="block text-sm font-semibold text-white/60">{label}</label>
             {multiline ? (
                 <textarea
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder}
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 outline-none focus:border-white/20 transition-all resize-none"
+                    rows={4}
+                    className="w-full px-5 py-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-white placeholder:text-white/20 outline-none focus:border-white/15 focus:bg-white/[0.04] transition-all resize-none text-[15px] leading-relaxed"
                 />
             ) : (
                 <input
@@ -235,10 +236,10 @@ export function ProfileView({ accent }: ProfileViewProps) {
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder}
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 outline-none focus:border-white/20 transition-all"
+                    className="w-full px-5 py-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-white placeholder:text-white/20 outline-none focus:border-white/15 focus:bg-white/[0.04] transition-all text-[15px]"
                 />
             )}
-            {hint && <p className="text-xs text-white/40">{hint}</p>}
+            {hint && <p className="text-xs text-white/30 leading-relaxed">{hint}</p>}
         </div>
     );
 
@@ -254,27 +255,35 @@ export function ProfileView({ accent }: ProfileViewProps) {
         value: boolean;
         onChange: (value: boolean) => void;
     }) => (
-        <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
-            <div>
-                <div className="text-sm font-medium text-white">{label}</div>
-                <div className="text-xs text-white/40">{description}</div>
+        <div className="flex items-center justify-between p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+            <div className="pr-4">
+                <div className="text-sm font-medium text-white/80 mb-1">{label}</div>
+                <div className="text-xs text-white/35 leading-relaxed">{description}</div>
             </div>
             <button
                 onClick={() => onChange(!value)}
-                className={`w-12 h-7 rounded-full transition-all flex items-center ${value ? 'justify-end' : 'justify-start'}`}
-                style={{ background: value ? accent : 'rgba(255,255,255,0.1)' }}
+                className={`w-14 h-8 rounded-full transition-all duration-300 flex items-center shrink-0 ${value ? 'justify-end' : 'justify-start'}`}
+                style={{ background: value ? accent : 'rgba(255,255,255,0.08)' }}
             >
-                <div className="w-5 h-5 rounded-full bg-white shadow-md mx-1" />
+                <div className="w-6 h-6 rounded-full bg-white shadow-lg mx-1" />
             </button>
         </div>
     );
 
-    // Render section content
+    // Section Label
+    const SectionLabel = ({ children }: { children: string }) => (
+        <label className="block text-sm font-semibold text-white/60 mb-4">{children}</label>
+    );
+
+    // ============================================================
+    // SECTION RENDERERS
+    // ============================================================
+
     const renderSection = () => {
         switch (activeSection) {
             case 'identity':
                 return (
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                         <InputField
                             label="Your Name"
                             value={profile.identity.name}
@@ -286,18 +295,19 @@ export function ProfileView({ accent }: ProfileViewProps) {
                             value={profile.identity.nickname}
                             onChange={(v) => profileService.updateIdentity({ nickname: v })}
                             placeholder="What should the AI call you?"
-                            hint="The AI will use this in conversations"
+                            hint="The AI will use this in conversations to make it feel more personal"
                         />
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="block text-sm font-bold text-white/70">Timezone</label>
-                                <div className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white/60 text-sm">
+
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-3">
+                                <label className="block text-sm font-semibold text-white/60">Timezone</label>
+                                <div className="px-5 py-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] text-white/40 text-[15px]">
                                     {profile.identity.timezone}
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="block text-sm font-bold text-white/70">Language</label>
-                                <div className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white/60 text-sm">
+                            <div className="space-y-3">
+                                <label className="block text-sm font-semibold text-white/60">Language</label>
+                                <div className="px-5 py-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] text-white/40 text-[15px]">
                                     {profile.identity.language}
                                 </div>
                             </div>
@@ -307,7 +317,7 @@ export function ProfileView({ accent }: ProfileViewProps) {
 
             case 'profession':
                 return (
-                    <div className="space-y-6">
+                    <div className="space-y-10">
                         <InputField
                             label="Your Role"
                             value={profile.profession.role}
@@ -315,18 +325,21 @@ export function ProfileView({ accent }: ProfileViewProps) {
                             placeholder="e.g., Software Engineer, Designer, Product Manager"
                         />
 
-                        <div className="space-y-2">
-                            <label className="block text-sm font-bold text-white/70">Industry</label>
-                            <div className="flex flex-wrap gap-2">
+                        <div>
+                            <SectionLabel>Industry</SectionLabel>
+                            <div className="flex flex-wrap gap-2.5">
                                 {INDUSTRIES.map(industry => (
                                     <button
                                         key={industry}
                                         onClick={() => profileService.updateProfession({ industry })}
-                                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${profile.profession.industry === industry
+                                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${profile.profession.industry === industry
                                                 ? 'text-black'
-                                                : 'bg-white/5 text-white/60 hover:bg-white/10 border border-white/10'
+                                                : 'bg-white/[0.03] text-white/50 hover:bg-white/[0.06] border border-white/[0.06]'
                                             }`}
-                                        style={profile.profession.industry === industry ? { background: accent } : {}}
+                                        style={profile.profession.industry === industry ? {
+                                            background: accent,
+                                            boxShadow: `0 4px 20px ${accent}40`
+                                        } : {}}
                                     >
                                         {industry}
                                     </button>
@@ -334,8 +347,8 @@ export function ProfileView({ accent }: ProfileViewProps) {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="block text-sm font-bold text-white/70">Experience Level</label>
+                        <div>
+                            <SectionLabel>Experience Level</SectionLabel>
                             <CardSelector
                                 options={[
                                     { id: 'student', label: 'Student', description: 'Learning and growing' },
@@ -350,8 +363,8 @@ export function ProfileView({ accent }: ProfileViewProps) {
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="block text-sm font-bold text-white/70">Work Style</label>
+                        <div>
+                            <SectionLabel>Work Style</SectionLabel>
                             <CardSelector
                                 options={[
                                     { id: 'remote', label: 'Fully Remote', description: 'Work from home or anywhere', icon: Coffee },
@@ -368,24 +381,24 @@ export function ProfileView({ accent }: ProfileViewProps) {
 
             case 'goals':
                 return (
-                    <div className="space-y-6">
+                    <div className="space-y-10">
                         <InputField
                             label="What are you currently focused on?"
                             value={profile.goals.currentFocus}
                             onChange={(v) => profileService.updateGoals({ currentFocus: v })}
                             placeholder="e.g., Launching my startup, Learning a new skill, Finishing a project"
-                            hint="This helps the AI provide relevant encouragement"
+                            hint="This helps the AI provide relevant encouragement and context-aware support"
                         />
 
-                        <div className="space-y-2">
-                            <label className="block text-sm font-bold text-white/70">Short-term Goals</label>
+                        <div>
+                            <SectionLabel>Short-term Goals</SectionLabel>
                             <ChipSelector
                                 options={[]}
                                 selected={profile.goals.shortTermGoals}
                                 onChange={(v) => profileService.updateGoals({ shortTermGoals: v })}
                                 maxItems={5}
                             />
-                            <p className="text-xs text-white/40">Add 3-5 goals for this week or month</p>
+                            <p className="text-xs text-white/30 mt-3">Add 3-5 goals for this week or month</p>
                         </div>
 
                         <InputField
@@ -409,9 +422,9 @@ export function ProfileView({ accent }: ProfileViewProps) {
 
             case 'patterns':
                 return (
-                    <div className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="block text-sm font-bold text-white/70">Are you an early bird or night owl?</label>
+                    <div className="space-y-10">
+                        <div>
+                            <SectionLabel>Are you an early bird or night owl?</SectionLabel>
                             <CardSelector
                                 options={[
                                     { id: 'early_bird', label: 'Early Bird', description: 'Most productive in the morning', icon: Sunrise },
@@ -424,9 +437,9 @@ export function ProfileView({ accent }: ProfileViewProps) {
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="block text-sm font-bold text-white/70">Preferred Session Length</label>
-                            <div className="flex items-center gap-4">
+                        <div>
+                            <SectionLabel>Preferred Session Length</SectionLabel>
+                            <div className="flex items-center gap-6 p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
                                 <input
                                     type="range"
                                     min="15"
@@ -434,20 +447,22 @@ export function ProfileView({ accent }: ProfileViewProps) {
                                     step="5"
                                     value={profile.patterns.preferredSessionLength}
                                     onChange={(e) => profileService.updatePatterns({ preferredSessionLength: parseInt(e.target.value) })}
-                                    className="flex-1 accent-current"
-                                    style={{ accentColor: accent }}
+                                    className="flex-1 h-2 rounded-full appearance-none cursor-pointer"
+                                    style={{
+                                        background: `linear-gradient(to right, ${accent} ${((profile.patterns.preferredSessionLength - 15) / 75) * 100}%, rgba(255,255,255,0.1) ${((profile.patterns.preferredSessionLength - 15) / 75) * 100}%)`
+                                    }}
                                 />
                                 <div
-                                    className="w-16 text-center py-2 rounded-lg font-bold text-sm"
-                                    style={{ background: `${accent}20`, color: accent }}
+                                    className="w-20 text-center py-3 rounded-xl font-bold text-sm shrink-0"
+                                    style={{ background: `${accent}15`, color: accent }}
                                 >
-                                    {profile.patterns.preferredSessionLength}m
+                                    {profile.patterns.preferredSessionLength} min
                                 </div>
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="block text-sm font-bold text-white/70">Common Distractions</label>
+                        <div>
+                            <SectionLabel>Common Distractions</SectionLabel>
                             <ChipSelector
                                 options={COMMON_DISTRACTIONS}
                                 selected={profile.patterns.distractions}
@@ -455,8 +470,8 @@ export function ProfileView({ accent }: ProfileViewProps) {
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="block text-sm font-bold text-white/70">What helps you focus?</label>
+                        <div>
+                            <SectionLabel>What helps you focus?</SectionLabel>
                             <ChipSelector
                                 options={COMMON_FOCUS_TRIGGERS}
                                 selected={profile.patterns.focusTriggers}
@@ -468,9 +483,9 @@ export function ProfileView({ accent }: ProfileViewProps) {
 
             case 'ai':
                 return (
-                    <div className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="block text-sm font-bold text-white/70">Coaching Style</label>
+                    <div className="space-y-10">
+                        <div>
+                            <SectionLabel>Coaching Style</SectionLabel>
                             <CardSelector
                                 options={[
                                     { id: 'supportive', label: 'Supportive', description: 'Warm, encouraging, understanding', icon: Heart },
@@ -483,8 +498,8 @@ export function ProfileView({ accent }: ProfileViewProps) {
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="block text-sm font-bold text-white/70">Feedback Tone</label>
+                        <div>
+                            <SectionLabel>Feedback Tone</SectionLabel>
                             <CardSelector
                                 options={[
                                     { id: 'gentle', label: 'Gentle', description: 'Soft, kind, patient', icon: Heart },
@@ -497,8 +512,8 @@ export function ProfileView({ accent }: ProfileViewProps) {
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="block text-sm font-bold text-white/70">Reminder Frequency</label>
+                        <div>
+                            <SectionLabel>Reminder Frequency</SectionLabel>
                             <CardSelector
                                 options={[
                                     { id: 'minimal', label: 'Minimal', description: 'Only when essential', icon: Bell },
@@ -511,7 +526,8 @@ export function ProfileView({ accent }: ProfileViewProps) {
                             />
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="space-y-4">
+                            <SectionLabel>Preferences</SectionLabel>
                             <Toggle
                                 label="Affirmations"
                                 description="Include positive affirmations in coaching"
@@ -536,15 +552,15 @@ export function ProfileView({ accent }: ProfileViewProps) {
 
             case 'personal':
                 return (
-                    <div className="space-y-6">
-                        <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
-                            <p className="text-sm text-purple-300">
+                    <div className="space-y-10">
+                        <div className="p-5 rounded-2xl bg-purple-500/[0.08] border border-purple-500/20">
+                            <p className="text-sm text-purple-300/80 leading-relaxed">
                                 🎯 This section is optional but helps the AI understand you better for more personalized coaching.
                             </p>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="block text-sm font-bold text-white/70">Hobbies & Interests</label>
+                        <div>
+                            <SectionLabel>Hobbies & Interests</SectionLabel>
                             <ChipSelector
                                 options={COMMON_HOBBIES}
                                 selected={profile.personal.hobbies}
@@ -552,8 +568,8 @@ export function ProfileView({ accent }: ProfileViewProps) {
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="block text-sm font-bold text-white/70">What motivates you?</label>
+                        <div>
+                            <SectionLabel>What motivates you?</SectionLabel>
                             <ChipSelector
                                 options={COMMON_MOTIVATORS}
                                 selected={profile.personal.motivators}
@@ -561,8 +577,8 @@ export function ProfileView({ accent }: ProfileViewProps) {
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="block text-sm font-bold text-white/70">Common stressors</label>
+                        <div>
+                            <SectionLabel>Common stressors</SectionLabel>
                             <ChipSelector
                                 options={COMMON_STRESSORS}
                                 selected={profile.personal.stressors}
@@ -570,8 +586,8 @@ export function ProfileView({ accent }: ProfileViewProps) {
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="block text-sm font-bold text-white/70">Communication Style</label>
+                        <div>
+                            <SectionLabel>Communication Style</SectionLabel>
                             <CardSelector
                                 options={[
                                     { id: 'detailed', label: 'Detailed', description: 'Give me all the context' },
@@ -597,16 +613,16 @@ export function ProfileView({ accent }: ProfileViewProps) {
     return (
         <div className="flex h-full">
             {/* Sidebar */}
-            <div className="w-72 border-r border-white/10 p-6 space-y-2">
+            <div className="w-80 border-r border-white/[0.06] p-8 flex flex-col">
                 {/* Profile Completion */}
-                <div className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-white/70">Profile Complete</span>
+                <div className="mb-10 p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+                    <div className="flex items-center justify-between mb-4">
+                        <span className="text-sm font-medium text-white/50">Profile Complete</span>
                         <span className="text-sm font-bold" style={{ color: accent }}>
                             {profile.meta.completionPercentage}%
                         </span>
                     </div>
-                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
                         <motion.div
                             className="h-full rounded-full"
                             style={{ background: accent }}
@@ -618,38 +634,46 @@ export function ProfileView({ accent }: ProfileViewProps) {
                 </div>
 
                 {/* Section Navigation */}
-                {SECTIONS.map((section) => {
-                    const Icon = section.icon;
-                    const isActive = activeSection === section.id;
-                    return (
-                        <motion.button
-                            key={section.id}
-                            onClick={() => setActiveSection(section.id)}
-                            whileHover={{ x: 4 }}
-                            className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${isActive ? 'bg-white/10' : 'hover:bg-white/5'
-                                }`}
-                        >
-                            <div
-                                className="w-9 h-9 rounded-xl flex items-center justify-center"
-                                style={{
-                                    background: isActive ? `${accent}20` : 'rgba(255,255,255,0.05)'
-                                }}
+                <nav className="flex-1 space-y-2">
+                    {SECTIONS.map((section) => {
+                        const Icon = section.icon;
+                        const isActive = activeSection === section.id;
+                        return (
+                            <motion.button
+                                key={section.id}
+                                onClick={() => setActiveSection(section.id)}
+                                whileHover={{ x: 4 }}
+                                className={`w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all duration-200 ${isActive ? 'bg-white/[0.06]' : 'hover:bg-white/[0.03]'
+                                    }`}
                             >
-                                <Icon size={18} style={{ color: isActive ? accent : 'rgba(255,255,255,0.5)' }} />
-                            </div>
-                            <div className="flex-1">
-                                <div className={`text-sm font-medium ${isActive ? 'text-white' : 'text-white/60'}`}>
-                                    {section.label}
+                                <div
+                                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                                    style={{
+                                        background: isActive ? `${accent}15` : 'rgba(255,255,255,0.03)'
+                                    }}
+                                >
+                                    <Icon size={18} style={{ color: isActive ? accent : 'rgba(255,255,255,0.4)' }} />
                                 </div>
-                            </div>
-                            {isActive && <ChevronRight size={16} className="text-white/30" />}
-                        </motion.button>
-                    );
-                })}
+                                <div className="flex-1 min-w-0">
+                                    <div className={`text-sm font-medium ${isActive ? 'text-white' : 'text-white/50'}`}>
+                                        {section.label}
+                                    </div>
+                                </div>
+                                {isActive && <ChevronRight size={16} style={{ color: accent }} />}
+                            </motion.button>
+                        );
+                    })}
+                </nav>
+
+                {/* Auto-save indicator */}
+                <div className="mt-auto pt-6 flex items-center gap-2 text-white/25 text-xs">
+                    <Check size={12} />
+                    <span>Changes save automatically</span>
+                </div>
             </div>
 
             {/* Content */}
-            <div className="flex-1 p-8 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeSection}
@@ -657,30 +681,25 @@ export function ProfileView({ accent }: ProfileViewProps) {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.2 }}
+                        className="p-12"
                     >
                         {/* Section Header */}
-                        <div className="flex items-center gap-4 mb-8">
+                        <div className="flex items-center gap-5 mb-12">
                             <div
-                                className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                                style={{ background: `${accent}20` }}
+                                className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                                style={{ background: `${accent}12` }}
                             >
                                 <CurrentIcon size={28} style={{ color: accent }} />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-white">{currentSectionData.label}</h2>
-                                <p className="text-white/50">{currentSectionData.description}</p>
+                                <h2 className="text-2xl font-bold text-white mb-1">{currentSectionData.label}</h2>
+                                <p className="text-white/40">{currentSectionData.description}</p>
                             </div>
                         </div>
 
                         {/* Section Content */}
                         <div className="max-w-2xl">
                             {renderSection()}
-                        </div>
-
-                        {/* Auto-save indicator */}
-                        <div className="mt-8 flex items-center gap-2 text-white/40 text-sm">
-                            <Check size={14} />
-                            <span>Changes save automatically</span>
                         </div>
                     </motion.div>
                 </AnimatePresence>
