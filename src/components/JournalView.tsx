@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ChevronLeft, ChevronRight, Flame, Calendar, Tag, X, Search } from 'lucide-react';
+import { Save, ChevronLeft, ChevronRight, Flame, Calendar, Tag, X, Search, Lightbulb } from 'lucide-react';
 import { journalService, JournalEntry } from '../services/journal/JournalService';
+import { journalPromptService, JournalPrompt } from '../services/journal/JournalPromptService';
 
 const MOODS = [
     { id: 'amazing', emoji: '🔥', label: 'Amazing' },
@@ -27,7 +28,7 @@ export function JournalView() {
     // Phase 1: Auto-save states
     const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | null>(null);
     const [wordCount, setWordCount] = useState(0);
-    const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastSavedContentRef = useRef('');
 
     // Calculate word count when content changes
@@ -77,6 +78,33 @@ export function JournalView() {
             }
         };
     }, [content, currentDate, mood, tags]);
+
+    // Phase 2: AI Writing Prompts
+    const [prompts, setPrompts] = useState<JournalPrompt[]>([]);
+    const [promptsVisible, setPromptsVisible] = useState(true);
+
+    // Load prompts when viewing an empty entry
+    useEffect(() => {
+        const loadPrompts = async () => {
+            // Only show prompts for today's empty entry
+            const isToday = currentDate === new Date().toISOString().split('T')[0];
+            if (isToday && !content.trim()) {
+                const contextualPrompts = await journalPromptService.getPrompts(3);
+                setPrompts(contextualPrompts);
+                setPromptsVisible(true);
+            } else {
+                setPrompts([]);
+            }
+        };
+        loadPrompts();
+    }, [currentDate]);
+
+    // Hide prompts when user starts writing
+    useEffect(() => {
+        if (content.trim().length > 20) {
+            setPromptsVisible(false);
+        }
+    }, [content]);
 
     useEffect(() => {
         loadEntry(currentDate);
@@ -282,6 +310,53 @@ export function JournalView() {
                                 ))}
                             </div>
                         </div>
+
+                        {/* AI Writing Prompts */}
+                        <AnimatePresence>
+                            {prompts.length > 0 && promptsVisible && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="space-y-4"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-white/60">
+                                            <Lightbulb size={18} />
+                                            <span className="text-sm font-medium">Writing prompts for you</span>
+                                        </div>
+                                        <button
+                                            onClick={() => setPromptsVisible(false)}
+                                            className="text-white/40 hover:text-white/60 transition-colors"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {prompts.map((prompt) => (
+                                            <motion.button
+                                                key={prompt.id}
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={() => {
+                                                    setContent(prompt.text + '\n\n');
+                                                    setPromptsVisible(false);
+                                                }}
+                                                className="p-4 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 hover:border-purple-500/40 text-left transition-all group"
+                                            >
+                                                <div className="text-2xl mb-2">{prompt.icon}</div>
+                                                <div className="text-sm text-white/70 group-hover:text-white/90 transition-colors leading-relaxed">
+                                                    {prompt.text}
+                                                </div>
+                                                <div className="mt-2 text-xs text-purple-400/60 capitalize">
+                                                    {prompt.category}
+                                                </div>
+                                            </motion.button>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
                         {/* Editor */}
                         <div className="space-y-4">
