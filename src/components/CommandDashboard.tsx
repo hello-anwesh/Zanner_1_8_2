@@ -80,7 +80,16 @@ export function CommandDashboard({
                 const today = new Date().toISOString().split('T')[0];
                 const entry = await journalService.getEntry(today);
                 if (entry) {
-                    const words = entry.content.trim().split(/\s+/).filter((w: string) => w.length > 0).length;
+                    // Filter out template placeholder content (markdown headers and empty placeholders)
+                    const cleanContent = entry.content
+                        .replace(/^##.*$/gm, '') // Remove markdown headers
+                        .replace(/^\*\*.*\*\*$/gm, '') // Remove bold prompts like **How am I feeling?**
+                        .replace(/^[0-9]+\.\s*$/gm, '') // Remove numbered list placeholders "1. "
+                        .replace(/^-\s*$/gm, '') // Remove empty bullet points
+                        .trim();
+
+                    // Only count actual written content
+                    const words = cleanContent ? cleanContent.split(/\s+/).filter((w: string) => w.length > 0).length : 0;
                     setTodayJournalWords(words);
                 }
 
@@ -388,59 +397,57 @@ export function CommandDashboard({
                     </div>
                 </motion.button>
 
-                {/* ========== QUICK ACTIONS (spans 4 cols, 2 rows) ========== */}
+                {/* ========== QUICK ACTIONS - Horizontal Pills ========== */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
-                    className="col-span-4 row-span-2 rounded-3xl bg-white/[0.02] border border-white/10 p-6"
+                    className="col-span-12 row-span-1 flex items-center gap-3"
                 >
-                    <div className="flex items-center gap-3 mb-4">
-                        <Zap className="text-yellow-400" size={20} />
-                        <span className="text-sm font-medium text-white/60">Quick Actions</span>
+                    <div className="flex items-center gap-2 text-white/40 mr-2">
+                        <Zap className="text-yellow-400" size={16} />
+                        <span className="text-xs font-medium uppercase tracking-wider">Quick</span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => onNavigate('philosophy')}
-                            className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-left transition-all"
-                        >
-                            <Sparkles className="text-purple-400 mb-2" size={20} />
-                            <div className="text-sm font-medium text-white">Daily Wisdom</div>
-                        </motion.button>
+                    <motion.button
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => onNavigate('philosophy')}
+                        className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 transition-all"
+                    >
+                        <Sparkles className="text-purple-400" size={18} />
+                        <span className="text-sm font-medium text-white">Daily Wisdom</span>
+                    </motion.button>
 
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => onNavigate('frequencies')}
-                            className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-left transition-all"
-                        >
-                            <TrendingUp className="text-cyan-400 mb-2" size={20} />
-                            <div className="text-sm font-medium text-white">Focus Tones</div>
-                        </motion.button>
+                    <motion.button
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => onNavigate('frequencies')}
+                        className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 hover:bg-cyan-500/20 transition-all"
+                    >
+                        <TrendingUp className="text-cyan-400" size={18} />
+                        <span className="text-sm font-medium text-white">Focus Tones</span>
+                    </motion.button>
 
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => onNavigate('ai-training')}
-                            className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-left transition-all"
-                        >
-                            <Brain className="text-blue-400 mb-2" size={20} />
-                            <div className="text-sm font-medium text-white">Train AI</div>
-                        </motion.button>
+                    <motion.button
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => onNavigate('ai-training')}
+                        className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-all"
+                    >
+                        <Brain className="text-blue-400" size={18} />
+                        <span className="text-sm font-medium text-white">Train AI</span>
+                    </motion.button>
 
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => onNavigate('integrations')}
-                            className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-left transition-all"
-                        >
-                            <Heart className="text-pink-400 mb-2" size={20} />
-                            <div className="text-sm font-medium text-white">Integrations</div>
-                        </motion.button>
-                    </div>
+                    <motion.button
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => onNavigate('integrations')}
+                        className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-pink-500/10 border border-pink-500/20 hover:bg-pink-500/20 transition-all"
+                    >
+                        <Heart className="text-pink-400" size={18} />
+                        <span className="text-sm font-medium text-white">Integrations</span>
+                    </motion.button>
                 </motion.div>
             </div>
         </div>
