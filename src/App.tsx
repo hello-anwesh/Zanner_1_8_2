@@ -181,7 +181,9 @@ function App() {
       try {
         const appWindow = getCurrentWindow();
         if (isCompactMode) {
-          await appWindow.setSize(new LogicalSize(320, 150));
+          // Exact size: 468px content + 12px buffer = 480 width
+          // Height: 88px content + 12px buffer = 100
+          await appWindow.setSize(new LogicalSize(480, 100));
         } else {
           await appWindow.setSize(new LogicalSize(1200, 800));
           await appWindow.center(); // Optional: Center window when restoring
@@ -432,7 +434,7 @@ function App() {
   const colors = { bg: "#050507", text: "#fafafa", textMuted, accent, card: "rgba(255,255,255,0.03)", border: "rgba(255,255,255,0.08)" };
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: isCompactMode ? "transparent" : "#050507", color: "#fafafa" }}>
+    <div className="flex h-screen overflow-hidden" style={{ background: isCompactMode ? "#0a0a0c" : "#050507", color: "#fafafa" }}>
       {!isCompactMode && (
         <>
           <TitleBar />

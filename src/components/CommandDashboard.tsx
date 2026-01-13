@@ -370,21 +370,37 @@ export function CommandDashboard({
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={onToggleTimer}
-                                className="w-16 h-16 rounded-2xl flex items-center justify-center transition-all"
+                                className="unstyled w-16 h-16 rounded-2xl flex items-center justify-center transition-all"
                                 style={{
                                     background: modeColors[mode],
-                                    boxShadow: `0 8px 32px ${modeColors[mode]}40`
+                                    boxShadow: `0 8px 32px ${modeColors[mode]}40`,
+                                    padding: 0,
+                                    minHeight: 'unset',
+                                    border: 'none',
                                 }}
                             >
-                                {isRunning ? <Pause size={28} className="text-white" /> : <Play size={28} className="text-white ml-1" />}
+                                {isRunning ? (
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="6" y="4" width="4" height="16" />
+                                        <rect x="14" y="4" width="4" height="16" />
+                                    </svg>
+                                ) : (
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 4 }}>
+                                        <polygon points="5 3 19 12 5 21 5 3" />
+                                    </svg>
+                                )}
                             </motion.button>
                             <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={onSkip}
-                                className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all"
+                                className="unstyled w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all"
+                                style={{ padding: 0, minHeight: 'unset' }}
                             >
-                                <SkipForward size={20} className="text-white/60" />
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polygon points="5 4 15 12 5 20 5 4" />
+                                    <line x1="19" y1="5" x2="19" y2="19" />
+                                </svg>
                             </motion.button>
                         </div>
                     </div>

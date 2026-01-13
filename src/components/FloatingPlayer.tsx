@@ -49,6 +49,7 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
     });
     const dragControls = useDragControls();
     const constraintsRef = useRef<HTMLDivElement>(null);
+    const isDraggingRef = useRef(false);
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -387,17 +388,24 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
                 dragElastic={0.1}
                 dragConstraints={constraintsRef}
                 initial={position}
+                onDragStart={() => {
+                    isDraggingRef.current = true;
+                }}
                 onDragEnd={(_, info) => {
                     const newPos = { x: position.x + info.offset.x, y: position.y + info.offset.y };
                     setPosition(newPos);
                     localStorage.setItem('floatingPlayerPosition', JSON.stringify(newPos));
+                    // Reset drag flag after a short delay to allow click to check it
+                    setTimeout(() => { isDraggingRef.current = false; }, 100);
                 }}
                 className="fixed bottom-8 right-8 z-50 cursor-grab active:cursor-grabbing">
 
                 {/* === TRIGGER BUTTON - CLEAN FLAT === */}
                 {!showLibrary && !currentTrack && (
                     <button
-                        onClick={() => setShowLibrary(true)}
+                        onClick={() => {
+                            if (!isDraggingRef.current) setShowLibrary(true);
+                        }}
                         className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-105"
                         style={{
                             background: colors.accent,
@@ -411,7 +419,9 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
                 {/* === MINI PLAYER - CLEAN FLAT === */}
                 {!showLibrary && currentTrack && (
                     <div
-                        onClick={() => setShowLibrary(true)}
+                        onClick={() => {
+                            if (!isDraggingRef.current) setShowLibrary(true);
+                        }}
                         className="flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer shadow-lg transition-all hover:border-white/20"
                         style={{
                             background: "#1E1E1E",

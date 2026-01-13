@@ -151,7 +151,10 @@ export function Onboarding({ isOpen, onClose, accent }: OnboardingProps) {
                         onClick={handleSkip}
                         className="absolute top-8 right-8 p-3 rounded-xl hover:bg-white/10 transition-all z-10"
                     >
-                        <X size={20} className="text-white/60" />
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
                     </button>
 
                     {/* Content */}

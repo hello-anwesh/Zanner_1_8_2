@@ -18,6 +18,17 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  /* Prevent accidental text selection during drag */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Allow text selection in input fields */
+input,
+textarea,
+[contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 html,
@@ -37,6 +48,12 @@ body {
   color: #fafafa;
   font-size: 14px;
   line-height: 1.5;
+}
+
+/* Ensure SVG icons inherit color properly */
+svg {
+  color: inherit;
+  stroke: currentColor;
 }
 
 /* Scrollbar */

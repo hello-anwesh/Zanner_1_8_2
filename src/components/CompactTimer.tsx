@@ -1,11 +1,9 @@
 /**
  * CompactTimer - Ultra-premium floating timer
- * Minimal, dark, glass aesthetic with glowing accents
+ * Uses Tauri's startDragging API for native window dragging
  */
 
-import { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Play, Pause, Maximize2, X } from 'lucide-react';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 interface CompactTimerProps {
     timeLeft: number;
@@ -24,7 +22,7 @@ function formatTime(seconds: number): string {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-const MODES: { [key: string]: { label: string; color: string } } = {
+const MODES: Record<string, { label: string; color: string }> = {
     focus: { label: 'FOCUS', color: '#A855F7' },
     work: { label: 'FOCUS', color: '#A855F7' },
     shortBreak: { label: 'BREAK', color: '#22C55E' },
@@ -41,168 +39,149 @@ export function CompactTimer({
     onExpand,
     onClose
 }: CompactTimerProps) {
-    const [position, setPosition] = useState(() => {
-        const saved = localStorage.getItem('compactTimerPosition');
-        return saved ? JSON.parse(saved) : { x: 0, y: 0 };
-    });
-    const constraintsRef = useRef<HTMLDivElement>(null);
-
     const config = MODES[mode] || { label: 'FOCUS', color: accent };
 
-    const containerStyle: React.CSSProperties = {
-        position: 'fixed',
-        top: 20,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 99999,
-        cursor: 'grab',
+    const handleMouseDown = async (e: React.MouseEvent) => {
+        if ((e.target as HTMLElement).closest('button')) return;
+        try {
+            await getCurrentWindow().startDragging();
+        } catch (err) {
+            console.error('Failed to start dragging:', err);
+        }
     };
 
-    const cardStyle: React.CSSProperties = {
-        backgroundColor: '#0a0a0c',
-        background: '#0a0a0c',
-        borderRadius: 20,
-        border: '1px solid rgba(255,255,255,0.1)',
-        boxShadow: `0 25px 50px -12px rgba(0,0,0,0.9), 0 0 60px -10px ${config.color}25`,
-        padding: '14px 20px',
+    // Icon button base style - overrides global button CSS
+    const iconBtnStyle: React.CSSProperties = {
+        padding: 0,
+        minHeight: 'unset',
+        border: 'none',
         display: 'flex',
         alignItems: 'center',
-        gap: 16,
+        justifyContent: 'center',
+        cursor: 'pointer',
     };
 
     return (
-        <>
-            <div ref={constraintsRef} style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 99998 }} />
-
-            <motion.div
-                drag
-                dragMomentum={false}
-                dragElastic={0.05}
-                dragConstraints={constraintsRef}
-                initial={position}
-                onDragEnd={(_, info) => {
-                    const newPos = { x: position.x + info.offset.x, y: position.y + info.offset.y };
-                    setPosition(newPos);
-                    localStorage.setItem('compactTimerPosition', JSON.stringify(newPos));
-                }}
-                style={containerStyle}
-                whileDrag={{ cursor: 'grabbing' }}
-            >
-                <motion.div
-                    initial={{ opacity: 0, y: -30, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -30, scale: 0.9 }}
-                    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                    style={cardStyle}
-                >
-                    {/* Mode Badge */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <div
-                                style={{
-                                    width: 8,
-                                    height: 8,
-                                    borderRadius: '50%',
-                                    backgroundColor: config.color,
-                                    boxShadow: isRunning ? `0 0 12px ${config.color}` : 'none',
-                                }}
-                            />
-                            <span style={{
-                                fontSize: 11,
-                                fontWeight: 700,
-                                letterSpacing: '0.1em',
-                                color: config.color
-                            }}>
-                                {config.label}
-                            </span>
-                        </div>
-                        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>
-                            Session {sessions + 1}
+        <div
+            onMouseDown={handleMouseDown}
+            style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#0a0a0c',
+                cursor: 'grab',
+                userSelect: 'none',
+            }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                {/* Mode & Session */}
+                <div style={{ minWidth: 65 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                        <div
+                            style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: '50%',
+                                backgroundColor: config.color,
+                                boxShadow: isRunning ? `0 0 10px ${config.color}` : 'none',
+                            }}
+                        />
+                        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: config.color }}>
+                            {config.label}
                         </span>
                     </div>
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
+                        Session {sessions + 1}
+                    </span>
+                </div>
 
-                    {/* Divider */}
-                    <div style={{ width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                {/* Divider */}
+                <div style={{ width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.08)' }} />
 
-                    {/* Timer */}
-                    <div style={{
-                        fontSize: 42,
-                        fontWeight: 700,
+                {/* Timer Display */}
+                <div
+                    style={{
+                        fontSize: 44,
+                        fontWeight: 600,
                         color: '#FFFFFF',
                         letterSpacing: '-0.02em',
-                        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                        fontFamily: "'Inter', -apple-system, system-ui, sans-serif",
                         fontVariantNumeric: 'tabular-nums',
                         lineHeight: 1,
                         textShadow: `0 0 40px ${config.color}40`
-                    }}>
-                        {formatTime(timeLeft)}
-                    </div>
+                    }}
+                >
+                    {formatTime(timeLeft)}
+                </div>
 
-                    {/* Play/Pause */}
-                    <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={onToggleTimer}
-                        style={{
-                            width: 48,
-                            height: 48,
-                            borderRadius: 14,
-                            border: 'none',
-                            backgroundColor: config.color,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            boxShadow: `0 8px 24px ${config.color}50`
-                        }}
-                    >
-                        {isRunning ? (
-                            <Pause size={22} color="#fff" strokeWidth={2.5} />
-                        ) : (
-                            <Play size={22} color="#fff" strokeWidth={2.5} style={{ marginLeft: 2 }} />
-                        )}
-                    </motion.button>
+                {/* Divider */}
+                <div style={{ width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.08)' }} />
 
-                    {/* Divider */}
-                    <div style={{ width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                {/* Play/Pause Button */}
+                <button
+                    className="unstyled"
+                    onClick={onToggleTimer}
+                    style={{
+                        ...iconBtnStyle,
+                        width: 48,
+                        height: 48,
+                        borderRadius: 14,
+                        backgroundColor: config.color,
+                        boxShadow: `0 6px 24px ${config.color}50`,
+                    }}
+                >
+                    {isRunning ? (
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="6" y="4" width="4" height="16" />
+                            <rect x="14" y="4" width="4" height="16" />
+                        </svg>
+                    ) : (
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 2 }}>
+                            <polygon points="5 3 19 12 5 21 5 3" />
+                        </svg>
+                    )}
+                </button>
 
-                    {/* Actions */}
-                    <div style={{ display: 'flex', gap: 4 }}>
-                        <button
-                            onClick={onExpand}
-                            style={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 8,
-                                border: 'none',
-                                backgroundColor: 'rgba(255,255,255,0.05)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                            }}
-                        >
-                            <Maximize2 size={14} color="rgba(255,255,255,0.5)" />
-                        </button>
-                        <button
-                            onClick={onClose}
-                            style={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 8,
-                                border: 'none',
-                                backgroundColor: 'rgba(255,255,255,0.05)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                            }}
-                        >
-                            <X size={14} color="rgba(255,255,255,0.5)" />
-                        </button>
-                    </div>
-                </motion.div>
-            </motion.div>
-        </>
+                {/* Expand Button */}
+                <button
+                    className="unstyled"
+                    onClick={onExpand}
+                    style={{
+                        ...iconBtnStyle,
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        backgroundColor: 'rgba(255,255,255,0.06)',
+                    }}
+                >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 3 21 3 21 9" />
+                        <polyline points="9 21 3 21 3 15" />
+                        <line x1="21" y1="3" x2="14" y2="10" />
+                        <line x1="3" y1="21" x2="10" y2="14" />
+                    </svg>
+                </button>
+
+                {/* Close Button */}
+                <button
+                    className="unstyled"
+                    onClick={onClose}
+                    style={{
+                        ...iconBtnStyle,
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        backgroundColor: 'rgba(255,255,255,0.06)',
+                    }}
+                >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+        </div>
     );
 }

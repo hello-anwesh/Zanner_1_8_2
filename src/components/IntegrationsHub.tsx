@@ -411,7 +411,10 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
                                     onClick={() => setSelectedProvider(null)}
                                     className="p-2 rounded-lg hover:bg-white/5 transition-colors"
                                 >
-                                    <X size={18} className="text-white/60" />
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                    </svg>
                                 </button>
                             </div>
                             <p className="text-sm text-[#B8B8C4] mb-6">{selectedProvider.description}</p>

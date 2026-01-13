@@ -1,19 +1,21 @@
 /**
  * Post-Session Journal Modal
  * Quick journaling prompt that appears after completing a focus session
+ * Now with AI Reflection support
  */
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, BookOpen, Send, Clock, Target, Zap } from 'lucide-react';
-import { journalService } from '../services/journal/JournalService';
+import { X, BookOpen, Send, Clock, Target, Zap, Sparkles, Loader2 } from 'lucide-react';
+import { journalService, JournalEntry } from '../services/journal/JournalService';
+import { journalAIService } from '../services/journal/JournalAIService';
 
 interface PostSessionJournalProps {
     isOpen: boolean;
     onClose: () => void;
     sessionData: {
         sessionNumber: number;
-        duration: number; // in minutes
+        duration: number;
         startTime: Date;
         endTime: Date;
         type: 'focus' | 'break';
@@ -34,6 +36,8 @@ export function PostSessionJournal({ isOpen, onClose, sessionData }: PostSession
     const [selectedReflections, setSelectedReflections] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [isReflecting, setIsReflecting] = useState(false);
+    const [aiReflection, setAiReflection] = useState<string | null>(null);
 
     const toggleReflection = (text: string) => {
         setSelectedReflections(prev =>
@@ -43,8 +47,65 @@ export function PostSessionJournal({ isOpen, onClose, sessionData }: PostSession
         );
     };
 
+    const handleAIReflect = async () => {
+        if (!notes.trim() && selectedReflections.length === 0) return;
+
+        setIsReflecting(true);
+        try {
+            // Build content for AI reflection
+            let contentForAI = '';
+            if (selectedReflections.length > 0) {
+                contentForAI += `Session feelings: ${selectedReflections.join(', ')}\n\n`;
+            }
+            if (notes.trim()) {
+                contentForAI += `Session notes: ${notes.trim()}`;
+            }
+
+            const entry: JournalEntry = {
+                id: 0,
+                date: new Date().toISOString().split('T')[0],
+                content: contentForAI,
+                created_at: Date.now(),
+                updated_at: Date.now()
+            };
+
+            const result = await journalAIService.getReflection(entry);
+
+            if (result) {
+                // Format the AI reflection nicely
+                let formattedReflection = '';
+                formattedReflection += `**Summary:** ${result.summary}\n\n`;
+
+                if (result.emotions) {
+                    formattedReflection += `**Emotions:** ${result.emotions.primary}`;
+                    if (result.emotions.secondary) {
+                        formattedReflection += ` + ${result.emotions.secondary}`;
+                    }
+                    formattedReflection += `\n\n`;
+                }
+
+                if (result.affirmation) {
+                    formattedReflection += `**✨ ${result.affirmation}**\n\n`;
+                }
+
+                if (result.suggestions && result.suggestions.length > 0) {
+                    formattedReflection += `**Suggestions:**\n`;
+                    result.suggestions.forEach((s: string) => {
+                        formattedReflection += `• ${s}\n`;
+                    });
+                }
+
+                setAiReflection(formattedReflection);
+            }
+        } catch (error) {
+            console.error('AI Reflection failed:', error);
+        } finally {
+            setIsReflecting(false);
+        }
+    };
+
     const handleSave = async () => {
-        if (!notes.trim() && selectedReflections.length === 0) {
+        if (!notes.trim() && selectedReflections.length === 0 && !aiReflection) {
             onClose();
             return;
         }
@@ -54,7 +115,6 @@ export function PostSessionJournal({ isOpen, onClose, sessionData }: PostSession
             const today = new Date().toISOString().split('T')[0];
             const existingEntry = await journalService.getEntry(today);
 
-            // Build session note content
             const timeStr = sessionData.endTime.toLocaleTimeString('en-US', {
                 hour: 'numeric',
                 minute: '2-digit'
@@ -68,10 +128,14 @@ export function PostSessionJournal({ isOpen, onClose, sessionData }: PostSession
             }
 
             if (notes.trim()) {
-                sessionNote += notes.trim() + '\n';
+                sessionNote += notes.trim() + '\n\n';
             }
 
-            // Append to existing entry or create new
+            // Add AI Reflection if available
+            if (aiReflection) {
+                sessionNote += `### 🪞 AI Reflection\n\n${aiReflection}\n`;
+            }
+
             const newContent = existingEntry
                 ? existingEntry.content + sessionNote
                 : `# ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}\n${sessionNote}`;
@@ -79,6 +143,9 @@ export function PostSessionJournal({ isOpen, onClose, sessionData }: PostSession
             const tags = existingEntry?.tags || [];
             if (!tags.includes('session-notes')) {
                 tags.push('session-notes');
+            }
+            if (aiReflection && !tags.includes('ai-reflection')) {
+                tags.push('ai-reflection');
             }
 
             await journalService.createOrUpdateEntry(
@@ -91,9 +158,9 @@ export function PostSessionJournal({ isOpen, onClose, sessionData }: PostSession
             setSaved(true);
             setTimeout(() => {
                 onClose();
-                // Reset state
                 setNotes('');
                 setSelectedReflections([]);
+                setAiReflection(null);
                 setSaved(false);
             }, 1000);
         } catch (error) {
@@ -106,6 +173,7 @@ export function PostSessionJournal({ isOpen, onClose, sessionData }: PostSession
     const handleSkip = () => {
         setNotes('');
         setSelectedReflections([]);
+        setAiReflection(null);
         onClose();
     };
 
@@ -124,7 +192,7 @@ export function PostSessionJournal({ isOpen, onClose, sessionData }: PostSession
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="bg-gradient-to-br from-slate-900 to-slate-950 rounded-3xl p-8 max-w-lg w-full border border-white/10"
+                    className="bg-gradient-to-br from-slate-900 to-slate-950 rounded-3xl p-8 max-w-lg w-full border border-white/10 max-h-[90vh] overflow-y-auto"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
@@ -142,7 +210,10 @@ export function PostSessionJournal({ isOpen, onClose, sessionData }: PostSession
                             onClick={handleSkip}
                             className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
                         >
-                            <X size={20} className="text-white/70" />
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
                         </button>
                     </div>
 
@@ -174,8 +245,8 @@ export function PostSessionJournal({ isOpen, onClose, sessionData }: PostSession
                                     key={item.text}
                                     onClick={() => toggleReflection(item.text)}
                                     className={`px-3 py-2 rounded-full text-sm font-medium transition-all ${selectedReflections.includes(item.text)
-                                            ? 'bg-green-500/20 border-green-500/50 text-green-300 border'
-                                            : 'bg-white/5 text-white/60 hover:bg-white/10 border border-transparent'
+                                        ? 'bg-green-500/20 border-green-500/50 text-green-300 border'
+                                        : 'bg-white/5 text-white/60 hover:bg-white/10 border border-transparent'
                                         }`}
                                 >
                                     {item.emoji} {item.text}
@@ -195,18 +266,48 @@ export function PostSessionJournal({ isOpen, onClose, sessionData }: PostSession
                         />
                     </div>
 
+                    {/* AI Reflection Result */}
+                    {aiReflection && (
+                        <div className="mb-6 p-4 rounded-2xl bg-gradient-to-br from-purple-500/10 to-cyan-500/10 border border-purple-500/30">
+                            <div className="flex items-center gap-2 text-purple-300 mb-3">
+                                <Sparkles size={16} />
+                                <span className="text-sm font-bold">AI Reflection</span>
+                            </div>
+                            <div className="text-sm text-white/80 whitespace-pre-wrap leading-relaxed">
+                                {aiReflection.split('\n').map((line, i) => (
+                                    <p key={i} className="mb-1">{line.replace(/\*\*/g, '')}</p>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Actions */}
                     <div className="flex gap-3">
                         <button
                             onClick={handleSkip}
-                            className="flex-1 px-6 py-4 rounded-2xl bg-white/5 text-white/60 font-medium hover:bg-white/10 transition-all"
+                            className="px-4 py-4 rounded-2xl bg-white/5 text-white/60 font-medium hover:bg-white/10 transition-all"
                         >
                             Skip
                         </button>
+
+                        {/* AI Reflect Button */}
+                        <button
+                            onClick={handleAIReflect}
+                            disabled={isReflecting || (!notes.trim() && selectedReflections.length === 0)}
+                            className="flex-1 px-4 py-4 rounded-2xl bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-purple-300 font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-40"
+                        >
+                            {isReflecting ? (
+                                <Loader2 size={18} className="animate-spin" />
+                            ) : (
+                                <Sparkles size={18} />
+                            )}
+                            {isReflecting ? 'Reflecting...' : aiReflection ? 'Reflect Again' : 'AI Reflect'}
+                        </button>
+
                         <button
                             onClick={handleSave}
                             disabled={isSaving}
-                            className="flex-1 px-6 py-4 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold hover:shadow-2xl hover:shadow-green-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                            className="flex-1 px-4 py-4 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold hover:shadow-2xl hover:shadow-green-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             {saved ? (
                                 <>✓ Saved!</>
@@ -215,7 +316,7 @@ export function PostSessionJournal({ isOpen, onClose, sessionData }: PostSession
                             ) : (
                                 <>
                                     <Send size={18} />
-                                    Save Note
+                                    Save
                                 </>
                             )}
                         </button>

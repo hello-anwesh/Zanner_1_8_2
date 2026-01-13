@@ -114,7 +114,10 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
                             onClick={onClose}
                             className="p-5 rounded-[24px] bg-white/5 hover:bg-white/8 transition-all"
                         >
-                            <X size={24} className="text-white/60" />
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
                         </motion.button>
                     </div>
                 </div>

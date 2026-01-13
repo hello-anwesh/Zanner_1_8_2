@@ -439,100 +439,64 @@ export function JournalView() {
                             </div>
                         </div>
 
-                        {/* Template Selector */}
+                        {/* Template Selector - Always Visible */}
                         <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-xl font-bold text-white/70">Choose a template</h3>
-                                <button
-                                    onClick={() => setShowTemplates(!showTemplates)}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70 text-sm font-medium transition-all"
-                                >
-                                    <FileText size={16} />
-                                    {showTemplates ? 'Hide templates' : 'Show templates'}
-                                </button>
-                            </div>
-
-                            <AnimatePresence>
-                                {showTemplates && (
-                                    <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        className="grid grid-cols-5 gap-3 overflow-hidden"
+                            <h3 className="text-xl font-bold text-white/70">Choose a template</h3>
+                            <div className="grid grid-cols-5 gap-3">
+                                {JOURNAL_TEMPLATES.map((template) => (
+                                    <motion.button
+                                        key={template.id}
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => {
+                                            setSelectedTemplate(template.id);
+                                            if (template.content) {
+                                                setContent(template.content);
+                                            }
+                                        }}
+                                        className={`p-4 rounded-2xl text-center transition-all ${selectedTemplate === template.id
+                                            ? 'bg-purple-500/20 border-purple-500/50 border-2'
+                                            : 'bg-white/[0.02] border border-white/10 hover:bg-white/[0.05] hover:border-white/20'
+                                            }`}
                                     >
-                                        {JOURNAL_TEMPLATES.map((template) => (
-                                            <motion.button
-                                                key={template.id}
-                                                whileHover={{ scale: 1.02 }}
-                                                whileTap={{ scale: 0.98 }}
-                                                onClick={() => {
-                                                    setSelectedTemplate(template.id);
-                                                    if (template.content) {
-                                                        setContent(template.content);
-                                                    }
-                                                    setShowTemplates(false);
-                                                }}
-                                                className={`p-4 rounded-2xl text-center transition-all ${selectedTemplate === template.id
-                                                    ? 'bg-purple-500/20 border-purple-500/50 border-2'
-                                                    : 'bg-white/[0.02] border border-white/10 hover:bg-white/[0.05] hover:border-white/20'
-                                                    }`}
-                                            >
-                                                <div className="text-2xl mb-2">{template.emoji}</div>
-                                                <div className="text-sm font-medium text-white/80">{template.name}</div>
-                                                <div className="text-xs text-white/40 mt-1">{template.description}</div>
-                                            </motion.button>
-                                        ))}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                                        <div className="text-2xl mb-2">{template.emoji}</div>
+                                        <div className="text-sm font-medium text-white/80">{template.name}</div>
+                                        <div className="text-xs text-white/40 mt-1">{template.description}</div>
+                                    </motion.button>
+                                ))}
+                            </div>
                         </div>
 
-                        {/* AI Writing Prompts */}
-                        <AnimatePresence>
-                            {prompts.length > 0 && promptsVisible && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    className="space-y-4"
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2 text-white/60">
-                                            <Lightbulb size={18} />
-                                            <span className="text-sm font-medium">Writing prompts for you</span>
-                                        </div>
-                                        <button
-                                            onClick={() => setPromptsVisible(false)}
-                                            className="text-white/40 hover:text-white/60 transition-colors"
+                        {/* AI Writing Prompts - Always Visible */}
+                        {prompts.length > 0 && (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 text-white/60">
+                                    <Lightbulb size={18} />
+                                    <span className="text-sm font-medium">Writing prompts for you</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {prompts.map((prompt) => (
+                                        <motion.button
+                                            key={prompt.id}
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={() => {
+                                                setContent(prompt.text + '\n\n');
+                                            }}
+                                            className="p-4 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 hover:border-purple-500/40 text-left transition-all group"
                                         >
-                                            <X size={16} />
-                                        </button>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-3">
-                                        {prompts.map((prompt) => (
-                                            <motion.button
-                                                key={prompt.id}
-                                                whileHover={{ scale: 1.02 }}
-                                                whileTap={{ scale: 0.98 }}
-                                                onClick={() => {
-                                                    setContent(prompt.text + '\n\n');
-                                                    setPromptsVisible(false);
-                                                }}
-                                                className="p-4 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 hover:border-purple-500/40 text-left transition-all group"
-                                            >
-                                                <div className="text-2xl mb-2">{prompt.icon}</div>
-                                                <div className="text-sm text-white/70 group-hover:text-white/90 transition-colors leading-relaxed">
-                                                    {prompt.text}
-                                                </div>
-                                                <div className="mt-2 text-xs text-purple-400/60 capitalize">
-                                                    {prompt.category}
-                                                </div>
-                                            </motion.button>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                                            <div className="text-2xl mb-2">{prompt.icon}</div>
+                                            <div className="text-sm text-white/70 group-hover:text-white/90 transition-colors leading-relaxed">
+                                                {prompt.text}
+                                            </div>
+                                            <div className="mt-2 text-xs text-purple-400/60 capitalize">
+                                                {prompt.category}
+                                            </div>
+                                        </motion.button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Editor with Gratitude Mode Toggle */}
                         <div className="space-y-4">
@@ -647,7 +611,10 @@ export function JournalView() {
                                             onClick={() => removeTag(tag)}
                                             className="opacity-0 group-hover:opacity-100 transition-opacity"
                                         >
-                                            <X size={14} />
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <line x1="18" y1="6" x2="6" y2="18" />
+                                                <line x1="6" y1="6" x2="18" y2="18" />
+                                            </svg>
                                         </button>
                                     </span>
                                 ))}
@@ -699,6 +666,56 @@ export function JournalView() {
                                             };
                                             const result = await journalAIService.getReflection(entry);
                                             setReflection(result);
+
+                                            // Auto-save the reflection to the journal
+                                            if (result) {
+                                                const timeStr = new Date().toLocaleTimeString('en-US', {
+                                                    hour: 'numeric',
+                                                    minute: '2-digit'
+                                                });
+
+                                                let reflectionContent = `\n\n---\n## 🪞 AI Reflection (${timeStr})\n\n`;
+                                                reflectionContent += `**Summary:** ${result.summary}\n\n`;
+
+                                                if (result.emotions) {
+                                                    reflectionContent += `**Emotions:** ${result.emotions.primary}`;
+                                                    if (result.emotions.secondary) {
+                                                        reflectionContent += ` + ${result.emotions.secondary}`;
+                                                    }
+                                                    reflectionContent += ` (${result.emotions.intensity} intensity)\n\n`;
+                                                }
+
+                                                if (result.insights && result.insights.length > 0) {
+                                                    reflectionContent += `**Insights:**\n`;
+                                                    result.insights.forEach((insight: string) => {
+                                                        reflectionContent += `- 💡 ${insight}\n`;
+                                                    });
+                                                    reflectionContent += '\n';
+                                                }
+
+                                                if (result.affirmation) {
+                                                    reflectionContent += `**✨ Affirmation:** ${result.affirmation}\n\n`;
+                                                }
+
+                                                if (result.suggestions && result.suggestions.length > 0) {
+                                                    reflectionContent += `**Gentle Suggestions:**\n`;
+                                                    result.suggestions.forEach((suggestion: string) => {
+                                                        reflectionContent += `- → ${suggestion}\n`;
+                                                    });
+                                                }
+
+                                                // Append to content and save
+                                                const newContent = content + reflectionContent;
+                                                setContent(newContent);
+                                                lastSavedContentRef.current = newContent;
+
+                                                // Add reflection tag if not present
+                                                const newTags = tags.includes('ai-reflection') ? tags : [...tags, 'ai-reflection'];
+                                                setTags(newTags);
+
+                                                await journalService.createOrUpdateEntry(currentDate, newContent, mood, newTags);
+                                                setAutoSaveStatus('saved');
+                                            }
                                         } catch (error) {
                                             console.error('Reflection failed:', error);
                                         } finally {
@@ -750,7 +767,10 @@ export function JournalView() {
                                                 onClick={() => setShowReflection(false)}
                                                 className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
                                             >
-                                                <X size={20} className="text-white/70" />
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                                </svg>
                                             </button>
                                         </div>
 

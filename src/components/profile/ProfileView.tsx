@@ -91,8 +91,8 @@ export function ProfileView({ accent }: ProfileViewProps) {
                             key={option}
                             onClick={() => toggle(option)}
                             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${selected.includes(option)
-                                    ? 'text-black shadow-lg'
-                                    : 'bg-white/[0.03] text-white/50 hover:bg-white/[0.06] hover:text-white/70 border border-white/[0.06]'
+                                ? 'text-black shadow-lg'
+                                : 'bg-white/[0.03] text-white/50 hover:bg-white/[0.06] hover:text-white/70 border border-white/[0.06]'
                                 }`}
                             style={selected.includes(option) ? {
                                 background: accent,
@@ -134,7 +134,10 @@ export function ProfileView({ accent }: ProfileViewProps) {
                                 <Check size={18} />
                             </button>
                             <button onClick={() => setShowCustom(false)} className="px-4 py-3 rounded-xl bg-white/[0.03] text-white/30 hover:bg-white/[0.06] transition-all">
-                                <X size={18} />
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
                             </button>
                         </motion.div>
                     )}
@@ -166,8 +169,8 @@ export function ProfileView({ accent }: ProfileViewProps) {
                         whileTap={{ scale: 0.99 }}
                         onClick={() => onChange(option.id)}
                         className={`p-5 rounded-2xl text-left transition-all duration-200 ${isSelected
-                                ? 'border-2'
-                                : 'bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]'
+                            ? 'border-2'
+                            : 'bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]'
                             }`}
                         style={isSelected ? {
                             background: `${accent}08`,
@@ -333,8 +336,8 @@ export function ProfileView({ accent }: ProfileViewProps) {
                                         key={industry}
                                         onClick={() => profileService.updateProfession({ industry })}
                                         className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${profile.profession.industry === industry
-                                                ? 'text-black'
-                                                : 'bg-white/[0.03] text-white/50 hover:bg-white/[0.06] border border-white/[0.06]'
+                                            ? 'text-black'
+                                            : 'bg-white/[0.03] text-white/50 hover:bg-white/[0.06] border border-white/[0.06]'
                                             }`}
                                         style={profile.profession.industry === industry ? {
                                             background: accent,

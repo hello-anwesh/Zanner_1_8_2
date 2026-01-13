@@ -222,7 +222,10 @@ export function SettingsModal({ isOpen, onClose, accent, theme, themes, onThemeC
                                 border: "1px solid rgba(255,255,255,0.08)",
                             }}
                         >
-                            <X size={18} className="text-white/50" />
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
                         </button>
                     </div>
 
