@@ -1,38 +1,142 @@
 import { TrainingProfile, DEFAULT_PROFILE, AIKnowledge, AIExperience, AIRule } from "./types";
+import { databaseService } from "../db/DatabaseService";
 
-const STORAGE_KEY = "chronos_ai_training_profile";
+const LEGACY_STORAGE_KEY = "chronos_ai_training_profile";
+const PROFILE_TABLE = "training_profile";
 
 class TrainingService {
-    private profile: TrainingProfile;
+    private profile: TrainingProfile = DEFAULT_PROFILE;
+    private initialized = false;
+    private initPromise: Promise<void> | null = null;
 
     constructor() {
-        this.profile = this.loadProfile();
+        // Load synchronously from localStorage first for immediate access
+        this.loadFromLocalStorage();
+        // Then async migrate/sync with SQLite in background
+        this.init().catch(console.error);
     }
 
-    private loadProfile(): TrainingProfile {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        return stored ? { ...DEFAULT_PROFILE, ...JSON.parse(stored) } : DEFAULT_PROFILE;
+    private loadFromLocalStorage(): void {
+        try {
+            const stored = localStorage.getItem(LEGACY_STORAGE_KEY);
+            if (stored) {
+                this.profile = { ...DEFAULT_PROFILE, ...JSON.parse(stored) };
+            }
+        } catch (e) {
+            console.warn("[TrainingService] Failed to load from localStorage:", e);
+        }
     }
 
-    private saveProfile() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.profile));
+    /**
+     * Initialize SQLite storage and migrate if needed
+     */
+    async init(): Promise<void> {
+        if (this.initialized) return;
+        if (this.initPromise) return this.initPromise;
+
+        this.initPromise = this._doInit();
+        await this.initPromise;
     }
+
+    private async _doInit(): Promise<void> {
+        try {
+            const db = await databaseService.getDb();
+
+            // Create training profile table if not exists
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS ${PROFILE_TABLE} (
+                    id TEXT PRIMARY KEY DEFAULT 'default',
+                    profile_json TEXT NOT NULL,
+                    updated_at INTEGER NOT NULL
+                )
+            `);
+
+            // Check if we have data in SQLite
+            const existing = await db.select<{ profile_json: string }[]>(
+                `SELECT profile_json FROM ${PROFILE_TABLE} WHERE id = 'default'`
+            );
+
+            if (existing && existing.length > 0) {
+                // SQLite has data - use it as source of truth
+                const sqliteProfile = { ...DEFAULT_PROFILE, ...JSON.parse(existing[0].profile_json) };
+
+                // Compare with localStorage - use whichever has more data
+                const sqliteKnowledge = sqliteProfile.knowledgeBase?.length || 0;
+                const localKnowledge = this.profile.knowledgeBase?.length || 0;
+                const sqliteExperiences = sqliteProfile.experiences?.length || 0;
+                const localExperiences = this.profile.experiences?.length || 0;
+
+                if (sqliteKnowledge + sqliteExperiences >= localKnowledge + localExperiences) {
+                    this.profile = sqliteProfile;
+                    console.log("[TrainingService] Loaded from SQLite");
+                } else {
+                    // localStorage has more data - save to SQLite
+                    await this.saveToSQLite();
+                    console.log("[TrainingService] Migrated localStorage to SQLite (localStorage had more data)");
+                }
+            } else {
+                // No SQLite data - migrate from localStorage
+                await this.saveToSQLite();
+                console.log("[TrainingService] Initial migration to SQLite complete");
+            }
+
+            // Also sync back to localStorage as backup
+            this.saveToLocalStorage();
+
+            this.initialized = true;
+        } catch (error) {
+            console.error("[TrainingService] SQLite init failed, using localStorage only:", error);
+            this.initialized = true; // Mark as initialized even on failure
+        }
+    }
+
+    private saveToLocalStorage(): void {
+        try {
+            localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(this.profile));
+        } catch (e) {
+            console.error("[TrainingService] localStorage save failed:", e);
+        }
+    }
+
+    private async saveToSQLite(): Promise<void> {
+        try {
+            const db = await databaseService.getDb();
+            const json = JSON.stringify(this.profile);
+            const now = Date.now();
+
+            await db.execute(
+                `INSERT OR REPLACE INTO ${PROFILE_TABLE} (id, profile_json, updated_at) VALUES ('default', ?, ?)`,
+                [json, now]
+            );
+        } catch (error) {
+            console.error("[TrainingService] SQLite save failed:", error);
+        }
+    }
+
+    private saveProfile(): void {
+        // Save to localStorage immediately (sync)
+        this.saveToLocalStorage();
+        // Also save to SQLite (async, fire and forget)
+        this.saveToSQLite().catch(console.error);
+    }
+
+    // --- PUBLIC API (all synchronous for backwards compatibility) ---
 
     getProfile(): TrainingProfile {
         return this.profile;
     }
 
-    updateIdentity(identity: Partial<TrainingProfile["identity"]>) {
+    updateIdentity(identity: Partial<TrainingProfile["identity"]>): void {
         this.profile.identity = { ...this.profile.identity, ...identity };
         this.saveProfile();
     }
 
-    updateRhythms(rhythms: Partial<TrainingProfile["rhythms"]>) {
+    updateRhythms(rhythms: Partial<TrainingProfile["rhythms"]>): void {
         this.profile.rhythms = { ...this.profile.rhythms, ...rhythms };
         this.saveProfile();
     }
 
-    addKnowledge(content: string, category: AIKnowledge["category"] = "fact") {
+    addKnowledge(content: string, category: AIKnowledge["category"] = "fact"): AIKnowledge {
         const entry: AIKnowledge = {
             id: Date.now().toString(),
             category,
@@ -44,13 +148,13 @@ class TrainingService {
         return entry;
     }
 
-    removeKnowledge(id: string) {
+    removeKnowledge(id: string): void {
         this.profile.knowledgeBase = this.profile.knowledgeBase.filter(k => k.id !== id);
         this.saveProfile();
     }
 
     // --- Experience Memory (Episodic) ---
-    recordExperience(summary: string, sentiment: AIExperience["sentiment"] = "neutral", keyLearnings: string[] = []) {
+    recordExperience(summary: string, sentiment: AIExperience["sentiment"] = "neutral", keyLearnings: string[] = []): AIExperience {
         // Ensure array exists (migration safety)
         if (!this.profile.experiences) this.profile.experiences = [];
 
@@ -74,7 +178,7 @@ class TrainingService {
     }
 
     // --- Procedural Memory (Rules) ---
-    addRule(rule: string, triggerContext: string = "general") {
+    addRule(rule: string, triggerContext: string = "general"): AIRule {
         if (!this.profile.rules) this.profile.rules = [];
 
         const newRule: AIRule = {
@@ -89,14 +193,13 @@ class TrainingService {
         return newRule;
     }
 
-    removeRule(id: string) {
+    removeRule(id: string): void {
         if (!this.profile.rules) return;
         this.profile.rules = this.profile.rules.filter(r => r.id !== id);
         this.saveProfile();
     }
 
     // Simple RAG simulation: Retrieve relevant context based on keywords
-    // In a real implementation, this would use vector similarity
     getContext(query: string): string {
         if (!this.profile.knowledgeBase.length) return "";
 
@@ -142,6 +245,14 @@ ${activeRules}
 RECENT HISTORY (CONTEXT):
 ${recentHistory}
 `;
+    }
+
+    // Force reload from storage
+    async reload(): Promise<void> {
+        this.initialized = false;
+        this.initPromise = null;
+        this.loadFromLocalStorage();
+        await this.init();
     }
 }
 
