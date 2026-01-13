@@ -282,7 +282,7 @@ export function PostSessionJournal({ isOpen, onClose, sessionData }: PostSession
                     )}
 
                     {/* Actions */}
-                    <div className="flex gap-3">
+                    <div className="flex gap-4 pt-2">
                         <button
                             onClick={handleSkip}
                             className="px-4 py-4 rounded-2xl bg-white/5 text-white/60 font-medium hover:bg-white/10 transition-all"

@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ChevronLeft, ChevronRight, Flame, Calendar, Tag, X, Search, Lightbulb, Heart, Sparkles, Loader2, FileText, BarChart3 } from 'lucide-react';
+import { Save, ChevronLeft, ChevronRight, Flame, Calendar, Tag, X, Search, Lightbulb, Heart, Sparkles, Loader2, FileText, BarChart3, Edit3, Eye } from 'lucide-react';
 import { journalService, JournalEntry } from '../services/journal/JournalService';
 import { journalPromptService, JournalPrompt } from '../services/journal/JournalPromptService';
 import { journalAIService, JournalReflection } from '../services/journal/JournalAIService';
 import { JournalAnalytics } from './JournalAnalytics';
+import { RichTextEditor } from './editor/RichTextEditor';
+import { JournalContentRenderer } from './journal/JournalContentRenderer';
 
 const MOODS = [
     { id: 'amazing', emoji: '🔥', label: 'Amazing' },
@@ -150,6 +152,18 @@ export function JournalView() {
     // Phase 3A: Templates
     const [showTemplates, setShowTemplates] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<string>('freewrite');
+
+    // Edit/View mode toggle
+    const [isEditMode, setIsEditMode] = useState(true);
+
+    // Separate user content from AI reflections for hybrid display
+    const { userContent, aiReflections } = useMemo(() => {
+        const parts = content.split(/---\s*##?\s*🪞?\s*AI Reflection/i);
+        return {
+            userContent: parts[0]?.trim() || '',
+            aiReflections: parts.slice(1).map(p => '## 🪞 AI Reflection' + p).join('\n\n---\n\n')
+        };
+    }, [content]);
 
     // Calculate word count when content changes
     useEffect(() => {
@@ -587,13 +601,65 @@ export function JournalView() {
                                     </p>
                                 </div>
                             ) : (
-                                <textarea
-                                    value={content}
-                                    onChange={(e) => setContent(e.target.value)}
-                                    placeholder="Write freely about your day, thoughts, wins, challenges, or anything else..."
-                                    className="w-full h-96 p-8 rounded-3xl bg-white/[0.02] border border-white/10 text-white text-lg leading-relaxed placeholder-white/20 focus:outline-none focus:border-purple-500/50 focus:bg-white/[0.03] resize-none transition-all"
-                                    style={{ lineHeight: '1.8' }}
-                                />
+                                <div className="space-y-6">
+                                    {/* Edit/View Toggle */}
+                                    <div className="flex items-center gap-2 p-1 bg-white/5 rounded-xl w-fit">
+                                        <button
+                                            onClick={() => setIsEditMode(true)}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${isEditMode
+                                                ? 'bg-purple-500/20 text-purple-300'
+                                                : 'text-white/40 hover:text-white/60'
+                                                }`}
+                                        >
+                                            <Edit3 size={14} />
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => setIsEditMode(false)}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${!isEditMode
+                                                ? 'bg-cyan-500/20 text-cyan-300'
+                                                : 'text-white/40 hover:text-white/60'
+                                                }`}
+                                        >
+                                            <Eye size={14} />
+                                            Preview
+                                        </button>
+                                    </div>
+
+                                    {/* Edit Mode - TipTap Editor */}
+                                    {isEditMode ? (
+                                        <RichTextEditor
+                                            key={currentDate}
+                                            content={userContent}
+                                            onChange={(newContent) => {
+                                                // Preserve AI reflections when editing user content
+                                                if (aiReflections) {
+                                                    setContent(newContent + '\n\n---\n\n' + aiReflections);
+                                                } else {
+                                                    setContent(newContent);
+                                                }
+                                            }}
+                                            placeholder="Write freely about your day, thoughts, wins, challenges, or anything else..."
+                                            autoSaveStatus={autoSaveStatus}
+                                        />
+                                    ) : (
+                                        /* View Mode - Beautiful Rendered Content */
+                                        <div className="rounded-2xl bg-white/[0.02] border border-white/10 p-6 min-h-[400px]">
+                                            <JournalContentRenderer content={content} />
+                                        </div>
+                                    )}
+
+                                    {/* AI Reflections - Always shown beautifully in edit mode too */}
+                                    {isEditMode && aiReflections && (
+                                        <div className="mt-6">
+                                            <h3 className="text-sm font-medium text-white/40 mb-4 flex items-center gap-2">
+                                                <Sparkles size={14} className="text-purple-400" />
+                                                AI Reflections
+                                            </h3>
+                                            <JournalContentRenderer content={aiReflections} />
+                                        </div>
+                                    )}
+                                </div>
                             )}
                         </div>
 
@@ -638,13 +704,13 @@ export function JournalView() {
                         </div>
 
                         {/* Save & Reflect Buttons */}
-                        <div className="flex justify-center gap-4 pt-8">
+                        <div className="flex justify-center gap-6 pt-10 pb-4">
                             <button
                                 onClick={handleSave}
                                 disabled={!content.trim() || isSaving}
-                                className="px-12 py-5 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-lg font-bold disabled:opacity-50 hover:shadow-2xl hover:shadow-purple-500/50 transition-all hover:scale-105 flex items-center gap-3"
+                                className="px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-base font-bold disabled:opacity-50 hover:shadow-xl hover:shadow-purple-500/30 transition-all hover:scale-[1.02] flex items-center gap-3"
                             >
-                                <Save size={24} />
+                                <Save size={20} />
                                 {isSaving ? 'Saving...' : 'Save Entry'}
                             </button>
 
@@ -723,12 +789,12 @@ export function JournalView() {
                                         }
                                     }}
                                     disabled={isReflecting}
-                                    className="px-8 py-5 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 text-cyan-300 text-lg font-bold hover:shadow-2xl hover:shadow-cyan-500/20 transition-all hover:scale-105 flex items-center gap-3 disabled:opacity-50"
+                                    className="px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 text-cyan-300 text-base font-bold hover:shadow-xl hover:shadow-cyan-500/20 transition-all hover:scale-[1.02] flex items-center gap-3 disabled:opacity-50"
                                 >
                                     {isReflecting ? (
-                                        <Loader2 size={24} className="animate-spin" />
+                                        <Loader2 size={20} className="animate-spin" />
                                     ) : (
-                                        <Sparkles size={24} />
+                                        <Sparkles size={20} />
                                     )}
                                     {isReflecting ? 'Reflecting...' : 'Reflect with AI'}
                                 </button>
