@@ -4,6 +4,7 @@ import { databaseService } from "../db/DatabaseService";
 import { memoryOrchestrator } from "./MemoryOrchestrator";
 import { journalService } from "../journal/JournalService";
 import { profileService } from "../profile/ProfileService";
+import { conversationManager } from "./ConversationManager";
 
 export interface CoachContext {
     sessionsToday: number;
@@ -224,7 +225,9 @@ Provide an intelligent, contextual response. Be helpful, concise, and specific t
                 throw new Error('AI service returned an empty response. Check AI provider configuration and API key.');
             }
 
-            // Note: AIService adds messages to history automatically
+            // Persist conversation for cross-session memory
+            await conversationManager.addMessage("user", userMessage);
+            await conversationManager.addMessage("assistant", response);
 
             // Trigger Background Memory Consolidation
             this.analyzeInteraction(userMessage, response);

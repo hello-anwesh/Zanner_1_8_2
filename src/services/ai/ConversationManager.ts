@@ -5,6 +5,7 @@
  */
 
 import { aiService } from "./AIService";
+import { databaseService } from "../db/DatabaseService";
 
 interface ConversationMessage {
     role: "user" | "assistant" | "system";
@@ -19,6 +20,8 @@ interface ConversationState {
 }
 
 const STORAGE_KEY = "zenner_conversation_state";
+const MESSAGES_TABLE = "conversation_messages";
+const SUMMARIES_TABLE = "conversation_summaries";
 
 class ConversationManager {
     private state: ConversationState = {
@@ -34,9 +37,102 @@ class ConversationManager {
     private readonly MAX_SUMMARY_TOKENS = 200; // Each summary ~200 tokens
 
     private isSummarizing = false;
+    private initialized = false;
+    private initPromise: Promise<void> | null = null;
 
     constructor() {
-        this.loadState();
+        this.loadState(); // Load from localStorage first for immediate access
+        this.init().catch(console.error); // Then init SQLite in background
+    }
+
+    /**
+     * Initialize SQLite tables
+     */
+    async init(): Promise<void> {
+        if (this.initialized) return;
+        if (this.initPromise) return this.initPromise;
+        this.initPromise = this._doInit();
+        await this.initPromise;
+    }
+
+    private async _doInit(): Promise<void> {
+        try {
+            const db = await databaseService.getDb();
+
+            // Create tables
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS ${MESSAGES_TABLE} (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    role TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    timestamp INTEGER NOT NULL
+                )
+            `);
+
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS ${SUMMARIES_TABLE} (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    summary TEXT NOT NULL,
+                    created_at INTEGER NOT NULL
+                )
+            `);
+
+            // Migrate localStorage to SQLite if SQLite is empty
+            const msgCount = await db.select<{ count: number }[]>(
+                `SELECT COUNT(*) as count FROM ${MESSAGES_TABLE}`
+            );
+
+            if ((!msgCount || msgCount[0]?.count === 0) && this.state.messages.length > 0) {
+                // Migrate
+                for (const msg of this.state.messages) {
+                    await db.execute(
+                        `INSERT INTO ${MESSAGES_TABLE} (role, content, timestamp) VALUES (?, ?, ?)`,
+                        [msg.role, msg.content, msg.timestamp]
+                    );
+                }
+                for (const summary of this.state.summaries) {
+                    await db.execute(
+                        `INSERT INTO ${SUMMARIES_TABLE} (summary, created_at) VALUES (?, ?)`,
+                        [summary, Date.now()]
+                    );
+                }
+                console.log("[ConversationManager] Migrated to SQLite");
+            } else if (msgCount && msgCount[0]?.count > 0) {
+                // Load from SQLite
+                await this.loadFromSQLite();
+            }
+
+            this.initialized = true;
+        } catch (error) {
+            console.error("[ConversationManager] SQLite init failed:", error);
+            this.initialized = true; // Continue with localStorage
+        }
+    }
+
+    private async loadFromSQLite(): Promise<void> {
+        const db = await databaseService.getDb();
+        const messages = await db.select<ConversationMessage[]>(
+            `SELECT role, content, timestamp FROM ${MESSAGES_TABLE} ORDER BY timestamp ASC LIMIT 100`
+        );
+        const summaries = await db.select<{ summary: string }[]>(
+            `SELECT summary FROM ${SUMMARIES_TABLE} ORDER BY created_at ASC`
+        );
+        this.state.messages = messages || [];
+        this.state.summaries = (summaries || []).map(s => s.summary);
+        console.log("[ConversationManager] Loaded from SQLite");
+    }
+
+    private async saveToSQLite(role: string, content: string, timestamp: number): Promise<void> {
+        if (!this.initialized) return;
+        try {
+            const db = await databaseService.getDb();
+            await db.execute(
+                `INSERT INTO ${MESSAGES_TABLE} (role, content, timestamp) VALUES (?, ?, ?)`,
+                [role, content, timestamp]
+            );
+        } catch (e) {
+            console.warn("[ConversationManager] SQLite save failed:", e);
+        }
     }
 
     /**
@@ -68,11 +164,15 @@ class ConversationManager {
      * Add a message and check if summarization is needed
      */
     async addMessage(role: "user" | "assistant", content: string): Promise<void> {
+        const timestamp = Date.now();
         this.state.messages.push({
             role,
             content,
-            timestamp: Date.now()
+            timestamp
         });
+
+        // Save to SQLite
+        await this.saveToSQLite(role, content, timestamp);
 
         // Check if we need to summarize
         if (this.state.messages.length >= this.SUMMARY_THRESHOLD && !this.isSummarizing) {
@@ -200,13 +300,25 @@ Provide a concise summary only, no preamble:`;
     /**
      * Clear all conversation data
      */
-    clear(): void {
+    async clear(): Promise<void> {
         this.state = {
             messages: [],
             summaries: [],
             lastSummaryIndex: 0
         };
         localStorage.removeItem(STORAGE_KEY);
+
+        // Clear SQLite
+        if (this.initialized) {
+            try {
+                const db = await databaseService.getDb();
+                await db.execute(`DELETE FROM ${MESSAGES_TABLE}`);
+                await db.execute(`DELETE FROM ${SUMMARIES_TABLE}`);
+                console.log("[ConversationManager] Cleared SQLite data");
+            } catch (e) {
+                console.warn("[ConversationManager] Failed to clear SQLite:", e);
+            }
+        }
     }
 
     /**

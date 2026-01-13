@@ -1,17 +1,21 @@
-import { TrainingProfile, DEFAULT_PROFILE, AIKnowledge, AIExperience, AIRule } from "./types";
+import { TrainingProfile, getDefaultProfile, AIKnowledge, AIExperience, AIRule } from "./types";
 import { databaseService } from "../db/DatabaseService";
 
 const LEGACY_STORAGE_KEY = "chronos_ai_training_profile";
 const PROFILE_TABLE = "training_profile";
 
 class TrainingService {
-    private profile: TrainingProfile = DEFAULT_PROFILE;
+    private profile: TrainingProfile;
     private initialized = false;
     private initPromise: Promise<void> | null = null;
 
     constructor() {
-        // Load synchronously from localStorage first for immediate access
+        // Start with pre-seeded profile (includes all Zeni knowledge)
+        this.profile = getDefaultProfile();
+
+        // Load from localStorage if user has existing data
         this.loadFromLocalStorage();
+
         // Then async migrate/sync with SQLite in background
         this.init().catch(console.error);
     }
@@ -20,11 +24,66 @@ class TrainingService {
         try {
             const stored = localStorage.getItem(LEGACY_STORAGE_KEY);
             if (stored) {
-                this.profile = { ...DEFAULT_PROFILE, ...JSON.parse(stored) };
+                const parsed = JSON.parse(stored);
+                // Merge with default profile, but prefer stored data if it exists
+                // Keep pre-seeded knowledge if user hasn't added their own
+                const defaultProfile = getDefaultProfile();
+
+                this.profile = {
+                    ...defaultProfile,
+                    ...parsed,
+                    // Merge knowledge: keep pre-seeded + user's custom knowledge
+                    knowledgeBase: this.mergeKnowledge(
+                        defaultProfile.knowledgeBase,
+                        parsed.knowledgeBase || []
+                    ),
+                    // Merge rules: keep pre-seeded + user's custom rules
+                    rules: this.mergeRules(
+                        defaultProfile.rules,
+                        parsed.rules || []
+                    ),
+                    // User experiences replace default (they're user-specific)
+                    experiences: parsed.experiences || defaultProfile.experiences
+                };
             }
         } catch (e) {
             console.warn("[TrainingService] Failed to load from localStorage:", e);
         }
+    }
+
+    /**
+     * Merge pre-seeded knowledge with user's custom knowledge
+     * Pre-seeded items have IDs starting with 'zeni_'
+     */
+    private mergeKnowledge(preSeeded: AIKnowledge[], userKnowledge: AIKnowledge[]): AIKnowledge[] {
+        // Keep all pre-seeded knowledge
+        const merged = [...preSeeded];
+
+        // Add user's custom knowledge (items without 'zeni_' prefix)
+        for (const item of userKnowledge) {
+            if (!item.id.startsWith('zeni_')) {
+                merged.push(item);
+            }
+        }
+
+        return merged;
+    }
+
+    /**
+     * Merge pre-seeded rules with user's custom rules
+     */
+    private mergeRules(preSeeded: AIRule[], userRules: AIRule[]): AIRule[] {
+        // Keep all pre-seeded rules
+        const merged = [...preSeeded];
+
+        // Add user's custom rules (items without 'zeni_' prefix)
+        for (const item of userRules) {
+            if (!item.id.startsWith('zeni_')) {
+                merged.push(item);
+            }
+        }
+
+        return merged;
     }
 
     /**
@@ -57,8 +116,24 @@ class TrainingService {
             );
 
             if (existing && existing.length > 0) {
-                // SQLite has data - use it as source of truth
-                const sqliteProfile = { ...DEFAULT_PROFILE, ...JSON.parse(existing[0].profile_json) };
+                // SQLite has data - merge with default profile
+                const defaultProfile = getDefaultProfile();
+                const parsed = JSON.parse(existing[0].profile_json);
+                const sqliteProfile = {
+                    ...defaultProfile,
+                    ...parsed,
+                    // Merge knowledge: pre-seeded + stored
+                    knowledgeBase: this.mergeKnowledge(
+                        defaultProfile.knowledgeBase,
+                        parsed.knowledgeBase || []
+                    ),
+                    // Merge rules: pre-seeded + stored
+                    rules: this.mergeRules(
+                        defaultProfile.rules,
+                        parsed.rules || []
+                    ),
+                    experiences: parsed.experiences || defaultProfile.experiences
+                };
 
                 // Compare with localStorage - use whichever has more data
                 const sqliteKnowledge = sqliteProfile.knowledgeBase?.length || 0;

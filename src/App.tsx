@@ -51,6 +51,9 @@ import { PostSessionJournal } from "./components/PostSessionJournal";
 import { CommandDashboard } from "./components/CommandDashboard";
 import { ProfileView } from "./components/profile/ProfileView";
 import { SettingsHub } from "./components/SettingsHub";
+import { databaseService } from "./services/db/DatabaseService";
+import { migrationService } from "./services/db/MigrationService";
+import { accountabilityService } from "./services/accountability/AccountabilityService";
 
 
 
@@ -207,6 +210,30 @@ function App() {
     metronomeService.loadConfig();
   }, []);
 
+  // Initialize database and run migration on mount
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        // Initialize database (creates tables if not exist)
+        await databaseService.init();
+        console.log('[App] Database initialized');
+
+        // Run migration if not already done
+        if (!migrationService.hasMigrated()) {
+          console.log('[App] Running data migration...');
+          const result = await migrationService.migrate();
+          console.log('[App] Migration result:', result);
+        } else {
+          console.log('[App] Migration already complete');
+        }
+      } catch (error) {
+        console.error('[App] Initialization error:', error);
+      }
+    };
+
+    initializeApp();
+  }, []);
+
   const [isAILoading, setIsAILoading] = useState(false);
 
   // Hooks
@@ -270,6 +297,10 @@ function App() {
       eventBus.emit({ type: "SESSION_START", mode });
     } else {
       eventBus.emit({ type: "SESSION_PAUSE", mode });
+      // Track paused sessions for accountability (only during focus)
+      if (mode === "focus") {
+        accountabilityService.recordSessionPaused();
+      }
     }
   };
 
@@ -315,6 +346,9 @@ function App() {
       // Track session completion and show post-session journal for focus sessions
       if (mode === "focus") {
         setSessions(s => s + 1);
+
+        // Track in accountability system for discipline scoring
+        accountabilityService.recordSessionComplete();
 
         // Show post-session journal modal
         setCompletedSessionData({
