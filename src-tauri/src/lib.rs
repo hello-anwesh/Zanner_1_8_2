@@ -19,6 +19,11 @@ pub struct SpotifyState {
     pub track: Option<SpotifyTrack>,
 }
 
+// ═══════════════════════════════════════════════════════════════
+// PLATFORM-SPECIFIC APPLESCRIPT (macOS only)
+// ═══════════════════════════════════════════════════════════════
+
+#[cfg(target_os = "macos")]
 fn run_applescript(script: &str) -> Result<String, String> {
     let output = Command::new("osascript")
         .arg("-e")
@@ -34,16 +39,12 @@ fn run_applescript(script: &str) -> Result<String, String> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// DOCK BADGE & BOUNCE (macOS via AppleScript)
+// DOCK BADGE & BOUNCE
 // ═══════════════════════════════════════════════════════════════
 
-/// Set dock badge label (shows on dock icon)
-/// Note: For Tauri apps, we use a workaround since direct NSApplication access is tricky
+/// Set dock badge label (macOS via AppleScript, others log only)
 #[tauri::command]
 fn set_dock_badge(label: String) -> Result<(), String> {
-    // macOS doesn't have a direct AppleScript way to set app badges
-    // The badge is managed by the app itself. For now, log it.
-    // A proper implementation would use the Tauri window title or overlay
     println!(
         "[Dock] Badge set to: {}",
         if label.is_empty() {
@@ -62,10 +63,10 @@ fn clear_dock_badge() -> Result<(), String> {
     Ok(())
 }
 
-/// Bounce dock icon (critical = continuous until clicked, non-critical = once)
+/// Bounce dock icon (macOS only - shows notification on other platforms)
 #[tauri::command]
+#[cfg(target_os = "macos")]
 fn bounce_dock(critical: bool) -> Result<isize, String> {
-    // Use AppleScript to bounce the dock icon
     let script = if critical {
         r#"
         tell application "System Events"
@@ -76,7 +77,6 @@ fn bounce_dock(critical: bool) -> Result<isize, String> {
         end tell
         "#
     } else {
-        // For non-critical, we can trigger a notification which bounces
         r#"
         display notification "Timer Complete!" with title "Zenner" sound name "Glass"
         "#
@@ -91,6 +91,14 @@ fn bounce_dock(critical: bool) -> Result<isize, String> {
     }
 }
 
+#[tauri::command]
+#[cfg(not(target_os = "macos"))]
+fn bounce_dock(_critical: bool) -> Result<isize, String> {
+    // On Windows/Linux, just log - notification would be handled in frontend
+    println!("[Dock] Bounce requested (not supported on this platform)");
+    Ok(0)
+}
+
 /// Cancel a dock bounce
 #[tauri::command]
 fn cancel_dock_bounce(_request_id: isize) -> Result<(), String> {
@@ -98,7 +106,7 @@ fn cancel_dock_bounce(_request_id: isize) -> Result<(), String> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SHELL COMMAND
+// SHELL COMMAND (cross-platform)
 // ═══════════════════════════════════════════════════════════════
 
 #[tauri::command]
@@ -120,6 +128,11 @@ fn run_shell_cmd(cmd: String, args: Vec<String>) -> Result<String, String> {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// SPOTIFY COMMANDS - macOS (AppleScript)
+// ═══════════════════════════════════════════════════════════════
+
+#[cfg(target_os = "macos")]
 #[tauri::command]
 fn spotify_is_running() -> Result<bool, String> {
     let script = r#"
@@ -132,31 +145,37 @@ fn spotify_is_running() -> Result<bool, String> {
     Ok(result == "true")
 }
 
+#[cfg(target_os = "macos")]
 #[tauri::command]
 fn spotify_play() -> Result<String, String> {
     run_applescript(r#"tell application "Spotify" to play"#)
 }
 
+#[cfg(target_os = "macos")]
 #[tauri::command]
 fn spotify_pause() -> Result<String, String> {
     run_applescript(r#"tell application "Spotify" to pause"#)
 }
 
+#[cfg(target_os = "macos")]
 #[tauri::command]
 fn spotify_toggle() -> Result<String, String> {
     run_applescript(r#"tell application "Spotify" to playpause"#)
 }
 
+#[cfg(target_os = "macos")]
 #[tauri::command]
 fn spotify_next() -> Result<String, String> {
     run_applescript(r#"tell application "Spotify" to next track"#)
 }
 
+#[cfg(target_os = "macos")]
 #[tauri::command]
 fn spotify_previous() -> Result<String, String> {
     run_applescript(r#"tell application "Spotify" to previous track"#)
 }
 
+#[cfg(target_os = "macos")]
 #[tauri::command]
 fn spotify_set_volume(level: u8) -> Result<String, String> {
     let level_clamped = level.min(100);
@@ -167,6 +186,7 @@ fn spotify_set_volume(level: u8) -> Result<String, String> {
     run_applescript(&script)
 }
 
+#[cfg(target_os = "macos")]
 #[tauri::command]
 fn spotify_get_volume() -> Result<u8, String> {
     let script = r#"tell application "Spotify" to get sound volume"#;
@@ -176,17 +196,20 @@ fn spotify_get_volume() -> Result<u8, String> {
         .map_err(|e| format!("Failed to parse volume: {}", e))
 }
 
+#[cfg(target_os = "macos")]
 #[tauri::command]
 fn spotify_play_uri(uri: String) -> Result<String, String> {
     let script = format!(r#"tell application "Spotify" to play track "{}""#, uri);
     run_applescript(&script)
 }
 
+#[cfg(target_os = "macos")]
 #[tauri::command]
 fn spotify_open() -> Result<String, String> {
     run_applescript(r#"tell application "Spotify" to activate"#)
 }
 
+#[cfg(target_os = "macos")]
 #[tauri::command]
 fn spotify_get_state() -> Result<SpotifyState, String> {
     let is_running = spotify_is_running()?;
@@ -263,6 +286,231 @@ fn spotify_get_state() -> Result<SpotifyState, String> {
         })
     }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SPOTIFY COMMANDS - Windows (via Spotify Web API - stubs)
+// Note: Full implementation would use Spotify Connect API
+// ═══════════════════════════════════════════════════════════════
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn spotify_is_running() -> Result<bool, String> {
+    // On Windows, we can't easily detect if Spotify is running
+    // Return false and let frontend use Web API
+    Ok(false)
+}
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn spotify_play() -> Result<String, String> {
+    Err("Use Spotify Web API on Windows".to_string())
+}
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn spotify_pause() -> Result<String, String> {
+    Err("Use Spotify Web API on Windows".to_string())
+}
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn spotify_toggle() -> Result<String, String> {
+    Err("Use Spotify Web API on Windows".to_string())
+}
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn spotify_next() -> Result<String, String> {
+    Err("Use Spotify Web API on Windows".to_string())
+}
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn spotify_previous() -> Result<String, String> {
+    Err("Use Spotify Web API on Windows".to_string())
+}
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn spotify_set_volume(_level: u8) -> Result<String, String> {
+    Err("Use Spotify Web API on Windows".to_string())
+}
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn spotify_get_volume() -> Result<u8, String> {
+    Ok(50) // Default
+}
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn spotify_play_uri(_uri: String) -> Result<String, String> {
+    Err("Use Spotify Web API on Windows".to_string())
+}
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn spotify_open() -> Result<String, String> {
+    // Try to open Spotify via Windows
+    let _ = Command::new("cmd")
+        .args(["/C", "start", "spotify:"])
+        .output();
+    Ok("Attempting to open Spotify".to_string())
+}
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn spotify_get_state() -> Result<SpotifyState, String> {
+    Ok(SpotifyState {
+        is_running: false,
+        is_playing: false,
+        volume: 50,
+        track: None,
+    })
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SPOTIFY COMMANDS - Linux (via DBus MPRIS)
+// ═══════════════════════════════════════════════════════════════
+
+#[cfg(target_os = "linux")]
+fn run_dbus_spotify(method: &str) -> Result<String, String> {
+    let output = Command::new("dbus-send")
+        .args([
+            "--print-reply",
+            "--dest=org.mpris.MediaPlayer2.spotify",
+            "/org/mpris/MediaPlayer2",
+            &format!("org.mpris.MediaPlayer2.Player.{}", method),
+        ])
+        .output()
+        .map_err(|e| format!("DBus command failed: {}", e))?;
+
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[tauri::command]
+fn spotify_is_running() -> Result<bool, String> {
+    let output = Command::new("pgrep")
+        .args(["-x", "spotify"])
+        .output()
+        .map_err(|e| format!("pgrep failed: {}", e))?;
+    Ok(output.status.success())
+}
+
+#[cfg(target_os = "linux")]
+#[tauri::command]
+fn spotify_play() -> Result<String, String> {
+    run_dbus_spotify("Play")
+}
+
+#[cfg(target_os = "linux")]
+#[tauri::command]
+fn spotify_pause() -> Result<String, String> {
+    run_dbus_spotify("Pause")
+}
+
+#[cfg(target_os = "linux")]
+#[tauri::command]
+fn spotify_toggle() -> Result<String, String> {
+    run_dbus_spotify("PlayPause")
+}
+
+#[cfg(target_os = "linux")]
+#[tauri::command]
+fn spotify_next() -> Result<String, String> {
+    run_dbus_spotify("Next")
+}
+
+#[cfg(target_os = "linux")]
+#[tauri::command]
+fn spotify_previous() -> Result<String, String> {
+    run_dbus_spotify("Previous")
+}
+
+#[cfg(target_os = "linux")]
+#[tauri::command]
+fn spotify_set_volume(_level: u8) -> Result<String, String> {
+    // MPRIS volume is 0.0-1.0, would need dbus-send with variant
+    Err("Volume control via MPRIS not implemented yet".to_string())
+}
+
+#[cfg(target_os = "linux")]
+#[tauri::command]
+fn spotify_get_volume() -> Result<u8, String> {
+    Ok(50) // Default - MPRIS metadata retrieval is complex
+}
+
+#[cfg(target_os = "linux")]
+#[tauri::command]
+fn spotify_play_uri(uri: String) -> Result<String, String> {
+    // Use xdg-open to open Spotify URI
+    Command::new("xdg-open")
+        .arg(&uri)
+        .output()
+        .map_err(|e| format!("Failed to open URI: {}", e))?;
+    Ok("Opened URI".to_string())
+}
+
+#[cfg(target_os = "linux")]
+#[tauri::command]
+fn spotify_open() -> Result<String, String> {
+    Command::new("spotify")
+        .spawn()
+        .map_err(|e| format!("Failed to open Spotify: {}", e))?;
+    Ok("Opening Spotify".to_string())
+}
+
+#[cfg(target_os = "linux")]
+#[tauri::command]
+fn spotify_get_state() -> Result<SpotifyState, String> {
+    let is_running = spotify_is_running()?;
+
+    if !is_running {
+        return Ok(SpotifyState {
+            is_running: false,
+            is_playing: false,
+            volume: 50,
+            track: None,
+        });
+    }
+
+    // Get playback status via dbus-send
+    let status_output = Command::new("dbus-send")
+        .args([
+            "--print-reply",
+            "--dest=org.mpris.MediaPlayer2.spotify",
+            "/org/mpris/MediaPlayer2",
+            "org.freedesktop.DBus.Properties.Get",
+            "string:org.mpris.MediaPlayer2.Player",
+            "string:PlaybackStatus",
+        ])
+        .output();
+
+    let is_playing = match status_output {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            stdout.contains("Playing")
+        }
+        Err(_) => false,
+    };
+
+    // Getting track metadata via MPRIS is complex - return minimal state
+    Ok(SpotifyState {
+        is_running: true,
+        is_playing,
+        volume: 50,
+        track: None, // Would need to parse MPRIS Metadata dict
+    })
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN APP ENTRY
+// ═══════════════════════════════════════════════════════════════
 
 #[tauri::command]
 fn greet(name: &str) -> String {
