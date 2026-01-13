@@ -172,6 +172,24 @@ class DatabaseService {
             CREATE INDEX IF NOT EXISTS idx_rules_user_active ON rules(user_id, is_active);
             CREATE INDEX IF NOT EXISTS idx_stats_user_date ON memory_stats(user_id, date DESC);
 
+            -- Training Profile (for AI training data persistence)
+            CREATE TABLE IF NOT EXISTS training_profile (
+                id TEXT PRIMARY KEY DEFAULT 'default',
+                profile_json TEXT NOT NULL,
+                updated_at INTEGER NOT NULL
+            );
+
+            -- Journal Entries
+            CREATE TABLE IF NOT EXISTS journal_entries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT NOT NULL UNIQUE,
+                content TEXT NOT NULL,
+                mood TEXT,
+                tags TEXT,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
+            );
+
             -- Insert default user
             INSERT OR IGNORE INTO users (id, email, subscription_tier, created_at, last_login, is_active)
             VALUES ('default_user', NULL, 'free', strftime('%s', 'now') * 1000, strftime('%s', 'now') * 1000, 1);
