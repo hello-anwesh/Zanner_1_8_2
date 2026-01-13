@@ -54,6 +54,7 @@ import { SettingsHub } from "./components/SettingsHub";
 import { databaseService } from "./services/db/DatabaseService";
 import { migrationService } from "./services/db/MigrationService";
 import { accountabilityService } from "./services/accountability/AccountabilityService";
+import { useSessionLogger } from "./hooks/useSessionLogger";
 
 
 
@@ -162,7 +163,7 @@ function App() {
 
   const [timeLeft, setTimeLeft] = useState(activePreset.sequence ? activePreset.sequence[0].duration * 60 : durations.focus * 60);
   const [isRunning, setIsRunning] = useState(false);
-  const [sessions, setSessions] = useState(0);
+  const [sessions, setSessions] = useState(0); // Synced from database via useAnalytics
   const prevSecondsRef = useRef(timeLeft);
 
   // Sync presets with manager
@@ -205,6 +206,21 @@ function App() {
     loading: _analyticsLoading
   } = useAnalytics();
 
+  // Sync sessions count from database on mount
+  useEffect(() => {
+    if (historySessions && historySessions.length > 0) {
+      // Count today's completed focus sessions
+      const today = new Date().toISOString().split('T')[0];
+      const todayCompleted = historySessions.filter(
+        (s: any) => s.start_time?.startsWith(today) && s.status === 'COMPLETED' && s.mode === 'focus'
+      ).length;
+      if (todayCompleted > 0) {
+        setSessions(todayCompleted);
+        console.log(`[App] Synced ${todayCompleted} sessions from database`);
+      }
+    }
+  }, [historySessions]);
+
   // Load metronome config on mount
   useEffect(() => {
     metronomeService.loadConfig();
@@ -239,6 +255,7 @@ function App() {
   // Hooks
   useAI();
   useVoice();
+  useSessionLogger(); // Logs sessions to SQLite for analytics
   const spotify = useSpotify();
 
   const currentDuration = durations[mode] * 60;
@@ -345,7 +362,7 @@ function App() {
 
       // Track session completion and show post-session journal for focus sessions
       if (mode === "focus") {
-        setSessions(s => s + 1);
+        setSessions((s: number) => s + 1); // UI counter, DB is logged by useSessionLogger
 
         // Track in accountability system for discipline scoring
         accountabilityService.recordSessionComplete();
