@@ -5,7 +5,7 @@
 import { motion } from 'framer-motion';
 import {
     Brain, Settings2, Palette, Music, Youtube, Clock, Mic,
-    ChevronRight, Sparkles
+    ChevronRight, Sparkles, HardDrive
 } from 'lucide-react';
 
 interface SettingsHubProps {
@@ -70,6 +70,14 @@ const SETTINGS_CARDS = [
         description: 'Speech recognition and text-to-speech settings',
         gradient: 'from-indigo-500 to-purple-600',
         color: '#6366F1'
+    },
+    {
+        id: 'settings-backup',
+        icon: HardDrive,
+        label: 'Backup & Data',
+        description: 'Export, import, and manage your data safely',
+        gradient: 'from-teal-500 to-cyan-600',
+        color: '#14B8A6'
     }
 ];
 
@@ -113,8 +121,8 @@ export function SettingsHub({ accent, onNavigate, currentView }: SettingsHubProp
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => onNavigate(card.id)}
                                 className={`relative p-6 rounded-2xl text-left transition-all duration-300 group overflow-hidden ${isActive
-                                        ? 'bg-white/10 border-2'
-                                        : 'bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.06] hover:border-white/[0.15]'
+                                    ? 'bg-white/10 border-2'
+                                    : 'bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.06] hover:border-white/[0.15]'
                                     }`}
                                 style={isActive ? { borderColor: card.color } : {}}
                             >

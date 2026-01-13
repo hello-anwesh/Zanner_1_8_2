@@ -55,6 +55,7 @@ import { databaseService } from "./services/db/DatabaseService";
 import { migrationService } from "./services/db/MigrationService";
 import { accountabilityService } from "./services/accountability/AccountabilityService";
 import { useSessionLogger } from "./hooks/useSessionLogger";
+import { BackupSettingsView } from "./components/settings/BackupSettingsView";
 
 
 
@@ -63,7 +64,7 @@ import { useSessionLogger } from "./hooks/useSessionLogger";
 // ============================================================================
 
 type View = "home" | "dashboard" | "stats" | "integrations" | "frequencies" | "philosophy" | "journal" | "profile" | "settings" |
-  "settings-ai" | "settings-theme" | "settings-spotify" | "settings-youtube" | "settings-timer" | "settings-voice" | "settings-brain" |
+  "settings-ai" | "settings-theme" | "settings-spotify" | "settings-youtube" | "settings-timer" | "settings-voice" | "settings-brain" | "settings-backup" |
   "ai-identity" | "ai-cognition" | "ai-rhythms" | "ai-training" |
   "voice-speech" | "voice-tts";
 type TimerMode = "focus" | "shortBreak" | "longBreak";
@@ -1170,6 +1171,9 @@ function App() {
 
                   {/* SETTINGS - VOICE */}
                   {view === "settings-voice" && <VoiceSettingsView accent={accent} onBack={() => setView("settings")} />}
+
+                  {/* SETTINGS - BACKUP */}
+                  {view === "settings-backup" && <BackupSettingsView accent={accent} />}
 
                   {/* FREQUENCIES */}
                   {view === "frequencies" && <FrequencyGenerator isOpen={true} accent={accent} />}
