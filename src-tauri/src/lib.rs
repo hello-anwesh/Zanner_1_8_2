@@ -33,6 +33,98 @@ fn run_applescript(script: &str) -> Result<String, String> {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// DOCK BADGE & BOUNCE (macOS)
+// ═══════════════════════════════════════════════════════════════
+
+#[cfg(target_os = "macos")]
+mod dock {
+    use objc2::rc::Retained;
+    use objc2_app_kit::{NSApplication, NSRequestUserAttentionType};
+    use objc2_foundation::NSString;
+
+    /// Set dock badge label (e.g., "25" for minutes remaining)
+    pub fn set_badge(label: &str) {
+        unsafe {
+            let app = NSApplication::sharedApplication();
+            let dock_tile = app.dockTile();
+            if label.is_empty() {
+                dock_tile.setBadgeLabel(None);
+            } else {
+                let ns_label = NSString::from_str(label);
+                dock_tile.setBadgeLabel(Some(&ns_label));
+            }
+        }
+    }
+
+    /// Clear dock badge
+    pub fn clear_badge() {
+        set_badge("");
+    }
+
+    /// Bounce dock icon to get attention
+    pub fn bounce(critical: bool) -> isize {
+        unsafe {
+            let app = NSApplication::sharedApplication();
+            let attention_type = if critical {
+                NSRequestUserAttentionType::CriticalRequest
+            } else {
+                NSRequestUserAttentionType::InformationalRequest
+            };
+            app.requestUserAttention(attention_type)
+        }
+    }
+
+    /// Cancel a previous bounce request
+    pub fn cancel_bounce(request_id: isize) {
+        unsafe {
+            let app = NSApplication::sharedApplication();
+            app.cancelUserAttentionRequest(request_id);
+        }
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+mod dock {
+    pub fn set_badge(_label: &str) {}
+    pub fn clear_badge() {}
+    pub fn bounce(_critical: bool) -> isize {
+        0
+    }
+    pub fn cancel_bounce(_request_id: isize) {}
+}
+
+/// Set dock badge label (shows on dock icon)
+#[tauri::command]
+fn set_dock_badge(label: String) -> Result<(), String> {
+    dock::set_badge(&label);
+    Ok(())
+}
+
+/// Clear dock badge
+#[tauri::command]
+fn clear_dock_badge() -> Result<(), String> {
+    dock::clear_badge();
+    Ok(())
+}
+
+/// Bounce dock icon (critical = continuous until clicked, non-critical = once)
+#[tauri::command]
+fn bounce_dock(critical: bool) -> Result<isize, String> {
+    Ok(dock::bounce(critical))
+}
+
+/// Cancel a dock bounce
+#[tauri::command]
+fn cancel_dock_bounce(request_id: isize) -> Result<(), String> {
+    dock::cancel_bounce(request_id);
+    Ok(())
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SHELL COMMAND
+// ═══════════════════════════════════════════════════════════════
+
 #[tauri::command]
 fn run_shell_cmd(cmd: String, args: Vec<String>) -> Result<String, String> {
     let output = Command::new(&cmd)
@@ -210,6 +302,12 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             run_shell_cmd,
+            // Dock commands
+            set_dock_badge,
+            clear_dock_badge,
+            bounce_dock,
+            cancel_dock_bounce,
+            // Spotify commands
             spotify_is_running,
             spotify_play,
             spotify_pause,

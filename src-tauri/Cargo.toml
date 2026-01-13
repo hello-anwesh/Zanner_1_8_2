@@ -25,3 +25,8 @@ serde_json = "1"
 tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 tauri-plugin-localhost = "2.3.1"
 
+# macOS dock badge/bounce support
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.5"
+objc2-foundation = { version = "0.2", features = ["NSString"] }
+objc2-app-kit = { version = "0.2", features = ["NSApplication", "NSDockTile", "NSRunningApplication"] }
