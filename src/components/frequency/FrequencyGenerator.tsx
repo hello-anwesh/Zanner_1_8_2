@@ -382,11 +382,30 @@ export function FrequencyGenerator({ isOpen, accent }: Omit<FrequencyGeneratorPr
                             </div>
                         </div>
 
-                        {/* Active Frequencies */}
-                        <div className="overflow-y-auto p-3 max-h-64">
-                            <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Active ({activeFreqs.length})</h3>
+                        {/* Active Frequencies - Enhanced Section */}
+                        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                    <div
+                                        className="w-6 h-6 rounded-lg flex items-center justify-center"
+                                        style={{ background: `${accent}20` }}
+                                    >
+                                        <Volume2 size={12} style={{ color: accent }} />
+                                    </div>
+                                    Active Mix
+                                    {activeFreqs.length > 0 && (
+                                        <span
+                                            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                            style={{ background: `${accent}20`, color: accent }}
+                                        >
+                                            {activeFreqs.length}
+                                        </span>
+                                    )}
+                                </h3>
+                            </div>
+
                             {activeFreqs.length > 0 ? (
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     {activeFreqs.map(af => {
                                         const freq = FREQUENCIES.find(f => f.hz === af.hz);
                                         if (!freq) return null;
@@ -402,9 +421,15 @@ export function FrequencyGenerator({ isOpen, accent }: Omit<FrequencyGeneratorPr
                                     })}
                                 </div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center py-8 opacity-40">
-                                    <Sparkles size={20} className="text-white/20 mb-2" />
-                                    <p className="text-xs text-white/40 text-center">Select frequencies to begin</p>
+                                <div className="flex flex-col items-center justify-center py-12 opacity-50">
+                                    <div
+                                        className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+                                        style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)' }}
+                                    >
+                                        <Sparkles size={24} className="text-white/30" />
+                                    </div>
+                                    <p className="text-sm text-white/40 text-center mb-1">No frequencies selected</p>
+                                    <p className="text-xs text-white/25 text-center">Click on frequency cards to add them</p>
                                 </div>
                             )}
                         </div>
@@ -698,7 +723,7 @@ function FrequencyCard({ freq, isActive, onClick }: { freq: FrequencyInfo; isAct
     );
 }
 
-// Active Frequency Item with Volume Control
+// Active Frequency Item with Volume Control - Enhanced UI
 function ActiveFrequencyItem({ freq, volume, onVolumeChange, onRemove }: {
     freq: FrequencyInfo;
     volume: number;
@@ -707,35 +732,76 @@ function ActiveFrequencyItem({ freq, volume, onVolumeChange, onRemove }: {
 }) {
     return (
         <div
-            className="p-2 rounded-lg group"
-            style={{ background: `${freq.color}08`, border: `1px solid ${freq.color}20` }}
+            className="p-3 rounded-xl group transition-all hover:scale-[1.02]"
+            style={{
+                background: `linear-gradient(135deg, ${freq.color}15 0%, ${freq.color}05 100%)`,
+                border: `1px solid ${freq.color}30`
+            }}
         >
-            <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1.5">
-                    <span className="text-sm">{freq.icon}</span>
-                    <span className="text-[11px] font-bold" style={{ color: freq.color }}>
-                        {freq.hz < 10 ? freq.hz.toFixed(1) : freq.hz} Hz
-                    </span>
+            {/* Header Row */}
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                    <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style={{ background: `${freq.color}25` }}
+                    >
+                        <span className="text-base">{freq.icon}</span>
+                    </div>
+                    <div>
+                        <span className="text-sm font-bold" style={{ color: freq.color }}>
+                            {freq.hz < 10 ? freq.hz.toFixed(1) : freq.hz} Hz
+                        </span>
+                        <p className="text-[10px] text-white/40 truncate max-w-[100px]">{freq.name}</p>
+                    </div>
                 </div>
                 <button
                     onClick={onRemove}
-                    className="w-5 h-5 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-500/20 transition-all"
+                    className="w-6 h-6 rounded-lg flex items-center justify-center opacity-50 hover:opacity-100 hover:bg-red-500/30 transition-all"
                 >
-                    <X size={10} className="text-white/40" />
+                    <X size={12} className="text-white/60 hover:text-red-400" />
                 </button>
             </div>
-            <div className="flex items-center gap-2">
-                <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={volume}
-                    onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
-                    className="flex-1 h-0.5 rounded-full bg-white/10"
-                    style={{ accentColor: freq.color }}
-                />
-                <span className="text-[9px] text-white/40 w-8 text-right">{Math.round(volume * 100)}%</span>
+
+            {/* Volume Control - Prominent */}
+            <div className="flex items-center gap-3">
+                <Volume2 size={14} style={{ color: freq.color, opacity: 0.7 }} />
+                <div className="flex-1 relative h-6 flex items-center">
+                    <div
+                        className="absolute inset-0 rounded-full"
+                        style={{ background: 'rgba(255,255,255,0.05)' }}
+                    />
+                    <div
+                        className="absolute left-0 top-0 bottom-0 rounded-full transition-all"
+                        style={{
+                            width: `${volume * 100}%`,
+                            background: `linear-gradient(90deg, ${freq.color}40, ${freq.color}80)`
+                        }}
+                    />
+                    <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={volume}
+                        onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+                        className="absolute inset-0 w-full opacity-0 cursor-pointer"
+                    />
+                    {/* Thumb indicator */}
+                    <div
+                        className="absolute w-4 h-4 rounded-full shadow-lg pointer-events-none transition-all"
+                        style={{
+                            left: `calc(${volume * 100}% - 8px)`,
+                            background: freq.color,
+                            boxShadow: `0 2px 8px ${freq.color}60`
+                        }}
+                    />
+                </div>
+                <span
+                    className="text-xs font-bold w-10 text-right tabular-nums"
+                    style={{ color: freq.color }}
+                >
+                    {Math.round(volume * 100)}%
+                </span>
             </div>
         </div>
     );

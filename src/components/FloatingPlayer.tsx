@@ -42,10 +42,24 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
     // Spotify state
     const [spotifyState, setSpotifyState] = useState<SpotifyState | null>(null);
 
-    // Drag position state - persisted
+    // Drag position state - persisted with bounds checking
     const [position, setPosition] = useState(() => {
         const saved = localStorage.getItem('floatingPlayerPosition');
-        return saved ? JSON.parse(saved) : { x: 0, y: 0 };
+        if (saved) {
+            try {
+                const pos = JSON.parse(saved);
+                // Ensure position is within reasonable bounds (not off-screen)
+                const maxX = window.innerWidth - 100;
+                const maxY = window.innerHeight - 100;
+                return {
+                    x: Math.max(-maxX, Math.min(pos.x || 0, maxX)),
+                    y: Math.max(-maxY, Math.min(pos.y || 0, maxY))
+                };
+            } catch {
+                return { x: 0, y: 0 };
+            }
+        }
+        return { x: 0, y: 0 };
     });
     const dragControls = useDragControls();
     const constraintsRef = useRef<HTMLDivElement>(null);
@@ -70,6 +84,31 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
 
     useEffect(() => {
         setFavorites(loadSoundLibrary().favorites);
+    }, []);
+
+    // Keep position in bounds when window resizes
+    useEffect(() => {
+        const handleResize = () => {
+            setPosition(prev => {
+                const maxX = window.innerWidth - 100;
+                const maxY = window.innerHeight - 100;
+                const newX = Math.max(-maxX + 100, Math.min(prev.x, maxX - 100));
+                const newY = Math.max(-maxY + 100, Math.min(prev.y, maxY - 100));
+                // If position needs clamping, update localStorage too
+                if (newX !== prev.x || newY !== prev.y) {
+                    const newPos = { x: newX, y: newY };
+                    localStorage.setItem('floatingPlayerPosition', JSON.stringify(newPos));
+                    return newPos;
+                }
+                return prev;
+            });
+        };
+
+        window.addEventListener('resize', handleResize);
+        // Also run once on mount to fix any off-screen positions
+        handleResize();
+
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     // Subscribe to Spotify state
@@ -387,14 +426,21 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
                 dragMomentum={false}
                 dragElastic={0.1}
                 dragConstraints={constraintsRef}
-                initial={position}
+                style={{ x: position.x, y: position.y }}
                 onDragStart={() => {
                     isDraggingRef.current = true;
                 }}
                 onDragEnd={(_, info) => {
                     const newPos = { x: position.x + info.offset.x, y: position.y + info.offset.y };
-                    setPosition(newPos);
-                    localStorage.setItem('floatingPlayerPosition', JSON.stringify(newPos));
+                    // Clamp to viewport
+                    const maxX = window.innerWidth - 100;
+                    const maxY = window.innerHeight - 100;
+                    const clampedPos = {
+                        x: Math.max(-maxX, Math.min(newPos.x, maxX)),
+                        y: Math.max(-maxY, Math.min(newPos.y, maxY))
+                    };
+                    setPosition(clampedPos);
+                    localStorage.setItem('floatingPlayerPosition', JSON.stringify(clampedPos));
                     // Reset drag flag after a short delay to allow click to check it
                     setTimeout(() => { isDraggingRef.current = false; }, 100);
                 }}

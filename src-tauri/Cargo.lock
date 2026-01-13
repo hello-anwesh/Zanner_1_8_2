@@ -4094,19 +4094,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tauri-app"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-localhost",
- "tauri-plugin-opener",
- "tauri-plugin-sql",
-]
-
-[[package]]
 name = "tauri-build"
 version = "2.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5793,6 +5780,19 @@ dependencies = [
  "static_assertions",
  "winnow 0.7.14",
  "zvariant",
+]
+
+[[package]]
+name = "zenner"
+version = "1.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-localhost",
+ "tauri-plugin-opener",
+ "tauri-plugin-sql",
 ]
 
 [[package]]
