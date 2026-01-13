@@ -54,13 +54,48 @@ export interface TrainingProfile {
     rules: AIRule[];              // Procedural Memory (Behavior)
 }
 
+import { getDefaultKnowledgeBase, getDefaultRules, getDefaultExperiences } from './ZeniKnowledge';
+
+// Lazy-cached profile with pre-seeded knowledge
+let _cachedDefaultProfile: TrainingProfile | null = null;
+
+export function getDefaultProfile(): TrainingProfile {
+    if (_cachedDefaultProfile) return _cachedDefaultProfile;
+
+    _cachedDefaultProfile = {
+        identity: {
+            name: "User",
+            role: "Focused Creator",
+            coreValues: ["Growth", "Focus", "Flow"],
+            longTermVision: "",
+            motivationTriggers: ["Progress", "Mastery", "Impact"]
+        },
+        rhythms: {
+            chronotype: "bear",
+            peakEnergyHours: [9, 10, 11, 14, 15, 16],
+            preferredSessionDuration: 25,
+            breakStyle: "active"
+        },
+        goals: [
+            { id: "g1", label: "Focus Hours", target: 40, unit: "h/week", current: 0 },
+            { id: "g2", label: "Deep Work Streak", target: 7, unit: "days", current: 0 }
+        ],
+        knowledgeBase: getDefaultKnowledgeBase(),
+        experiences: getDefaultExperiences(),
+        rules: getDefaultRules()
+    };
+
+    return _cachedDefaultProfile;
+}
+
+// Legacy export for backwards compatibility (empty arrays - use getDefaultProfile() for full data)
 export const DEFAULT_PROFILE: TrainingProfile = {
     identity: {
         name: "User",
-        role: "Visionary",
+        role: "Focused Creator",
         coreValues: ["Growth", "Focus", "Flow"],
         longTermVision: "",
-        motivationTriggers: ["Progress", "Mastery"]
+        motivationTriggers: ["Progress", "Mastery", "Impact"]
     },
     rhythms: {
         chronotype: "bear",
@@ -69,10 +104,10 @@ export const DEFAULT_PROFILE: TrainingProfile = {
         breakStyle: "active"
     },
     goals: [
-        { id: "g1", label: "Focus Hours", target: 40, unit: "h/week", current: 12 },
-        { id: "g2", label: "Deep Work Streak", target: 7, unit: "days", current: 3 }
+        { id: "g1", label: "Focus Hours", target: 40, unit: "h/week", current: 0 },
+        { id: "g2", label: "Deep Work Streak", target: 7, unit: "days", current: 0 }
     ],
-    knowledgeBase: [],
+    knowledgeBase: [],  // Use getDefaultProfile() for pre-seeded knowledge
     experiences: [],
     rules: []
 };
