@@ -1419,8 +1419,6 @@ function App() {
             </main >
 
           </ThreeDTiltContainer >
-
-          <FloatingPlayer colors={colors} />
           <SettingsModal
             isOpen={showSettings}
             onClose={() => setShowSettings(false)}
@@ -1512,6 +1510,11 @@ function App() {
           />
         )
       }
+
+      {/* FloatingPlayer - Always mounted to preserve audio state */}
+      <div style={{ display: isCompactMode ? 'none' : 'block' }}>
+        <FloatingPlayer colors={colors} />
+      </div>
     </div >
   );
 }
