@@ -274,7 +274,6 @@ export function AIBrainView({ accent, onBack }: AIBrainViewProps) {
                         <ExperienceCard
                             key={item.id}
                             experience={item}
-                            accent={accent}
                         />
                     ))}
 
@@ -328,7 +327,7 @@ function MemoryCard({ content, meta, onDelete, accent, icon: Icon = Brain }: any
     );
 }
 
-function ExperienceCard({ experience, accent }: { experience: AIExperience, accent: string }) {
+function ExperienceCard({ experience }: { experience: AIExperience }) {
     return (
         <motion.div
             layout

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
-import { X, Terminal, ChevronRight, Trash2, Sparkles } from "lucide-react";
+import { Terminal, ChevronRight, Trash2, Sparkles } from "lucide-react";
 import { commander, CommandHistoryItem, AppCommand } from "../../services/commander/CommanderService";
 
 interface CommandCenterProps {
