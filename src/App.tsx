@@ -48,6 +48,9 @@ import { PhilosophyView } from "./components/PhilosophyView";
 import { JournalView } from "./components/JournalView";
 import { AISettingsView } from "./components/AISettingsView";
 import { AIBrainView } from "./components/AIBrainView";
+
+// Service Container - Initialize at app startup
+import { registerServices } from "./lib/ServiceRegistry";
 import { PostSessionJournal } from "./components/PostSessionJournal";
 import { CommandDashboard } from "./components/CommandDashboard";
 import { ProfileView } from "./components/profile/ProfileView";
@@ -85,6 +88,13 @@ function formatTime(seconds: number): string {
 // ============================================================================
 
 function App() {
+  // Service Container - Register all services once on mount
+  useEffect(() => {
+    registerServices().catch((error) => {
+      console.error('[App] Failed to register services:', error);
+    });
+  }, []); // Run once on mount
+
   // Theme Context
   const { currentTheme, themeName, setTheme, themes } = useTheme();
   const accent = currentTheme.colors.accent;
