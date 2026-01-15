@@ -446,7 +446,7 @@ export function CommandDashboard({
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 }}
                     whileHover={{ scale: 1.02 }}
-                    onClick={() => onNavigate('settings-ai')}
+                    onClick={() => onNavigate('zeni')}
                     className="col-span-3 row-span-1 rounded-2xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 p-4 flex items-center gap-4 cursor-pointer"
                 >
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${aiReady ? 'bg-cyan-500/20' : 'bg-white/5'}`}>
@@ -566,15 +566,7 @@ export function CommandDashboard({
                         <span className="text-xs font-medium uppercase tracking-wider">Quick</span>
                     </div>
 
-                    <motion.button
-                        whileHover={{ scale: 1.02, y: -2 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => onNavigate('philosophy')}
-                        className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 transition-all"
-                    >
-                        <Sparkles className="text-purple-400" size={18} />
-                        <span className="text-sm font-medium text-white">Daily Wisdom</span>
-                    </motion.button>
+
 
                     <motion.button
                         whileHover={{ scale: 1.02, y: -2 }}
