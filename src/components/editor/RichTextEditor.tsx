@@ -7,7 +7,6 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Highlight from '@tiptap/extension-highlight';
-import { useCallback } from 'react';
 import {
     Bold, Italic, List, ListOrdered,
     Quote, Undo, Redo, Heading2
@@ -103,8 +102,8 @@ export function RichTextEditor({
                 {/* Save status */}
                 {autoSaveStatus !== 'idle' && (
                     <span className={`text-xs px-3 py-1.5 rounded-full ${autoSaveStatus === 'saving' ? 'bg-yellow-500/10 text-yellow-400' :
-                            autoSaveStatus === 'saved' ? 'bg-green-500/10 text-green-400' :
-                                'bg-orange-500/10 text-orange-400'
+                        autoSaveStatus === 'saved' ? 'bg-green-500/10 text-green-400' :
+                            'bg-orange-500/10 text-orange-400'
                         }`}>
                         {autoSaveStatus === 'saving' ? 'Saving...' : autoSaveStatus === 'saved' ? '✓ Saved' : '○ Unsaved'}
                     </span>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Brain, Image, MonitorSmartphone, X,
+    Brain, Image, MonitorSmartphone,
     Zap, Cpu, Sparkles, Wand2,
     Tablet, Play, Link2, Loader2, CheckCircle2, AlertCircle, RefreshCw
 } from "lucide-react";
@@ -18,10 +18,6 @@ interface IntegrationProvider {
     requiresApiKey: boolean;
     isLocal?: boolean;
     status: "connected" | "disconnected" | "error";
-}
-
-interface IntegrationsHubProps {
-    accent: string;
 }
 
 const TEXT_AI_PROVIDERS: IntegrationProvider[] = [
@@ -148,7 +144,7 @@ const AUTOMATION_PROVIDERS: IntegrationProvider[] = [
     }
 ];
 
-export function IntegrationsHub({ accent }: IntegrationsHubProps) {
+export function IntegrationsHub() {
     const [activeTab, setActiveTab] = useState<"text" | "image" | "automation">("text");
     const [selectedProvider, setSelectedProvider] = useState<IntegrationProvider | null>(null);
     const [apiKey, setApiKey] = useState("");
@@ -338,7 +334,6 @@ export function IntegrationsHub({ accent }: IntegrationsHubProps) {
                 {/* Provider Cards - MASSIVE SPACING */}
                 <div className="space-y-6">
                     {currentProviders.map(provider => {
-                        const Icon = provider.icon;
                         const isConnected = provider.status === "connected";
 
                         return (
