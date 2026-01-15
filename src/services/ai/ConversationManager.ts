@@ -210,7 +210,8 @@ ${messageText}
 Provide a concise summary only, no preamble:`;
 
             const summary = await aiService.chat(prompt, {
-                systemPrompt: "You are a conversation summarizer. Output only the summary, nothing else."
+                systemPrompt: "You are a conversation summarizer. Output only the summary, nothing else.",
+                skipHistory: true
             });
 
             if (summary && summary.trim()) {

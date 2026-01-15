@@ -56,6 +56,7 @@ import { migrationService } from "./services/db/MigrationService";
 import { accountabilityService } from "./services/accountability/AccountabilityService";
 import { useSessionLogger } from "./hooks/useSessionLogger";
 import { BackupSettingsView } from "./components/settings/BackupSettingsView";
+import { getLocalDateString } from "./utils/dateUtils";
 
 
 
@@ -166,6 +167,7 @@ function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [sessions, setSessions] = useState(0); // Synced from database via useAnalytics
   const prevSecondsRef = useRef(timeLeft);
+  const endTimeRef = useRef<number | null>(null); // Absolute timestamp when timer should end
 
   // Sync presets with manager
   useEffect(() => {
@@ -211,12 +213,16 @@ function App() {
   useEffect(() => {
     if (historySessions && historySessions.length > 0) {
       // Count today's completed focus sessions
-      const today = new Date().toISOString().split('T')[0];
-      const todayCompleted = historySessions.filter(
-        (s: any) => s.start_time?.startsWith(today) && s.status === 'COMPLETED' && s.mode === 'focus'
-      ).length;
+      // Use local date for "today" and convert session UTC timestamps to local date
+      const todayLocal = getLocalDateString();
+      const todayCompleted = historySessions.filter((s: any) => {
+        if (s.status !== 'COMPLETED' || s.mode !== 'focus' || !s.start_time) return false;
+        // Convert UTC timestamp to local date string
+        const sessionLocalDate = getLocalDateString(new Date(s.start_time));
+        return sessionLocalDate === todayLocal;
+      }).length;
+      setSessions(todayCompleted);
       if (todayCompleted > 0) {
-        setSessions(todayCompleted);
         console.log(`[App] Synced ${todayCompleted} sessions from database`);
       }
     }
@@ -312,8 +318,12 @@ function App() {
     const wasRunning = isRunning;
     setIsRunning(!isRunning);
     if (!wasRunning) {
+      // Starting timer - set the absolute end time
+      endTimeRef.current = Date.now() + (timeLeft * 1000);
       eventBus.emit({ type: "SESSION_START", mode });
     } else {
+      // Pausing timer - clear the end time
+      endTimeRef.current = null;
       eventBus.emit({ type: "SESSION_PAUSE", mode });
       // Track paused sessions for accountability (only during focus)
       if (mode === "focus") {
@@ -323,19 +333,42 @@ function App() {
   };
 
   useEffect(() => {
-    if (!isRunning || timeLeft <= 0) return;
+    if (!isRunning) return;
+
+    // If no endTime set (shouldn't happen but guard against it)
+    if (!endTimeRef.current) {
+      endTimeRef.current = Date.now() + (timeLeft * 1000);
+    }
+
     const interval = setInterval(() => {
-      setTimeLeft(t => {
-        const newTime = t - 1;
-        if (newTime === 60 && prevSecondsRef.current > 60) {
+      // Guard: if endTimeRef was cleared, stop
+      if (!endTimeRef.current) {
+        clearInterval(interval);
+        return;
+      }
+
+      const now = Date.now();
+      const remaining = Math.ceil((endTimeRef.current - now) / 1000);
+
+      if (remaining <= 0) {
+        // Timer complete - set to exactly 0 and stop interval
+        setTimeLeft(0);
+        endTimeRef.current = null;
+        clearInterval(interval); // Stop immediately, don't wait for cleanup
+      } else {
+        setTimeLeft(remaining);
+
+        // Emit break warning at 1 minute
+        if (remaining === 60 && prevSecondsRef.current > 60) {
           eventBus.emit({ type: "BREAK_WARNING", minutesLeft: 1 });
         }
-        prevSecondsRef.current = newTime;
-        return newTime;
-      });
-    }, 1000);
+        prevSecondsRef.current = remaining;
+      }
+    }, 250);
+
     return () => clearInterval(interval);
-  }, [isRunning, timeLeft]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRunning]);
 
   // Control metronome based on timer state
   useEffect(() => {

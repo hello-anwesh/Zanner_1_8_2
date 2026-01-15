@@ -178,7 +178,10 @@ Keep messages under 50 words.`,
 - Time: ${context.currentTime}
 Keep it under 30 words, be genuine and encouraging.`;
 
-            const response = await aiService.chat(prompt, { systemPrompt: this.getSystemPrompt("motivation") });
+            const response = await aiService.chat(prompt, {
+                systemPrompt: this.getSystemPrompt("motivation"),
+                skipHistory: true
+            });
             return response || MOTIVATIONAL_MESSAGES[0];
         } catch {
             return MOTIVATIONAL_MESSAGES[Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length)];
@@ -295,7 +298,10 @@ Keep it under 30 words, be genuine and encouraging.`;
         try {
             const response = await aiService.chat(
                 `${contextString}\n\nUser: ${message}`,
-                { systemPrompt: this.getSystemPrompt("coach") }
+                {
+                    systemPrompt: this.getSystemPrompt("coach"),
+                    skipHistory: true
+                }
             );
             return response || "I'm here to help! What would you like to know about productivity?";
         } catch {

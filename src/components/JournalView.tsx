@@ -1,11 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ChevronLeft, ChevronRight, Flame, Calendar, Tag, Search, Lightbulb, Heart, Sparkles, Loader2, BarChart3 } from 'lucide-react';
+import { Save, ChevronLeft, ChevronRight, Flame, Calendar, Tag, Search, Lightbulb, Heart, Sparkles, Loader2, BarChart3, Edit3, Eye } from 'lucide-react';
 import { journalService, JournalEntry } from '../services/journal/JournalService';
 import { journalPromptService, JournalPrompt } from '../services/journal/JournalPromptService';
 import { journalAIService, JournalReflection } from '../services/journal/JournalAIService';
 import { JournalAnalytics } from './JournalAnalytics';
 import { RichTextEditor } from './editor/RichTextEditor';
+import { JournalContentRenderer } from './journal/JournalContentRenderer';
+import { SessionNotesTimeline } from './journal/SessionNotesTimeline';
+import { getLocalDateString } from '../utils/dateUtils';
 
 const MOODS = [
     { id: 'amazing', emoji: '🔥', label: 'Amazing' },
@@ -121,7 +124,7 @@ const JOURNAL_TEMPLATES = [
 ];
 
 export function JournalView() {
-    const [currentDate, setCurrentDate] = useState(new Date().toISOString().split('T')[0]);
+    const [currentDate, setCurrentDate] = useState(getLocalDateString());
     const [content, setContent] = useState('');
     const [mood, setMood] = useState<string>();
     const [tags, setTags] = useState<string[]>([]);
@@ -132,14 +135,13 @@ export function JournalView() {
     const [searchQuery, setSearchQuery] = useState('');
     const [streak, setStreak] = useState(0);
     const [viewMode, setViewMode] = useState<'today' | 'all' | 'analytics'>('today');
-    const [cameFromAllEntries, setCameFromAllEntries] = useState(false);
 
     // Phase 3B: Gratitude Mode
     const [gratitudeMode, setGratitudeMode] = useState(false);
     const [gratitudeItems, setGratitudeItems] = useState<[string, string, string]>(['', '', '']);
 
     // Phase 1: Auto-save states
-    const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | null>(null);
+    const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | 'idle'>('idle');
     const [wordCount, setWordCount] = useState(0);
     const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastSavedContentRef = useRef('');
@@ -149,9 +151,20 @@ export function JournalView() {
     const [isReflecting, setIsReflecting] = useState(false);
     const [reflection, setReflection] = useState<JournalReflection | null>(null);
 
-    // Phase 3A: Templates
-    const [showTemplates, setShowTemplates] = useState(false);
+    // Phase 3A: Templates (showTemplates removed - unused)
     const [selectedTemplate, setSelectedTemplate] = useState<string>('freewrite');
+
+    // Edit/View mode toggle
+    const [isEditMode, setIsEditMode] = useState(true);
+
+    // Separate user content from AI reflections for hybrid display
+    const { userContent, aiReflections } = useMemo(() => {
+        const parts = content.split(/---\s*##?\s*🪞?\s*AI Reflection/i);
+        return {
+            userContent: parts[0]?.trim() || '',
+            aiReflections: parts.slice(1).map(p => '## 🪞 AI Reflection' + p).join('\n\n---\n\n')
+        };
+    }, [content]);
 
     // Calculate word count when content changes
     useEffect(() => {
@@ -178,18 +191,7 @@ export function JournalView() {
 
         // Set new timeout for auto-save
         autoSaveTimeoutRef.current = setTimeout(async () => {
-            // PROTECTION: Don't overwrite existing content with less content
-            const existingEntry = await journalService.getEntry(currentDate);
-            const existingLength = existingEntry?.content?.length || 0;
-            const newLength = content.trim().length;
-
-            // Only save if:
-            // 1. New content has meaningful text (more than just HTML tags)
-            // 2. AND either no existing content, or new content is longer/equal
-            const meaningfulContent = content.replace(/<[^>]*>/g, '').trim(); // Strip HTML tags
-            const shouldSave = meaningfulContent.length > 10 || newLength >= existingLength;
-
-            if (shouldSave && content !== lastSavedContentRef.current) {
+            if (content.trim() && content !== lastSavedContentRef.current) {
                 setAutoSaveStatus('saving');
                 try {
                     await journalService.createOrUpdateEntry(currentDate, content, mood, tags);
@@ -202,8 +204,6 @@ export function JournalView() {
                     console.error('Auto-save failed:', error);
                     setAutoSaveStatus('unsaved');
                 }
-            } else if (!shouldSave) {
-                console.log('Auto-save skipped: would overwrite longer content with shorter content');
             }
         }, 3000);
 
@@ -222,7 +222,7 @@ export function JournalView() {
     useEffect(() => {
         const loadPrompts = async () => {
             // Only show prompts for today's empty entry
-            const isToday = currentDate === new Date().toISOString().split('T')[0];
+            const isToday = currentDate === getLocalDateString();
             if (isToday && !content.trim()) {
                 const contextualPrompts = await journalPromptService.getPrompts(3);
                 setPrompts(contextualPrompts);
@@ -272,7 +272,7 @@ export function JournalView() {
             setMood(undefined);
             setTags([]);
             lastSavedContentRef.current = '';
-            setAutoSaveStatus(null);
+            setAutoSaveStatus('idle');
         }
     };
 
@@ -351,7 +351,7 @@ export function JournalView() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [content, isSaving, currentDate, mood, tags]);
 
-    const isToday = currentDate === new Date().toISOString().split('T')[0];
+    const isToday = currentDate === getLocalDateString();
 
     return (
         <div className="min-h-screen p-16" style={{ background: 'linear-gradient(to bottom, #0a0a0a, #0a0a1a)' }}>
@@ -379,11 +379,7 @@ export function JournalView() {
 
                         <div className="flex gap-2 bg-white/5 p-2 rounded-2xl">
                             <button
-                                onClick={() => {
-                                    setCameFromAllEntries(false);
-                                    setCurrentDate(new Date().toISOString().split('T')[0]);
-                                    setViewMode('today');
-                                }}
+                                onClick={() => setViewMode('today')}
                                 className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${viewMode === 'today' ? 'bg-purple-500 text-white' : 'text-white/50 hover:text-white/70'
                                     }`}
                             >
@@ -410,21 +406,7 @@ export function JournalView() {
 
                 {/* Today's Entry View */}
                 {viewMode === 'today' && (
-                    <div className="space-y-8">
-                        {/* Back Button - shows when came from All Entries */}
-                        {cameFromAllEntries && (
-                            <button
-                                onClick={() => {
-                                    setCameFromAllEntries(false);
-                                    setViewMode('all');
-                                }}
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-sm font-medium transition-all"
-                            >
-                                <ChevronLeft size={18} />
-                                Back to All Entries
-                            </button>
-                        )}
-
+                    <div className="space-y-12">
                         {/* Date Navigation */}
                         <div className="flex items-center justify-center gap-8">
                             <button
@@ -574,7 +556,7 @@ export function JournalView() {
                                         </span>
                                     )}
                                     {/* Auto-save status */}
-                                    {autoSaveStatus && (
+                                    {autoSaveStatus !== 'idle' && (
                                         <span className={`flex items-center gap-1 ${autoSaveStatus === 'saved' ? 'text-green-400' :
                                             autoSaveStatus === 'saving' ? 'text-yellow-400' :
                                                 'text-orange-400'
@@ -620,13 +602,65 @@ export function JournalView() {
                                     </p>
                                 </div>
                             ) : (
-                                <RichTextEditor
-                                    key={currentDate}
-                                    content={content}
-                                    onChange={setContent}
-                                    placeholder="Write freely about your day, thoughts, wins, challenges, or anything else..."
-                                    autoSaveStatus={autoSaveStatus || undefined}
-                                />
+                                <div className="space-y-6">
+                                    {/* Edit/View Toggle */}
+                                    <div className="flex items-center gap-2 p-1 bg-white/5 rounded-xl w-fit">
+                                        <button
+                                            onClick={() => setIsEditMode(true)}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${isEditMode
+                                                ? 'bg-purple-500/20 text-purple-300'
+                                                : 'text-white/40 hover:text-white/60'
+                                                }`}
+                                        >
+                                            <Edit3 size={14} />
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => setIsEditMode(false)}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${!isEditMode
+                                                ? 'bg-cyan-500/20 text-cyan-300'
+                                                : 'text-white/40 hover:text-white/60'
+                                                }`}
+                                        >
+                                            <Eye size={14} />
+                                            Preview
+                                        </button>
+                                    </div>
+
+                                    {/* Edit Mode - TipTap Editor */}
+                                    {isEditMode ? (
+                                        <RichTextEditor
+                                            key={currentDate}
+                                            content={userContent}
+                                            onChange={(newContent) => {
+                                                // Preserve AI reflections when editing user content
+                                                if (aiReflections) {
+                                                    setContent(newContent + '\n\n---\n\n' + aiReflections);
+                                                } else {
+                                                    setContent(newContent);
+                                                }
+                                            }}
+                                            placeholder="Write freely about your day, thoughts, wins, challenges, or anything else..."
+                                            autoSaveStatus={autoSaveStatus}
+                                        />
+                                    ) : (
+                                        /* View Mode - Beautiful Rendered Content */
+                                        <div className="rounded-2xl bg-white/[0.02] border border-white/10 p-6 min-h-[400px]">
+                                            <JournalContentRenderer content={content} />
+                                        </div>
+                                    )}
+
+                                    {/* AI Reflections - Always shown beautifully in edit mode too */}
+                                    {isEditMode && aiReflections && (
+                                        <div className="mt-6">
+                                            <h3 className="text-sm font-medium text-white/40 mb-4 flex items-center gap-2">
+                                                <Sparkles size={14} className="text-purple-400" />
+                                                AI Reflections
+                                            </h3>
+                                            <JournalContentRenderer content={aiReflections} />
+                                        </div>
+                                    )}
+                                </div>
                             )}
                         </div>
 
@@ -668,6 +702,11 @@ export function JournalView() {
                                     </button>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Session Notes Timeline */}
+                        <div className="space-y-4">
+                            <SessionNotesTimeline date={currentDate} />
                         </div>
 
                         {/* Save & Reflect Buttons */}
@@ -907,11 +946,7 @@ export function JournalView() {
                             {filteredEntries.map((entry) => (
                                 <motion.button
                                     key={entry.date}
-                                    onClick={() => {
-                                        setCurrentDate(entry.date);
-                                        setCameFromAllEntries(true);
-                                        setViewMode('today');
-                                    }}
+                                    onClick={() => { setCurrentDate(entry.date); setViewMode('today'); }}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     whileHover={{ y: -4 }}
@@ -954,6 +989,6 @@ export function JournalView() {
                     <JournalAnalytics />
                 )}
             </div>
-        </div >
+        </div>
     );
 }

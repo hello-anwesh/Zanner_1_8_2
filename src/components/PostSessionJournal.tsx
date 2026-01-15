@@ -6,8 +6,8 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, BookOpen, Send, Clock, Target, Zap, Sparkles, Loader2 } from 'lucide-react';
-import { journalService, JournalEntry } from '../services/journal/JournalService';
+import { BookOpen, Send, Clock, Target, Zap, Sparkles, Loader2 } from 'lucide-react';
+import { sessionNotesService } from '../services/journal/SessionNotesService';
 import { journalAIService } from '../services/journal/JournalAIService';
 
 interface PostSessionJournalProps {
@@ -61,15 +61,16 @@ export function PostSessionJournal({ isOpen, onClose, sessionData }: PostSession
                 contentForAI += `Session notes: ${notes.trim()}`;
             }
 
-            const entry: JournalEntry = {
+            // Create entry-like object for AI reflection
+            const entry = {
                 id: 0,
-                date: new Date().toISOString().split('T')[0],
+                date: new Date().toLocaleDateString('en-US'),
                 content: contentForAI,
                 created_at: Date.now(),
                 updated_at: Date.now()
             };
 
-            const result = await journalAIService.getReflection(entry);
+            const result = await journalAIService.getReflection(entry as any);
 
             if (result) {
                 // Format the AI reflection nicely
@@ -112,48 +113,17 @@ export function PostSessionJournal({ isOpen, onClose, sessionData }: PostSession
 
         setIsSaving(true);
         try {
-            const today = new Date().toISOString().split('T')[0];
-            const existingEntry = await journalService.getEntry(today);
-
-            const timeStr = sessionData.endTime.toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit'
+            // Save to SessionNotesService as a first-class entity
+            await sessionNotesService.createNote({
+                sessionNumber: sessionData.sessionNumber,
+                duration: sessionData.duration,
+                type: sessionData.type,
+                startTime: sessionData.startTime,
+                endTime: sessionData.endTime,
+                quickReflections: selectedReflections,
+                notes: notes.trim(),
+                aiReflection: aiReflection
             });
-
-            let sessionNote = `\n\n---\n## Session ${sessionData.sessionNumber} (${timeStr})\n`;
-            sessionNote += `*${sessionData.duration} min ${sessionData.type} session*\n\n`;
-
-            if (selectedReflections.length > 0) {
-                sessionNote += selectedReflections.join(' • ') + '\n\n';
-            }
-
-            if (notes.trim()) {
-                sessionNote += notes.trim() + '\n\n';
-            }
-
-            // Add AI Reflection if available
-            if (aiReflection) {
-                sessionNote += `### 🪞 AI Reflection\n\n${aiReflection}\n`;
-            }
-
-            const newContent = existingEntry
-                ? existingEntry.content + sessionNote
-                : `# ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}\n${sessionNote}`;
-
-            const tags = existingEntry?.tags || [];
-            if (!tags.includes('session-notes')) {
-                tags.push('session-notes');
-            }
-            if (aiReflection && !tags.includes('ai-reflection')) {
-                tags.push('ai-reflection');
-            }
-
-            await journalService.createOrUpdateEntry(
-                today,
-                newContent,
-                existingEntry?.mood,
-                tags
-            );
 
             setSaved(true);
             setTimeout(() => {

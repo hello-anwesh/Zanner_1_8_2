@@ -44,13 +44,23 @@ class AIService {
                     hasProviders: !!parsed.providers
                 });
 
+                // Deep merge each provider individually to preserve defaults
+                const mergedProviders = { ...DEFAULT_AI_CONFIG.providers };
+                if (parsed.providers) {
+                    for (const [key, value] of Object.entries(parsed.providers)) {
+                        if (value && typeof value === 'object') {
+                            (mergedProviders as any)[key] = {
+                                ...(DEFAULT_AI_CONFIG.providers as any)[key],
+                                ...value
+                            };
+                        }
+                    }
+                }
+
                 this.config = {
                     ...DEFAULT_AI_CONFIG,
                     ...parsed,
-                    providers: {
-                        ...DEFAULT_AI_CONFIG.providers,
-                        ...(parsed.providers || {})
-                    }
+                    providers: mergedProviders as typeof DEFAULT_AI_CONFIG.providers
                 };
 
                 // Migrate old configs with low maxTokens to new minimum
@@ -362,6 +372,9 @@ class AIService {
                 continue;
             }
 
+            // Check if this is a one-shot call (no history)
+            const skipHistory = context?.skipHistory === true;
+
             try {
                 console.log(`[AIService] Trying provider: ${providerType}`);
 
@@ -374,20 +387,28 @@ class AIService {
                 // precise override if provided in context
                 if (context && typeof context.systemPrompt === 'string') {
                     systemPrompt = context.systemPrompt;
-                } else if (context) {
-                    // Append context if it's not an override
+                } else if (context && !context.skipHistory) {
+                    // Append context if it's not an override (skip if skipHistory mode)
                     systemPrompt += `\n\nCurrent context: ${JSON.stringify(context)}`;
                 }
 
-                // Add user message to history
-                this.conversationHistory.push({ role: "user", content: userMessage });
+                let messages: Message[];
 
-                // Build messages array with trimmed history (respects token budget)
-                const trimmedHistory = this.trimHistoryToTokenBudget();
-                const messages: Message[] = [
-                    { role: "system", content: systemPrompt },
-                    ...trimmedHistory,
-                ];
+                if (skipHistory) {
+                    // One-shot mode: just system + user message, no history
+                    messages = [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: userMessage }
+                    ];
+                } else {
+                    // Normal mode: add to history and include previous messages
+                    this.conversationHistory.push({ role: "user", content: userMessage });
+                    const trimmedHistory = this.trimHistoryToTokenBudget();
+                    messages = [
+                        { role: "system", content: systemPrompt },
+                        ...trimmedHistory,
+                    ];
+                }
 
                 // Attempt chat
                 const response = await provider.chat(messages, {
@@ -399,12 +420,14 @@ class AIService {
                 // Success!
                 console.log(`[AIService] Success with ${providerType}`);
 
-                // Add assistant response to history
-                this.conversationHistory.push({ role: "assistant", content: response });
+                // Add assistant response to history (only if not skipping history)
+                if (!skipHistory) {
+                    this.conversationHistory.push({ role: "assistant", content: response });
 
-                // Keep history manageable
-                if (this.conversationHistory.length > 20) {
-                    this.conversationHistory = this.conversationHistory.slice(-16);
+                    // Keep history manageable
+                    if (this.conversationHistory.length > 20) {
+                        this.conversationHistory = this.conversationHistory.slice(-16);
+                    }
                 }
 
                 return response;
@@ -414,8 +437,10 @@ class AIService {
                 console.error(`[AIService] ${providerType} failed:`, errorMsg);
                 errors.push({ provider: providerType, error: errorMsg });
 
-                // Remove the failed user message before trying next provider
-                this.conversationHistory.pop();
+                // Remove the failed user message before trying next provider (only if we added it)
+                if (!skipHistory) {
+                    this.conversationHistory.pop();
+                }
                 continue;
             }
         }

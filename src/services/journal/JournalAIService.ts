@@ -63,7 +63,8 @@ Only return valid JSON, no other text.`;
 
         try {
             const response = await aiService.chat(prompt, {
-                systemPrompt: 'You are a supportive journal reflection assistant. Analyze entries with empathy and provide helpful insights. Always respond in valid JSON format only.'
+                systemPrompt: 'You are a supportive journal reflection assistant. Analyze entries with empathy and provide helpful insights. Always respond in valid JSON format only.',
+                skipHistory: true  // One-shot call, don't mix with Zeni conversation
             });
 
             // Parse the JSON response
@@ -127,7 +128,8 @@ Only return valid JSON, no other text.`;
 
         try {
             const response = await aiService.chat(prompt, {
-                systemPrompt: 'You are a supportive journal analyst. Identify positive patterns and growth. Always respond in valid JSON format only.'
+                systemPrompt: 'You are a supportive journal analyst. Identify positive patterns and growth. Always respond in valid JSON format only.',
+                skipHistory: true  // One-shot call, don't mix with Zeni conversation
             });
 
             const cleaned = response.replace(/```json\n?|\n?```/g, '').trim();
@@ -212,7 +214,8 @@ Be supportive and focus on progress and self-compassion. Only return valid JSON,
 
         try {
             const response = await aiService.chat(prompt, {
-                systemPrompt: 'You are a supportive weekly journal reviewer. Celebrate wins, acknowledge challenges with compassion, and encourage growth. Always respond in valid JSON format only.'
+                systemPrompt: 'You are a supportive weekly journal reviewer. Celebrate wins, acknowledge challenges with compassion, and encourage growth. Always respond in valid JSON format only.',
+                skipHistory: true  // One-shot call, don't mix with Zeni conversation
             });
 
             const cleaned = response.replace(/```json\n?|\n?```/g, '').trim();
