@@ -149,7 +149,7 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
                         key={item.id}
                         {...item}
                         view={view}
-                        onClick={() => item.id === 'zeni' ? onCoachOpen() : onViewChange(item.id)}
+                        onClick={() => onViewChange(item.id)}
                         collapsed={collapsed}
                         accent={accent}
                     />

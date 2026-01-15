@@ -1,3 +1,10 @@
+/**
+ * ⚠️ SECURITY WARNING ⚠️
+ * NEVER hardcode API keys in this file!
+ * All API keys must be entered by users in Settings.
+ * Hardcoded keys WILL be scraped and abused if pushed to any repository.
+ */
+
 // AI Provider Types
 export type AIProviderType = "ollama" | "openai" | "claude" | "gemini";
 
@@ -87,8 +94,8 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
             model: "claude-3-haiku-20240307",
         },
         gemini: {
-            enabled: true,
-            apiKey: "AIzaSyA5q8sXegiMQgJJDr9Clxo7FZUxTqJycHU",
+            enabled: false,  // User must configure their own API key
+            apiKey: "",      // DO NOT hardcode API keys!
             model: "gemini-1.5-flash",
         },
     },

@@ -42,19 +42,26 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
     // Spotify state
     const [spotifyState, setSpotifyState] = useState<SpotifyState | null>(null);
 
-    // Drag position state - persisted with bounds checking
+    // Drag position state - start at origin (bottom-right corner due to CSS)
+    // Version the storage key to force reset when bounds logic changes
+    const POSITION_KEY = 'floatingPlayerPosition_v2';
     const [position, setPosition] = useState(() => {
-        const saved = localStorage.getItem('floatingPlayerPosition');
+        // Clear old position storage
+        localStorage.removeItem('floatingPlayerPosition');
+
+        const saved = localStorage.getItem(POSITION_KEY);
         if (saved) {
             try {
                 const pos = JSON.parse(saved);
-                // Ensure position is within reasonable bounds (not off-screen)
-                const maxX = window.innerWidth - 100;
-                const maxY = window.innerHeight - 100;
-                return {
-                    x: Math.max(-maxX, Math.min(pos.x || 0, maxX)),
-                    y: Math.max(-maxY, Math.min(pos.y || 0, maxY))
-                };
+                const x = pos.x || 0;
+                const y = pos.y || 0;
+                // Safety check: position offset shouldn't exceed half viewport
+                const maxOffset = Math.min(window.innerWidth, window.innerHeight) * 0.3;
+                if (Math.abs(x) > maxOffset || Math.abs(y) > maxOffset) {
+                    localStorage.removeItem(POSITION_KEY);
+                    return { x: 0, y: 0 };
+                }
+                return { x, y };
             } catch {
                 return { x: 0, y: 0 };
             }
@@ -90,15 +97,14 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
     useEffect(() => {
         const handleResize = () => {
             setPosition(prev => {
-                const maxX = window.innerWidth - 100;
-                const maxY = window.innerHeight - 100;
-                const newX = Math.max(-maxX + 100, Math.min(prev.x, maxX - 100));
-                const newY = Math.max(-maxY + 100, Math.min(prev.y, maxY - 100));
-                // If position needs clamping, update localStorage too
-                if (newX !== prev.x || newY !== prev.y) {
-                    const newPos = { x: newX, y: newY };
-                    localStorage.setItem('floatingPlayerPosition', JSON.stringify(newPos));
-                    return newPos;
+                // Use same safe bounds as initial calculation
+                const safeMaxX = Math.max(0, (window.innerWidth * 0.4) - 50);
+                const safeMaxY = Math.max(0, (window.innerHeight * 0.4) - 50);
+
+                // If current position exceeds safe bounds, reset to origin
+                if (Math.abs(prev.x) > safeMaxX || Math.abs(prev.y) > safeMaxY) {
+                    localStorage.removeItem('floatingPlayerPosition_v2');
+                    return { x: 0, y: 0 };
                 }
                 return prev;
             });
@@ -440,7 +446,7 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
                         y: Math.max(-maxY, Math.min(newPos.y, maxY))
                     };
                     setPosition(clampedPos);
-                    localStorage.setItem('floatingPlayerPosition', JSON.stringify(clampedPos));
+                    localStorage.setItem('floatingPlayerPosition_v2', JSON.stringify(clampedPos));
                     // Reset drag flag after a short delay to allow click to check it
                     setTimeout(() => { isDraggingRef.current = false; }, 100);
                 }}

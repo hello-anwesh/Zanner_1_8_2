@@ -37,6 +37,7 @@ import { PresetEditor } from "./components/settings/PresetEditor";
 import { CommandCenter } from "./components/CommandCenter/CommandCenter";
 import { FrequencyGenerator } from "./components/frequency";
 import { ZennerCoach } from "./components/ZennerCoach";
+import { ZeniView } from "./components/ZeniView";
 import { CompactTimer } from "./components/CompactTimer";
 import { TitleBar } from "./components/TitleBar";
 import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
@@ -64,7 +65,7 @@ import { getLocalDateString } from "./utils/dateUtils";
 // TYPES & CONSTANTS
 // ============================================================================
 
-type View = "home" | "dashboard" | "stats" | "integrations" | "frequencies" | "philosophy" | "journal" | "profile" | "settings" |
+type View = "home" | "dashboard" | "stats" | "integrations" | "frequencies" | "philosophy" | "journal" | "profile" | "settings" | "zeni" |
   "settings-ai" | "settings-theme" | "settings-spotify" | "settings-youtube" | "settings-timer" | "settings-voice" | "settings-brain" | "settings-backup" |
   "ai-identity" | "ai-cognition" | "ai-rhythms" | "ai-training" |
   "voice-speech" | "voice-tts";
@@ -1112,6 +1113,14 @@ function App() {
                   {/* JOURNAL */}
                   {view === "journal" && (
                     <JournalView />
+                  )}
+
+                  {/* ZENI - Full Page AI Coach */}
+                  {view === "zeni" && (
+                    <ZeniView
+                      accent={accent}
+                      onNavigate={(v) => setView(v as View)}
+                    />
                   )}
 
                   {/* PROFILE */}
