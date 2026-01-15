@@ -34,7 +34,6 @@ class ConversationManager {
     private readonly SUMMARY_THRESHOLD = 20; // Summarize every 20 messages
     private readonly MESSAGES_TO_SUMMARIZE = 10; // Summarize oldest 10 when triggered
     private readonly MAX_SUMMARIES = 5; // Keep last 5 summaries
-    private readonly MAX_SUMMARY_TOKENS = 200; // Each summary ~200 tokens
 
     private isSummarizing = false;
     private initialized = false;

@@ -4,7 +4,7 @@ import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import {
   Play, Pause, Sparkles,
   Target,
-  Home, BarChart2, Settings2, ChevronLeft,
+  ChevronLeft,
   Send, X, TrendingUp, Flame, Lightbulb, Heart, Dumbbell,
   Music, Edit2, Palette
 } from "lucide-react";
@@ -12,9 +12,7 @@ import { useTheme } from "./contexts/ThemeContext";
 import PremiumSidebar from "./components/PremiumSidebar";
 import { SettingsModal } from "./components/settings";
 import { FloatingPlayer } from "./components/FloatingPlayer";
-import { Canvas } from "@react-three/fiber";
-import { Environment } from "@react-three/drei";
-import { HoloTimer } from "./components/Cyberpunk/HoloTimer";
+
 
 import { ParticleSystem, ParallaxBackground, ThreeDTiltContainer } from "./components/PremiumEffects";
 import { AITrainingView } from "./components/training/AITrainingView";
@@ -108,13 +106,7 @@ function App() {
   const [isCompactMode, setIsCompactMode] = useState(false);
   const [showCoach, setShowCoach] = useState(false); // Coach starts collapsed
 
-  // Profile state
-  const [profile, setProfile] = useState({
-    identity: {
-      name: "Focus Master",
-      role: "Productivity Expert"
-    }
-  });
+
 
   // Post-Session Journal state
   const [showPostSessionJournal, setShowPostSessionJournal] = useState(false);
@@ -508,7 +500,6 @@ function App() {
   const stroke = 8;
   const radius = (size - stroke) / 2;
   const circ = 2 * Math.PI * radius;
-  const offset = circ - (progress / 100) * circ;
 
   const textMuted = "rgba(255,255,255,0.5)";
 

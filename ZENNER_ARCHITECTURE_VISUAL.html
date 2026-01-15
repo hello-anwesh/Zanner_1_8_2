@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenner Architecture - Interactive Visual Guide</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: radial-gradient(circle at 50% 50%, rgba(138, 43, 226, 0.1) 0%, transparent 70%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent 30%, rgba(138, 43, 226, 0.05) 50%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hero h1 {
+            font-size: 5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #8a2be2, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            z-index: 1;
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 20px rgba(138, 43, 226, 0.5));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 40px rgba(138, 43, 226, 0.8));
+            }
+        }
+
+        .hero p {
+            font-size: 1.5rem;
+            opacity: 0.8;
+            z-index: 1;
+            margin-bottom: 2rem;
+        }
+
+        .nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(138, 43, 226, 0.3);
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: #e0e0e0;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: rgba(138, 43, 226, 0.2);
+            color: #8a2be2;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        .section {
+            margin-bottom: 6rem;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, #8a2be2, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(138, 43, 226, 0.3);
+            border-color: rgba(138, 43, 226, 0.6);
+        }
+
+        .card-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #8a2be2;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .folder-tree {
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            overflow-x: auto;
+        }
+
+        .folder-tree pre {
+            color: #4ecdc4;
+            font-size: 0.9rem;
+            line-height: 1.8;
+        }
+
+        .folder {
+            color: #ff6b6b;
+            font-weight: 600;
+        }
+
+        .file {
+            color: #95e1d3;
+        }
+
+        .mermaid {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .tech-badge {
+            display: inline-block;
+            background: rgba(138, 43, 226, 0.2);
+            border: 1px solid rgba(138, 43, 226, 0.5);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            margin: 0.25rem;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .tech-badge:hover {
+            background: rgba(138, 43, 226, 0.4);
+            transform: scale(1.05);
+        }
+
+        .emoji {
+            font-size: 2rem;
+            margin-right: 0.5rem;
+        }
+
+        .interactive-box {
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.1), rgba(78, 205, 196, 0.1));
+            border: 2px solid rgba(138, 43, 226, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .interactive-box:hover {
+            border-color: rgba(138, 43, 226, 0.6);
+            transform: scale(1.02);
+            box-shadow: 0 10px 40px rgba(138, 43, 226, 0.4);
+        }
+
+        .interactive-box.expanded {
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(78, 205, 196, 0.2));
+        }
+
+        .hidden-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+        }
+
+        .hidden-content.show {
+            max-height: 2000px;
+        }
+
+        .scroll-indicator {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(138, 43, 226, 0.3);
+            border: 2px solid #8a2be2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            animation: bounce 2s infinite;
+            z-index: 999;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .highlight {
+            color: #ff6b6b;
+            font-weight: 600;
+        }
+
+        code {
+            background: rgba(138, 43, 226, 0.2);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Monaco', monospace;
+            color: #4ecdc4;
+        }
+
+        .legend {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="nav">
+        <div class="nav-content">
+            <div style="font-size: 1.5rem; font-weight: 700;">🎯 Zenner</div>
+            <div class="nav-links">
+                <a href="#overview" class="nav-link">Overview</a>
+                <a href="#structure" class="nav-link">Structure</a>
+                <a href="#architecture" class="nav-link">Architecture</a>
+                <a href="#components" class="nav-link">Components</a>
+                <a href="#data-flow" class="nav-link">Data Flow</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <h1>🎯 ZENNER</h1>
+        <p>The Ultimate Productivity Timer with AI Brain</p>
+        <div style="display: flex; gap: 1rem; z-index: 1;">
+            <div class="tech-badge">⚛️ React</div>
+            <div class="tech-badge">🦀 Rust</div>
+            <div class="tech-badge">🎨 Tauri</div>
+            <div class="tech-badge">🧠 AI Powered</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <section id="overview" class="section">
+            <h2 class="section-title">📖 What is Zenner?</h2>
+            <div class="card">
+                <p style="font-size: 1.3rem; line-height: 1.8;">
+                    Zenner is a <span class="highlight">next-generation productivity timer</span> that combines the
+                    proven Pomodoro Technique
+                    with <span class="highlight">AI-powered coaching</span>, <span class="highlight">binaural
+                        beats</span>, and
+                    <span class="highlight">real-time analytics</span>. It's like having a personal productivity coach
+                    that learns from your habits.
+                </p>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">⏱️ Smart Timer</div>
+                    <p>15+ preset timer modes from 15min ultrasprint to 90min marathons, including psychedelic focus
+                        modes.</p>
+                </div>
+                <div class="card">
+                    <div class="card-title">🧠 AI Coach (Zeni)</div>
+                    <p>Powered by Gemini, OpenAI, Claude, or local Ollama. Learns your patterns, suggests breaks,
+                        analyzes productivity.</p>
+                </div>
+                <div class="card">
+                    <div class="card-title">📊 Analytics</div>
+                    <p>Real-time session tracking, streak tracking, heatmaps, and productivity insights.</p>
+                </div>
+                <div class="card">
+                    <div class="card-title">🎵 Binaural Beats</div>
+                    <p>Frequency generator with preset modes: focus (40Hz), relax (7Hz), sleep (2Hz), and more.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="structure" class="section">
+            <h2 class="section-title">📁 Project Structure</h2>
+
+            <div class="interactive-box" onclick="toggleContent('folder-detail')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>🗂️ Click to explore the folder structure</h3>
+                    <span id="folder-toggle">▼</span>
+                </div>
+            </div>
+
+            <div id="folder-detail" class="hidden-content">
+                <div class="folder-tree">
+                    <pre>
+<span class="folder">zenner/</span>
+├── <span class="folder">src/</span>                           ← <span class="highlight">Frontend (React + TypeScript)</span>
+│   ├── <span class="folder">components/</span>               ← UI Components
+│   │   ├── <span class="file">CommandDashboard.tsx</span>  ← Main timer interface
+│   │   ├── <span class="file">ZeniView.tsx</span>          ← AI chat interface
+│   │   ├── <span class="file">ZennerCoach.tsx</span>       ← Productivity coach
+│   │   ├── <span class="file">JournalView.tsx</span>       ← Session notes & reflection
+│   │   └── <span class="file">AnalyticsDashboard.tsx</span>← Stats & insights
+│   ├── <span class="folder">services/</span>                ← Business Logic
+│   │   ├── <span class="folder">ai/</span>                  ← AI Orchestration
+│   │   │   ├── <span class="file">AIService.ts</span>      ← Multi-provider manager
+│   │   │   ├── <span class="file">CoachService.ts</span>   ← Coaching prompts
+│   │   │   ├── <span class="folder">providers/</span>
+│   │   │   │   ├── <span class="file">OllamaProvider.ts</span>
+│   │   │   │   ├── <span class="file">OpenAIProvider.ts</span>
+│   │   │   │   ├── <span class="file">ClaudeProvider.ts</span>
+│   │   │   │   └── <span class="file">GeminiProvider.ts</span>
+│   │   ├── <span class="folder">db/</span>                  ← SQLite Database
+│   │   │   └── <span class="file">DatabaseService.ts</span>
+│   │   ├── <span class="folder">journal/</span>             ← Session notes
+│   │   │   ├── <span class="file">SessionNotesService.ts</span>
+│   │   │   └── <span class="file">JournalService.ts</span>
+│   │   ├── <span class="folder">chat/</span>                ← AI Chat History
+│   │   │   └── <span class="file">ChatSessionService.ts</span>
+│   │   └── <span class="folder">music/</span>               ← Spotify/YouTube
+│   ├── <span class="folder">lib/</span>                     ← Utilities
+│   │   └── <span class="file">tauriFetch.ts</span>        ← CORS-free HTTP wrapper
+│   └── <span class="file">App.tsx</span>                   ← Root component
+├── <span class="folder">src-tauri/</span>                   ← <span class="highlight">Backend (Rust + Tauri)</span>
+│   ├── <span class="file">src/lib.rs</span>               ← Rust commands & plugins
+│   ├── <span class="file">Cargo.toml</span>               ← Rust dependencies
+│   ├── <span class="file">tauri.conf.json</span>          ← App configuration
+│   └── <span class="folder">capabilities/</span>
+│       └── <span class="file">default.json</span>         ← Security permissions (ACL)
+├── <span class="folder">Project_Documentation/</span>      ← Architecture docs
+│   ├── <span class="file">BRAIN_SYSTEM_ARCHITECTURE.md</span>
+│   ├── <span class="file">ZENNER_ARCHITECTURE.md</span>
+│   └── <span class="file">MEMORY_SYSTEM_AUDIT.md</span>
+└── <span class="file">package.json</span>                 ← Node dependencies
+</pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="architecture" class="section">
+            <h2 class="section-title">🏗️ System Architecture</h2>
+
+            <div class="card">
+                <h3 class="card-title">High-Level Overview</h3>
+                <div class="mermaid">
+                    graph TB
+                    subgraph "Frontend (React)"
+                    UI[🎨 UI Layer]
+                    Services[⚙️ Service Layer]
+                    State[📦 State Management]
+                    end
+
+                    subgraph "Backend (Tauri + Rust)"
+                    Tauri[🦀 Tauri Core]
+                    SQL[🗄️ SQLite DB]
+                    FS[📁 File System]
+                    HTTP[🌐 HTTP Client]
+                    end
+
+                    subgraph "External APIs"
+                    Gemini[🧠 Gemini AI]
+                    OpenAI[🤖 OpenAI]
+                    Claude[💬 Claude]
+                    Ollama[🏠 Ollama Local]
+                    Spotify[🎵 Spotify]
+                    end
+
+                    UI --> Services
+                    Services --> State
+                    Services --> Tauri
+                    Tauri --> SQL
+                    Tauri --> FS
+                    Tauri --> HTTP
+                    HTTP --> Gemini
+                    HTTP --> OpenAI
+                    HTTP --> Claude
+                    HTTP --> Ollama
+                    Services --> Spotify
+
+                    style UI fill:#8a2be2,color:#fff
+                    style Tauri fill:#ff6b6b,color:#fff
+                    style Gemini fill:#4ecdc4,color:#000
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="card-title">🔄 Data Flow</h3>
+                <div class="mermaid">
+                    sequenceDiagram
+                    participant User
+                    participant UI
+                    participant Service
+                    participant Tauri
+                    participant AI
+                    participant DB
+
+                    User->>UI: Start Focus Session
+                    UI->>Service: startTimer()
+                    Service->>Tauri: Save session metadata
+                    Tauri->>DB: INSERT session
+                    DB-->>Tauri: Confirm
+                    Tauri-->>Service: Session ID
+
+                    Note over User,UI: Work happens... ⏱️
+
+                    Service->>AI: Request coaching tip
+                    AI-->>Service: Personalized message
+                    UI->>User: Show AI coaching
+
+                    User->>UI: Complete session
+                    UI->>Service: endSession()
+                    Service->>Tauri: Update session stats
+                    Tauri->>DB: UPDATE analytics
+                    Service->>AI: Store session memory
+                    AI-->>Service: Learning updated
+                </div>
+            </div>
+        </section>
+
+        <section id="components" class="section">
+            <h2 class="section-title">🧩 Major Components</h2>
+
+            <div class="interactive-box" onclick="toggleContent('ai-detail')">
+                <h3><span class="emoji">🧠</span> AI System (The Brain)</h3>
+            </div>
+            <div id="ai-detail" class="hidden-content">
+                <div class="card">
+                    <div class="mermaid">
+                        graph LR
+                        A[AIService] --> B[Gemini Provider]
+                        A --> C[OpenAI Provider]
+                        A --> D[Claude Provider]
+                        A --> E[Ollama Provider]
+
+                        A --> F[CoachService]
+                        A --> G[ConversationManager]
+                        A --> H[MemoryOrchestrator]
+
+                        F --> I[Context Builder]
+                        G --> J[Chat History]
+                        H --> K[RAG Service]
+
+                        style A fill:#8a2be2,color:#fff
+                        style F fill:#4ecdc4,color:#000
+                    </div>
+                    <p style="margin-top: 1rem;">
+                        <strong>Key Features:</strong><br>
+                        • <span class="highlight">Dynamic provider switching</span> - Falls back if primary fails<br>
+                        • <span class="highlight">Context-aware coaching</span> - Knows your session count, time of day,
+                        energy levels<br>
+                        • <span class="highlight">Memory system</span> - Remembers past conversations and insights<br>
+                        • <span class="highlight">Token budget management</span> - Auto-summarizes long conversations
+                    </p>
+                </div>
+            </div>
+
+            <div class="interactive-box" onclick="toggleContent('timer-detail')">
+                <h3><span class="emoji">⏱️</span> Timer System</h3>
+            </div>
+            <div id="timer-detail" class="hidden-content">
+                <div class="card">
+                    <h4>15 Built-in Presets:</h4>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #F43F5E;"></div>
+                            <span>Classic Pomodoro (25/5/15)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #8B5CF6;"></div>
+                            <span>Deep Work (50/10/30)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #F59E0B;"></div>
+                            <span>Ultra Sprint (15/3/10)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #06B6D4;"></div>
+                            <span>Marathon (90/20/45)</span>
+                        </div>
+                    </div>
+                    <p style="margin-top: 1rem;">
+                        Plus 5 <span class="highlight">psychedelic modes</span> with binaural frequency integration:
+                        DMT Breakthrough, Ayahuasca Spirit, LSD Microdose, Mushroom Trip, Astral Gate
+                    </p>
+                </div>
+            </div>
+
+            <div class="interactive-box" onclick="toggleContent('db-detail')">
+                <h3><span class="emoji">🗄️</span> Database Layer</h3>
+            </div>
+            <div id="db-detail" class="hidden-content">
+                <div class="card">
+                    <h4>SQLite Tables:</h4>
+                    <div class="folder-tree">
+                        <pre>
+<span class="folder">zenner.db</span>
+├── <span class="file">sessions</span>           ← All timer sessions
+├── <span class="file">session_notes</span>      ← Per-session journal entries
+├── <span class="file">journal_entries</span>    ← Daily journal  
+├── <span class="file">chat_sessions</span>      ← AI conversation history
+├── <span class="file">training_data</span>      ← User preferences & training
+└── <span class="file">analytics</span>          ← Aggregated stats
+</pre>
+                    </div>
+                    <p style="margin-top: 1rem;">
+                        <strong>Persistence Strategy:</strong><br>
+                        • All data stored locally in SQLite<br>
+                        • No cloud dependency (privacy-first)<br>
+                        • Optional Supabase sync for multi-device<br>
+                        • Automatic backups to user's Documents folder
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section id="data-flow" class="section">
+            <h2 class="section-title">🌊 Critical Data Flows</h2>
+
+            <div class="card">
+                <h3 class="card-title">1️⃣ AI Chat Flow (Production CORS Fix)</h3>
+                <div class="mermaid">
+                    sequenceDiagram
+                    participant UI as ZeniView
+                    participant Service as CoachService
+                    participant Wrapper as safeFetch()
+                    participant Tauri as Tauri HTTP Plugin
+                    participant API as Gemini/OpenAI API
+
+                    UI->>Service: chat("How can I focus better?")
+                    Service->>Wrapper: fetch(API_URL, {body, headers})
+
+                    alt Development Mode
+                    Wrapper->>API: Native browser fetch()
+                    Note over Wrapper: No CORS issues in dev
+                    else Production Mode
+                    Wrapper->>Tauri: Tauri HTTP fetch()
+                    Tauri->>API: Rust HTTP client
+                    Note over Tauri: Bypasses CORS restrictions
+                    end
+
+                    API-->>Tauri: AI Response
+                    Tauri-->>Wrapper: Response
+                    Wrapper-->>Service: Parsed JSON
+                    Service-->>UI: Display message
+                </div>
+                <p style="margin-top: 1rem; padding: 1rem; background: rgba(138, 43, 226, 0.1); border-radius: 8px;">
+                    <strong>🔧 Key Fix:</strong> The <code>safeFetch()</code> wrapper conditionally uses Tauri's HTTP
+                    client in production
+                    to bypass browser CORS restrictions while maintaining normal <code>fetch()</code> behavior in
+                    development.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3 class="card-title">2️⃣ Database ACL Flow (Localhost Plugin Fix)</h3>
+                <div class="mermaid">
+                    graph TB
+                    A[App loads from localhost:1421] --> B{Check capabilities}
+                    B --> C[default.json permissions]
+                    C --> D{Is origin allowed?}
+                    D -->|http://localhost:1421/*| E[✅ SQL commands allowed]
+                    D -->|Missing from remote URLs| F[❌ ACL Error]
+
+                    E --> G[Database.load 'zenner.db']
+                    G --> H[ChatSessionService init]
+                    G --> I[JournalService init]
+                    G --> J[AnalyticsService init]
+
+                    F --> K[Show: 'Command plugin:sql|load not allowed by ACL']
+
+                    style E fill:#4ecdc4,color:#000
+                    style F fill:#ff6b6b,color:#fff
+                </div>
+                <p style="margin-top: 1rem; padding: 1rem; background: rgba(255, 107, 107, 0.1); border-radius: 8px;">
+                    <strong>🔧 Critical Fix:</strong> Added <code>"http://localhost:1421/*"</code> to
+                    <code>capabilities/default.json</code>
+                    remote URLs to allow SQL commands when using tauri-plugin-localhost.
+                </p>
+            </div>
+        </section>
+
+        <section class="section" style="margin-bottom: 4rem;">
+            <h2 class="section-title">🚀 Technology Stack</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3 class="card-title">Frontend</h3>
+                    <div class="tech-badge">React 19</div>
+                    <div class="tech-badge">TypeScript 5.8</div>
+                    <div class="tech-badge">Vite 7</div>
+                    <div class="tech-badge">Framer Motion</div>
+                    <div class="tech-badge">Three.js</div>
+                    <div class="tech-badge">TailwindCSS 4</div>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">Backend</h3>
+                    <div class="tech-badge">Tauri 2.0</div>
+                    <div class="tech-badge">Rust</div>
+                    <div class="tech-badge">SQLite</div>
+                    <div class="tech-badge">tauri-plugin-sql</div>
+                    <div class="tech-badge">tauri-plugin-http</div>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">AI Integrations</h3>
+                    <div class="tech-badge">Google Gemini</div>
+                    <div class="tech-badge">OpenAI GPT-4</div>
+                    <div class="tech-badge">Anthropic Claude</div>
+                    <div class="tech-badge">Ollama (Local)</div>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">Music Integrations</h3>
+                    <div class="tech-badge">Spotify API</div>
+                    <div class="tech-badge">YouTube Data API</div>
+                    <div class="tech-badge">Web Audio API</div>
+                    <div class="tech-badge">Binaural Beats Gen</div>
+                </div>
+            </div>
+        </section>
+
+        <div style="text-align: center; padding: 4rem 0; opacity: 0.6;">
+            <p>Made with 💜 by Anwesh Rath</p>
+            <p style="margin-top: 0.5rem;">Zenner © 2026</p>
+        </div>
+    </div>
+
+    <div class="scroll-indicator" onclick="scrollToTop()">
+        ↑
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            themeVariables: {
+                primaryColor: '#8a2be2',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#4ecdc4',
+                lineColor: '#4ecdc4',
+                secondaryColor: '#4ecdc4',
+                tertiaryColor: '#ff6b6b'
+            }
+        });
+
+        function toggleContent(id) {
+            const content = document.getElementById(id);
+            const parent = content.previousElementSibling;
+            const toggle = document.getElementById(id.replace('-detail', '-toggle'));
+
+            content.classList.toggle('show');
+            parent.classList.toggle('expanded');
+
+            if (toggle) {
+                toggle.textContent = content.classList.contains('show') ? '▲' : '▼';
+            }
+        }
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Smooth scroll for nav links
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = document.querySelector(link.getAttribute('href'));
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // Animate sections on scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationPlayState = 'running';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.section').forEach(section => {
+            observer.observe(section);
+        });
+    </script>
+</body>
+
+</html>
