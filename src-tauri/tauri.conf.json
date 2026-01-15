@@ -12,13 +12,15 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Zenner",
         "width": 1200,
         "height": 800,
         "minWidth": 300,
         "minHeight": 150,
         "transparent": true,
-        "decorations": false
+        "decorations": false,
+        "devtools": true
       }
     ],
     "security": {

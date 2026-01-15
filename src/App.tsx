@@ -1092,7 +1092,7 @@ function App() {
                       accent={accent}
                       activePreset={activePreset}
                       allPresets={allPresets}
-                      onPresetChange={(preset) => {
+                      onPresetChange={(preset: any) => {
                         setActivePreset(preset);
                         if ((preset as any).sequence) {
                           setSequenceIndex(0);
@@ -1509,7 +1509,7 @@ function App() {
                 isRunning={isRunning}
                 timeLeft={formatTime(timeLeft)}
                 onClose={() => setShowCoach(false)}
-                onMusicSelect={(trackUrl, trackName) => {
+                onMusicSelect={(trackUrl: string, trackName: string) => {
                   // trigger playback via EventBus
                   eventBus.emit({ type: "PLAY_TRACK", url: trackUrl, name: trackName });
                 }}

@@ -52,13 +52,14 @@ class SpotifyServiceClass {
     private pollInterval: ReturnType<typeof setInterval> | null = null;
     private currentState: SpotifyState | null = null;
     private accessToken: string | null = null;
-    private refreshToken: string | null = null;
+    private _refreshToken: string | null = null;
     private tokenExpiry: number = 0;
 
     constructor() {
         // Load tokens from localStorage
         this.accessToken = localStorage.getItem('spotify_access_token');
-        this.refreshToken = localStorage.getItem('spotify_refresh_token');
+        const storedRefresh = localStorage.getItem('spotify_refresh_token');
+        if (storedRefresh) this._refreshToken = storedRefresh;
         const expiry = localStorage.getItem('spotify_token_expiry');
         this.tokenExpiry = expiry ? parseInt(expiry) : 0;
     }
@@ -288,11 +289,13 @@ class SpotifyServiceClass {
 
     private setTokens(accessToken: string, refreshToken: string, expiresIn: number) {
         this.accessToken = accessToken;
-        this.refreshToken = refreshToken;
+        this._refreshToken = refreshToken;
         this.tokenExpiry = Date.now() + (expiresIn * 1000);
 
         localStorage.setItem('spotify_access_token', accessToken);
-        localStorage.setItem('spotify_refresh_token', refreshToken);
+        if (this._refreshToken) {
+            localStorage.setItem('spotify_refresh_token', this._refreshToken);
+        }
         localStorage.setItem('spotify_token_expiry', this.tokenExpiry.toString());
     }
 
@@ -402,7 +405,7 @@ class SpotifyServiceClass {
      */
     logout(): void {
         this.accessToken = null;
-        this.refreshToken = null;
+        this._refreshToken = null;
         this.tokenExpiry = 0;
 
         localStorage.removeItem('spotify_access_token');

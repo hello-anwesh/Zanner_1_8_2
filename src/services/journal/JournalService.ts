@@ -75,7 +75,7 @@ class JournalService {
         await this.init();
 
         try {
-            const result = await this.db.select<JournalEntry[]>(
+            const result: any[] = await this.db.select(
                 "SELECT * FROM journal_entries WHERE date = ?",
                 [date]
             );
@@ -98,7 +98,7 @@ class JournalService {
         await this.init();
 
         try {
-            const result = await this.db.select<JournalEntry[]>(
+            const result: any[] = await this.db.select(
                 "SELECT * FROM journal_entries ORDER BY date DESC LIMIT ?",
                 [limit]
             );
@@ -119,7 +119,7 @@ class JournalService {
         await this.init();
 
         try {
-            const result = await this.db.select<JournalEntry[]>(
+            const result: any[] = await this.db.select(
                 "SELECT * FROM journal_entries ORDER BY date DESC"
             );
 
@@ -150,7 +150,7 @@ class JournalService {
         await this.init();
 
         try {
-            const result = await this.db.select<JournalEntry[]>(
+            const result: any[] = await this.db.select(
                 "SELECT * FROM journal_entries WHERE content LIKE ? ORDER BY date DESC",
                 [`%${query}%`]
             );

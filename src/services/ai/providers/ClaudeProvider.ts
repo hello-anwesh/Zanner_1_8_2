@@ -1,4 +1,5 @@
 import { AIProvider, Message, AIOptions, ModelInfo, ProviderStatus } from "../types";
+import { safeFetch } from "../../../lib/tauriFetch";
 
 /**
  * Claude Provider (Anthropic)
@@ -33,7 +34,7 @@ export class ClaudeProvider implements AIProvider {
 
         try {
             // Claude doesn't have a models endpoint, so we test with a minimal request
-            const response = await fetch(`${this.baseUrl}/messages`, {
+            const response = await safeFetch(`${this.baseUrl}/messages`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -103,7 +104,7 @@ export class ClaudeProvider implements AIProvider {
         const systemMessage = messages.find(m => m.role === "system")?.content;
         const chatMessages = messages.filter(m => m.role !== "system");
 
-        const response = await fetch(`${this.baseUrl}/messages`, {
+        const response = await safeFetch(`${this.baseUrl}/messages`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -134,7 +135,7 @@ export class ClaudeProvider implements AIProvider {
         const systemMessage = messages.find(m => m.role === "system")?.content;
         const chatMessages = messages.filter(m => m.role !== "system");
 
-        const response = await fetch(`${this.baseUrl}/messages`, {
+        const response = await safeFetch(`${this.baseUrl}/messages`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

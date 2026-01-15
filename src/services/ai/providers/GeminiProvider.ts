@@ -1,4 +1,5 @@
 import { AIProvider, Message, AIOptions, ModelInfo, ProviderStatus } from "../types";
+import { safeFetch } from "../../../lib/tauriFetch";
 
 /**
  * Gemini Provider (Google)
@@ -31,7 +32,7 @@ export class GeminiProvider implements AIProvider {
         }
 
         try {
-            const response = await fetch(
+            const response = await safeFetch(
                 `${this.baseUrl}/models?key=${this.apiKey}`,
                 { signal: AbortSignal.timeout(5000) }
             );
@@ -68,7 +69,7 @@ export class GeminiProvider implements AIProvider {
         if (!this.apiKey) return [];
 
         try {
-            const response = await fetch(`${this.baseUrl}/models?key=${this.apiKey}`);
+            const response = await safeFetch(`${this.baseUrl}/models?key=${this.apiKey}`);
             if (!response.ok) return [];
 
             const data = await response.json();
@@ -109,7 +110,7 @@ export class GeminiProvider implements AIProvider {
             maxTokens: options?.maxTokens ?? 2000
         });
 
-        const response = await fetch(
+        const response = await safeFetch(
             `${this.baseUrl}/models/${model}:generateContent?key=${this.apiKey}`,
             {
                 method: "POST",
@@ -177,7 +178,7 @@ export class GeminiProvider implements AIProvider {
         }));
 
         const model = options?.model || this.model;
-        const response = await fetch(
+        const response = await safeFetch(
             `${this.baseUrl}/models/${model}:streamGenerateContent?key=${this.apiKey}&alt=sse`,
             {
                 method: "POST",
@@ -223,7 +224,7 @@ export class GeminiProvider implements AIProvider {
     async embed(text: string): Promise<number[]> {
         if (!this.apiKey) throw new Error("API key required");
 
-        const response = await fetch(
+        const response = await safeFetch(
             `${this.baseUrl}/models/text-embedding-004:embedContent?key=${this.apiKey}`,
             {
                 method: "POST",

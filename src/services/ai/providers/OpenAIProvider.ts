@@ -1,4 +1,5 @@
 import { AIProvider, Message, AIOptions, ModelInfo, ProviderStatus } from "../types";
+import { safeFetch } from "../../../lib/tauriFetch";
 
 /**
  * OpenAI Provider
@@ -26,7 +27,7 @@ export class OpenAIProvider implements AIProvider {
         }
 
         try {
-            const response = await fetch(`${this.baseUrl}/models`, {
+            const response = await safeFetch(`${this.baseUrl}/models`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${this.apiKey}`,
@@ -63,7 +64,7 @@ export class OpenAIProvider implements AIProvider {
         if (!this.apiKey) return [];
 
         try {
-            const response = await fetch(`${this.baseUrl}/models`, {
+            const response = await safeFetch(`${this.baseUrl}/models`, {
                 headers: { Authorization: `Bearer ${this.apiKey}` },
             });
 
@@ -86,7 +87,7 @@ export class OpenAIProvider implements AIProvider {
     async chat(messages: Message[], options?: AIOptions): Promise<string> {
         if (!this.apiKey) throw new Error("API key required");
 
-        const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        const response = await safeFetch(`${this.baseUrl}/chat/completions`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -112,7 +113,7 @@ export class OpenAIProvider implements AIProvider {
     async *streamChat(messages: Message[], options?: AIOptions): AsyncGenerator<string, void, unknown> {
         if (!this.apiKey) throw new Error("API key required");
 
-        const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        const response = await safeFetch(`${this.baseUrl}/chat/completions`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

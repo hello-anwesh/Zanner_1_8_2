@@ -25,9 +25,13 @@ interface ChatSession {
 interface ZennerCoachProps {
     accent: string;
     onClose?: () => void;
+    sessionsToday?: number;
+    isRunning?: boolean;
+    timeLeft?: string;
+    onMusicSelect?: (url: string, name: string) => void;
 }
 
-export function ZennerCoach({ accent, onClose }: ZennerCoachProps) {
+export function ZennerCoach({ accent, onClose, sessionsToday = 0, isRunning = false, timeLeft = "25:00", onMusicSelect }: ZennerCoachProps) {
     // Session State
     const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
@@ -150,13 +154,13 @@ export function ZennerCoach({ accent, onClose }: ZennerCoachProps) {
         setIsTyping(true);
 
         try {
-            // Context placeholder - in real app connect to timer/state
+            // Real context from props
             const context = {
-                sessionsToday: 0,
-                currentSession: 1,
-                isRunning: false,
-                timeLeft: "25:00",
-                timeOfDay: "Day"
+                sessionsToday: sessionsToday,
+                currentSession: sessionsToday + 1,
+                isRunning: isRunning,
+                timeLeft: timeLeft,
+                timeOfDay: new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 17 ? "Afternoon" : "Evening"
             };
 
             const responseObj = await coachService.chat(userMsgText, context);

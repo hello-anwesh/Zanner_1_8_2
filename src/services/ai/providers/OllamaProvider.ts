@@ -1,4 +1,5 @@
-import { AIProvider, Message, AIOptions, ModelInfo, ProviderStatus } from "../types";
+import { AIProvider, Message, ModelInfo, ProviderStatus, AIOptions } from "../types";
+import { safeFetch } from "../../../lib/tauriFetch";
 
 /**
  * Ollama Provider
@@ -20,7 +21,7 @@ export class OllamaProvider implements AIProvider {
 
     async isAvailable(): Promise<ProviderStatus> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/tags`, {
+            const response = await safeFetch(`${this.baseUrl}/api/tags`, {
                 method: "GET",
                 signal: AbortSignal.timeout(3000),
             });
@@ -47,7 +48,7 @@ export class OllamaProvider implements AIProvider {
 
     async fetchModels(): Promise<ModelInfo[]> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/tags`);
+            const response = await safeFetch(`${this.baseUrl}/api/tags`);
             if (!response.ok) return [];
 
             const data = await response.json();
@@ -69,7 +70,7 @@ export class OllamaProvider implements AIProvider {
         const timeoutId = setTimeout(() => controller.abort(), 120000);
 
         try {
-            const response = await fetch(`${this.baseUrl}/api/chat`, {
+            const response = await safeFetch(`${this.baseUrl}/api/chat`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 signal: controller.signal,
@@ -107,7 +108,7 @@ export class OllamaProvider implements AIProvider {
         const timeoutId = setTimeout(() => controller.abort(), 120000);
 
         try {
-            const response = await fetch(`${this.baseUrl}/api/chat`, {
+            const response = await safeFetch(`${this.baseUrl}/api/chat`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 signal: controller.signal,
@@ -168,7 +169,7 @@ export class OllamaProvider implements AIProvider {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 min for cold start
 
-            const response = await fetch(`${this.baseUrl}/api/chat`, {
+            const response = await safeFetch(`${this.baseUrl}/api/chat`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 signal: controller.signal,

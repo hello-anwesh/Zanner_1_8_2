@@ -132,7 +132,7 @@ class SessionNotesService {
         await this.init();
 
         try {
-            const rows = await this.db.select<any[]>(
+            const rows: any[] = await this.db.select(
                 `SELECT * FROM session_notes WHERE date = ? ORDER BY session_number ASC`,
                 [date]
             );
@@ -151,7 +151,7 @@ class SessionNotesService {
         await this.init();
 
         try {
-            const rows = await this.db.select<any[]>(
+            const rows: any[] = await this.db.select(
                 `SELECT * FROM session_notes WHERE id = ?`,
                 [id]
             );
@@ -170,7 +170,7 @@ class SessionNotesService {
         await this.init();
 
         try {
-            const rows = await this.db.select<any[]>(
+            const rows: any[] = await this.db.select(
                 `SELECT * FROM session_notes ORDER BY created_at DESC LIMIT ?`,
                 [limit]
             );
@@ -243,7 +243,7 @@ class SessionNotesService {
         await this.init();
 
         try {
-            const rows = await this.db.select<{ count: number }[]>(
+            const rows: any[] = await this.db.select(
                 `SELECT COUNT(*) as count FROM session_notes WHERE date = ?`,
                 [date]
             );

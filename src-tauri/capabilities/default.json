@@ -2,6 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capability for the main window",
+  "local": true,
   "windows": [
     "main"
   ],
@@ -9,8 +10,10 @@
     "core:default",
     "opener:default",
     "sql:default",
+    "sql:allow-load",
     "sql:allow-execute",
     "sql:allow-select",
+    "sql:allow-close",
     "core:window:allow-set-focus",
     "core:window:allow-set-size",
     "core:window:allow-center",
@@ -18,6 +21,25 @@
     "core:window:allow-maximize",
     "core:window:allow-close",
     "core:window:allow-start-dragging",
-    "core:webview:default"
-  ]
+    "core:webview:default",
+    "core:webview:allow-internal-toggle-devtools",
+    "http:default"
+  ],
+  "platforms": [
+    "macOS",
+    "windows",
+    "linux"
+  ],
+  "remote": {
+    "urls": [
+      "http://localhost:1421/*",
+      "https://api.openai.com/*",
+      "https://api.anthropic.com/*",
+      "https://generativelanguage.googleapis.com/*",
+      "http://localhost:11434/*",
+      "http://127.0.0.1:11434/*",
+      "https://fonts.googleapis.com/*",
+      "https://fonts.gstatic.com/*"
+    ]
+  }
 }
