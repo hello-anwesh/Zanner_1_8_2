@@ -269,7 +269,6 @@ function App() {
   const spotify = useSpotify();
 
   const currentDuration = durations[mode] * 60;
-  const progress = ((currentDuration - timeLeft) / currentDuration) * 100;
 
   // Work context for AI
   const workContext = {
@@ -499,7 +498,6 @@ function App() {
   const size = 340;
   const stroke = 8;
   const radius = (size - stroke) / 2;
-  const circ = 2 * Math.PI * radius;
 
   const textMuted = "rgba(255,255,255,0.5)";
 

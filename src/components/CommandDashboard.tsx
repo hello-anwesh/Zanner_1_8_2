@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Play, Pause, SkipForward, Flame, Target, Brain, Sparkles,
+    Flame, Target, Brain, Sparkles,
     Calendar, PenLine, Music, TrendingUp, Zap,
     ChevronRight, BarChart3, Heart, Moon, Sun, Coffee, ChevronDown
 } from 'lucide-react';
