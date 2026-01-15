@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Target, Brain, Zap, X, ChevronRight } from 'lucide-react';
+import { Sparkles, Target, Brain, Zap, ChevronRight } from 'lucide-react';
 
 interface OnboardingProps {
     isOpen: boolean;
