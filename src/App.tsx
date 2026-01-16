@@ -205,6 +205,30 @@ function App() {
     updateWindowSize();
   }, [isCompactMode]);
 
+  // Handle Page Visibility for timer accuracy when minimized
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isRunning && endTimeRef.current) {
+        // When page becomes visible again, immediately sync to correct time
+        const now = Date.now();
+        const remaining = Math.ceil((endTimeRef.current - now) / 1000);
+
+        if (remaining > 0) {
+          setTimeLeft(remaining);
+        } else {
+          // Timer completed while hidden
+          setTimeLeft(0);
+          setIsRunning(false);
+          endTimeRef.current = null;
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isRunning]);
+
+
   const {
     sessions: historySessions,
     stats,
@@ -382,10 +406,14 @@ function App() {
   }, [isRunning]);
 
   // Control music based on timer state (only resume during focus sessions)
+  // Music should keep playing even when window is minimized/hidden
   useEffect(() => {
-    if (isRunning && mode === "focus") {
+    // Only control music based on actual timer state, not visibility
+    if (isRunning && mode === "focus" && endTimeRef.current) {
+      // Timer is actually running (has endTime), play music
       musicController.resume();
-    } else if (!isRunning) {
+    } else if (!isRunning || !endTimeRef.current) {
+      // Timer is actually stopped
       musicController.pause();
     }
   }, [isRunning, mode]);
