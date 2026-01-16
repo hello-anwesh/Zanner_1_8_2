@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
-    User, Database, Plus, Save, Trash2, Sparkles,
-    Target, Heart, Brain, Zap, Star, ChevronRight,
+    User, Database, Plus, Save as _Save, Trash2, Sparkles,
+    Target, Heart, Brain, Zap as _Zap, Star as _Star, ChevronRight,
     Edit3, MessageSquare, Check
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,7 +12,7 @@ import { TrainingProfile } from "../../services/training/types";
 // TYPES
 // =============================================================================
 
-interface PersonaDirective {
+interface _PersonaDirective {
     id: string;
     content: string;
     category: 'core' | 'tone' | 'behavior' | 'context';
@@ -28,7 +28,7 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
     const [showSuccess, setShowSuccess] = useState(false);
 
     // Persona editor state
-    const [editingDirective, setEditingDirective] = useState<string | null>(null);
+    const [_editingDirective, setEditingDirective] = useState<string | null>(null);
     const [newDirective, setNewDirective] = useState("");
     const [directiveCategory, setDirectiveCategory] = useState<'core' | 'tone' | 'behavior' | 'context'>('core');
 
@@ -284,8 +284,8 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
                                                     key={cat}
                                                     onClick={() => setDirectiveCategory(cat)}
                                                     className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${directiveCategory === cat
-                                                            ? 'bg-white/20 text-white'
-                                                            : 'bg-white/5 text-white/50 hover:text-white/70'
+                                                        ? 'bg-white/20 text-white'
+                                                        : 'bg-white/5 text-white/50 hover:text-white/70'
                                                         }`}
                                                 >
                                                     {cat}
@@ -582,8 +582,8 @@ function KnowledgeEditor({ profile, setProfile, accent, onSave }: {
                         <button
                             onClick={() => setCategory('fact')}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${category === 'fact'
-                                    ? 'bg-cyan-500/20 text-cyan-400'
-                                    : 'bg-white/5 text-white/50 hover:text-white/70'
+                                ? 'bg-cyan-500/20 text-cyan-400'
+                                : 'bg-white/5 text-white/50 hover:text-white/70'
                                 }`}
                         >
                             📝 Fact
@@ -591,8 +591,8 @@ function KnowledgeEditor({ profile, setProfile, accent, onSave }: {
                         <button
                             onClick={() => setCategory('preference')}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${category === 'preference'
-                                    ? 'bg-pink-500/20 text-pink-400'
-                                    : 'bg-white/5 text-white/50 hover:text-white/70'
+                                ? 'bg-pink-500/20 text-pink-400'
+                                : 'bg-white/5 text-white/50 hover:text-white/70'
                                 }`}
                         >
                             ❤️ Preference
@@ -652,7 +652,7 @@ function KnowledgeEditor({ profile, setProfile, accent, onSave }: {
 // FORM COMPONENTS
 // =============================================================================
 
-function FormField({ label, icon, value, onChange, placeholder, type = "text", accent }: any) {
+function FormField({ label, icon, value, onChange, placeholder, type = "text", accent: _accent }: any) {
     return (
         <div className="space-y-3">
             <label className="text-sm font-semibold text-white/50 flex items-center gap-2">
@@ -670,7 +670,7 @@ function FormField({ label, icon, value, onChange, placeholder, type = "text", a
     );
 }
 
-function FormTextArea({ label, icon, value, onChange, placeholder, accent }: any) {
+function FormTextArea({ label, icon, value, onChange, placeholder, accent: _accent }: any) {
     return (
         <div className="space-y-3">
             <label className="text-sm font-semibold text-white/50 flex items-center gap-2">
@@ -688,7 +688,7 @@ function FormTextArea({ label, icon, value, onChange, placeholder, accent }: any
     );
 }
 
-function SelectField({ label, icon, value, onChange, options, accent }: any) {
+function SelectField({ label, icon, value, onChange, options, accent: _accent }: any) {
     return (
         <div className="space-y-3">
             <label className="text-sm font-semibold text-white/50 flex items-center gap-2">

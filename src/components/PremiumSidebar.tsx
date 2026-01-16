@@ -16,12 +16,12 @@ interface PremiumSidebarProps {
     onCoachOpen: () => void;
 }
 
-const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, accent, onFrequencyClick, onCoachOpen }: PremiumSidebarProps) => {
-    const [expandedSections, setExpandedSections] = React.useState({
+const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, accent, onFrequencyClick, onCoachOpen: _onCoachOpen }: PremiumSidebarProps) => {
+    const [_expandedSections, setExpandedSections] = React.useState({
         settings: false
     });
 
-    const toggleSection = (section: 'settings') => {
+    const _toggleSection = (section: 'settings') => {
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
@@ -34,7 +34,7 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
         { id: 'journal', icon: Book, label: 'Journal', gradient: 'from-amber-500 to-yellow-600' },
     ];
 
-    const settingsItems = [
+    const _settingsItems = [
         { id: 'settings-brain', icon: Brain, label: 'Memory', effect: 'pulse' },
         { id: 'settings-ai', icon: Settings2, label: 'AI Engine', effect: 'rotate' },
         { id: 'settings-theme', icon: Palette, label: 'Theme', effect: 'rotate' },
@@ -256,7 +256,7 @@ const NavButton = ({ id, icon: Icon, label, view, onClick, collapsed, accent, ba
 };
 
 // ExpandableSection Component  
-const ExpandableSection = ({ title, count, icon: Icon, expanded, onToggle, collapsed, accent, children }: any) => {
+const _ExpandableSection = ({ title, count, icon: Icon, expanded, onToggle, collapsed, accent, children }: any) => {
     return (
         <div>
             <motion.button
@@ -318,7 +318,7 @@ const ExpandableSection = ({ title, count, icon: Icon, expanded, onToggle, colla
 };
 
 // SubItem Component
-const SubItem = ({ id, icon: Icon, label, effect, view, onClick, accent }: any) => {
+const _SubItem = ({ id, icon: Icon, label, effect, view, onClick, accent }: any) => {
     const isActive = view === id;
 
     const getHoverAnimation = () => {

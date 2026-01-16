@@ -7,10 +7,10 @@ import {
     Settings,
     AlertCircle,
     CheckCircle,
-    LogIn,
-    LogOut,
+    LogIn as _LogIn,
+    LogOut as _LogOut,
     Crown,
-    Lock
+    Lock as _Lock
 } from "lucide-react";
 import { syncService } from "../services/sync/SyncService";
 import { SyncState, SyncConfig } from "../services/sync/types";
@@ -23,10 +23,10 @@ interface SyncSettingsPanelProps {
 export function SyncSettingsPanel({ accent, isPremium = false }: SyncSettingsPanelProps) {
     const [state, setState] = useState<SyncState>(syncService.getState());
     const [config, setConfig] = useState<SyncConfig>(syncService.getConfig());
-    const [isAuthenticating, setIsAuthenticating] = useState(false);
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [authError, setAuthError] = useState("");
+    const [_isAuthenticating, setIsAuthenticating] = useState(false);
+    const [_email, setEmail] = useState("");
+    const [_password, setPassword] = useState("");
+    const [_authError, setAuthError] = useState("");
 
     useEffect(() => {
         const unsubscribe = syncService.subscribe(setState);
