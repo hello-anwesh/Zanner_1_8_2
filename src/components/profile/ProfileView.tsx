@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     User, Briefcase, Target, Clock, Brain, Heart,
-    ChevronRight, Check, Plus, X, Sparkles,
+    ChevronRight, Check, Plus, X as _X, Sparkles,
     Sun, Moon, Zap, MessageSquare, Bell,
     Coffee, Sunrise, CircleDot
 } from 'lucide-react';

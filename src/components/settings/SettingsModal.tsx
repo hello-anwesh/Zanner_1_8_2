@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Clock, Brain, Music2, Palette, Sparkles, ChevronRight } from "lucide-react";
+import { X as _X, Clock, Brain, Music2, Palette, Sparkles, ChevronRight } from "lucide-react";
 import { TimerSection } from "./sections/TimerSection";
 import { SoundsSection } from "./sections/SoundsSection";
 import { AppearanceSection } from "./sections/AppearanceSection";
