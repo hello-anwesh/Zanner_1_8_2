@@ -216,7 +216,7 @@ export function JournalView() {
 
     // Phase 2: AI Writing Prompts
     const [prompts, setPrompts] = useState<JournalPrompt[]>([]);
-    const [promptsVisible, setPromptsVisible] = useState(true);
+    const [_promptsVisible, setPromptsVisible] = useState(true);
 
     // Load prompts when viewing an empty entry
     useEffect(() => {

@@ -268,7 +268,7 @@ function App() {
   useSessionLogger(); // Logs sessions to SQLite for analytics
   const spotify = useSpotify();
 
-  const currentDuration = durations[mode] * 60;
+  const _currentDuration = durations[mode] * 60;
 
   // Work context for AI
   const workContext = {
@@ -497,7 +497,7 @@ function App() {
   // Timer circle
   const size = 340;
   const stroke = 8;
-  const radius = (size - stroke) / 2;
+  const _radius = (size - stroke) / 2;
 
   const textMuted = "rgba(255,255,255,0.5)";
 

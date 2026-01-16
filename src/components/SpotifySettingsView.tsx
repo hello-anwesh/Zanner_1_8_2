@@ -12,7 +12,7 @@ interface SpotifySettingsViewProps {
 }
 
 export function SpotifySettingsView({ accent: _accent, onBack }: SpotifySettingsViewProps) {
-    const [spotifyState, setSpotifyState] = useState<SpotifyState | null>(null);
+    const [_spotifyState, setSpotifyState] = useState<SpotifyState | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [clientId, setClientId] = useState('');
     const [clientSecret, setClientSecret] = useState('');

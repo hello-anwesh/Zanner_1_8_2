@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Plus, Sparkles, RotateCcw, Copy, Check, X, Bot, User, Mic, Clock, Trash2, MessageSquare, FileText } from "lucide-react";
+import { Send, Plus, Sparkles, RotateCcw, Copy, Check, X as _X, Bot, User, Mic, Clock, Trash2, MessageSquare, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -31,7 +31,7 @@ interface ZennerCoachProps {
     onMusicSelect?: (url: string, name: string) => void;
 }
 
-export function ZennerCoach({ accent, onClose, sessionsToday = 0, isRunning = false, timeLeft = "25:00", onMusicSelect }: ZennerCoachProps) {
+export function ZennerCoach({ accent, onClose, sessionsToday = 0, isRunning = false, timeLeft = "25:00", onMusicSelect: _onMusicSelect }: ZennerCoachProps) {
     // Session State
     const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
