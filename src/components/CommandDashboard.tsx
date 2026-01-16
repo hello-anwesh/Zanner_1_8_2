@@ -36,6 +36,8 @@ interface DashboardProps {
     onPresetChange?: (preset: TimerPresetBasic) => void;
     // Navigation
     onNavigate: (view: string) => void;
+    // Compact Mode
+    onCompactMode?: () => void;
     // Status
     streakDays?: number;
     aiReady?: boolean;
@@ -72,6 +74,7 @@ export function CommandDashboard({
     allPresets,
     onPresetChange,
     onNavigate,
+    onCompactMode,
     streakDays = 0,
     aiReady = true,
     musicPlaying = false
@@ -402,6 +405,22 @@ export function CommandDashboard({
                                     <line x1="19" y1="5" x2="19" y2="19" />
                                 </svg>
                             </motion.button>
+                            {onCompactMode && (
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={onCompactMode}
+                                    className="unstyled w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all"
+                                    style={{ padding: 0, minHeight: 'unset' }}
+                                    title="Compact Mode"
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                                        <path d="M9 3v18" />
+                                        <path d="m14 9 3 3-3 3" />
+                                    </svg>
+                                </motion.button>
+                            )}
                         </div>
                     </div>
                 </motion.div>

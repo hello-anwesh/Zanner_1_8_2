@@ -1103,6 +1103,7 @@ function App() {
                         }
                       }}
                       onNavigate={(v) => setView(v as View)}
+                      onCompactMode={() => setIsCompactMode(true)}
                       streakDays={7}
                       aiReady={true}
                       musicPlaying={false}
