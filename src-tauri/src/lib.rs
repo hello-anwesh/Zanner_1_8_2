@@ -519,11 +519,71 @@ fn greet(name: &str) -> String {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    use tauri::menu::{AboutMetadataBuilder, MenuBuilder, PredefinedMenuItem, SubmenuBuilder};
+
     tauri::Builder::default()
         .plugin(tauri_plugin_sql::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_localhost::Builder::new(1421).build())
+        .setup(|app| {
+            // Build the About metadata
+            let about_metadata = AboutMetadataBuilder::new()
+                .name(Some("Zenner"))
+                .version(Some("1.8.4"))
+                .authors(Some(vec!["Anwesh Rath".to_string()]))
+                .comments(Some("Your Intelligent Focus Companion"))
+                .copyright(Some("© 2026 Anwesh Rath"))
+                .website(Some("https://anwe.sh"))
+                .build();
+
+            // Build the App submenu (macOS style)
+            let app_submenu = SubmenuBuilder::new(app, "Zenner")
+                .about(Some(about_metadata))
+                .separator()
+                .services()
+                .separator()
+                .hide()
+                .hide_others()
+                .show_all()
+                .separator()
+                .quit()
+                .build()?;
+
+            // Build the Edit submenu
+            let edit_submenu = SubmenuBuilder::new(app, "Edit")
+                .undo()
+                .redo()
+                .separator()
+                .cut()
+                .copy()
+                .paste()
+                .select_all()
+                .build()?;
+
+            // Build the Window submenu
+            let window_submenu = SubmenuBuilder::new(app, "Window")
+                .minimize()
+                .item(&PredefinedMenuItem::maximize(app, Some("Zoom"))?)
+                .separator()
+                .close_window()
+                .build()?;
+
+            // Build the Help submenu
+            let help_submenu = SubmenuBuilder::new(app, "Help").build()?;
+
+            // Combine into menu
+            let menu = MenuBuilder::new(app)
+                .item(&app_submenu)
+                .item(&edit_submenu)
+                .item(&window_submenu)
+                .item(&help_submenu)
+                .build()?;
+
+            app.set_menu(menu)?;
+
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             greet,
             run_shell_cmd,

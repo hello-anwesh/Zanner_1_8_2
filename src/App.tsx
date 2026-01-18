@@ -53,6 +53,7 @@ import { PostSessionJournal } from "./components/PostSessionJournal";
 import { CommandDashboard } from "./components/CommandDashboard";
 import { ProfileView } from "./components/profile/ProfileView";
 import { SettingsHub } from "./components/SettingsHub";
+import { AboutView } from "./components/AboutView";
 import { databaseService } from "./services/db/DatabaseService";
 import { migrationService } from "./services/db/MigrationService";
 import { accountabilityService } from "./services/accountability/AccountabilityService";
@@ -67,7 +68,7 @@ import { voiceService } from "./services/voice/VoiceService";
 // TYPES & CONSTANTS
 // ============================================================================
 
-type View = "home" | "dashboard" | "stats" | "integrations" | "frequencies" | "philosophy" | "journal" | "profile" | "settings" | "zeni" |
+type View = "home" | "dashboard" | "stats" | "integrations" | "frequencies" | "philosophy" | "journal" | "profile" | "settings" | "zeni" | "about" |
   "settings-ai" | "settings-theme" | "settings-spotify" | "settings-youtube" | "settings-timer" | "settings-voice" | "settings-brain" | "settings-backup" |
   "ai-identity" | "ai-cognition" | "ai-rhythms" | "ai-training" |
   "voice-speech" | "voice-tts";
@@ -358,17 +359,17 @@ function App() {
   // Timer Control Functions - Proper State Transitions
 
   /**
-   * Start the timer from paused/stopped state
+   * Start the timer from paused/stopped state (user-initiated)
    * Uses captured remaining time if resuming from pause, otherwise uses current timeLeft
    */
-  const startTimer = (durationOverride?: number, modeOverride?: TimerMode) => {
+  const startTimer = () => {
     if (isRunning) return; // Already running, no-op
 
-    const timeToUse = durationOverride ?? remainingOnPauseRef.current ?? timeLeft;
+    const timeToUse = remainingOnPauseRef.current ?? timeLeft;
     endTimeRef.current = Date.now() + (timeToUse * 1000);
     remainingOnPauseRef.current = null; // Clear any captured pause state
     setIsRunning(true);
-    eventBus.emit({ type: "SESSION_START", mode: modeOverride ?? mode });
+    eventBus.emit({ type: "SESSION_START", mode });
   };
 
   /**
@@ -533,13 +534,14 @@ function App() {
           nextDuration = durations[nextMode] * 60;
         }
 
-        // Update state
+        // Update state and auto-start next session
+        // Direct state setting avoids stale closure issues with startTimer()
         setMode(nextMode);
         setTimeLeft(nextDuration);
-
-        // Auto-start next session with EXPLICIT values to bypass stale closure state
-        setTimeout(() => startTimer(nextDuration, nextMode), 0);
-        sessionStartTimeRef.current = new Date(); // Track session start
+        endTimeRef.current = Date.now() + (nextDuration * 1000);
+        setIsRunning(true);
+        sessionStartTimeRef.current = new Date();
+        eventBus.emit({ type: "SESSION_START", mode: nextMode });
       }, 2000);
     }
   }, [timeLeft, isRunning, mode, sessions, durations, activePreset, sequenceIndex]);
@@ -1236,6 +1238,11 @@ function App() {
                   {/* PROFILE */}
                   {view === "profile" && (
                     <ProfileView accent={accent} />
+                  )}
+
+                  {/* ABOUT */}
+                  {view === "about" && (
+                    <AboutView />
                   )}
 
                   {/* SETTINGS HUB */}
