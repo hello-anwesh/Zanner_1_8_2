@@ -405,6 +405,21 @@ function App() {
     }
   };
 
+  /**
+   * Reset timer to initial duration for current mode
+   */
+  const resetTimer = () => {
+    pauseTimer(); // Stop timer if running
+
+    // Reset to mode's initial duration
+    const duration = durations[mode] * 60;
+    setTimeLeft(duration);
+    remainingOnPauseRef.current = null; // Clear any pause state
+    endTimeRef.current = null;
+
+    console.log(`[Timer] Reset to ${mode} duration: ${duration}s`);
+  };
+
   useEffect(() => {
     if (!isRunning) return;
 
@@ -1073,6 +1088,18 @@ function App() {
                           </button>
 
                           <button
+                            onClick={resetTimer}
+                            className="p-4 rounded-xl transition-all duration-300 hover:scale-105 hover:bg-white/5"
+                            title="Reset Timer"
+                            style={{ border: `1px solid ${accent}30` }}
+                          >
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={accent + '80'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="23 4 23 10 17 10" />
+                              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                            </svg>
+                          </button>
+
+                          <button
                             onClick={() => setIsCompactMode(true)}
                             className="p-4 rounded-xl transition-all duration-300 hover:scale-105 hover:bg-white/5"
                             title="Compact Mode"
@@ -1155,6 +1182,7 @@ function App() {
                       mode={mode}
                       sessions={sessions}
                       onToggleTimer={toggleTimer}
+                      onReset={resetTimer}
                       onSkip={() => {
                         let nextMode: typeof mode = mode === "focus"
                           ? (sessions > 0 && (sessions + 1) % 4 === 0 ? "longBreak" : "shortBreak")

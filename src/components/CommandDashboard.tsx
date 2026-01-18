@@ -28,6 +28,7 @@ interface DashboardProps {
     sessions: number;
     onToggleTimer: () => void;
     onSkip: () => void;
+    onReset: () => void;
     onModeChange?: (mode: 'focus' | 'shortBreak' | 'longBreak') => void;
     accent: string;
     // Presets
@@ -68,6 +69,7 @@ export function CommandDashboard({
     sessions,
     onToggleTimer,
     onSkip,
+    onReset,
     onModeChange,
     accent,
     activePreset,
@@ -403,6 +405,19 @@ export function CommandDashboard({
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <polygon points="5 4 15 12 5 20 5 4" />
                                     <line x1="19" y1="5" x2="19" y2="19" />
+                                </svg>
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={onReset}
+                                className="unstyled w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all"
+                                style={{ padding: 0, minHeight: 'unset' }}
+                                title="Reset Timer"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="23 4 23 10 17 10" />
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                                 </svg>
                             </motion.button>
                             {onCompactMode && (
