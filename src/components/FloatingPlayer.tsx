@@ -118,12 +118,20 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
     }, []);
 
     // Subscribe to Spotify state
+    // Subscribe to Spotify state - ONLY when Spotify tab is active
     useEffect(() => {
+        if (!showLibrary || activeCategory !== 'spotify') {
+            return;
+        }
+
+        // Initial fetch
+        spotifyService.getState().then(setSpotifyState);
+
         const unsub = spotifyService.subscribe((state) => {
             setSpotifyState(state);
         });
         return () => unsub();
-    }, []);
+    }, [showLibrary, activeCategory]);
 
     // MusicController integration for timer pause/resume
     const pausePlayback = useCallback(() => {
