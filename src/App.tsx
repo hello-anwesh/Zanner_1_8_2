@@ -307,7 +307,6 @@ function App() {
   useSessionLogger(); // Logs sessions to SQLite for analytics
   const spotify = useSpotify();
 
-  const _currentDuration = durations[mode] * 60;
 
   // Work context for AI
   const workContext = {
@@ -589,9 +588,6 @@ function App() {
   };
 
   // Timer circle
-  const size = 340;
-  const stroke = 8;
-  const _radius = (size - stroke) / 2;
 
   const textMuted = "rgba(255,255,255,0.5)";
 
@@ -628,7 +624,7 @@ function App() {
               collapsed={sidebarCollapsed}
               onCollapsedChange={setSidebarCollapsed}
               view={view}
-              onViewChange={(v) => setView(v as any)}
+              onViewChange={(v: string) => setView(v as any)}
               accent={accent}
               onFrequencyClick={() => setView("frequencies")}
               onCoachOpen={() => setShowCoach(true)}

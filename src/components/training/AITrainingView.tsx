@@ -12,11 +12,6 @@ import { TrainingProfile } from "../../services/training/types";
 // TYPES
 // =============================================================================
 
-interface _PersonaDirective {
-    id: string;
-    content: string;
-    category: 'core' | 'tone' | 'behavior' | 'context';
-}
 
 // =============================================================================
 // MAIN COMPONENT
@@ -28,7 +23,6 @@ export function AITrainingView({ accent, onClose }: { accent: string; onClose: (
     const [showSuccess, setShowSuccess] = useState(false);
 
     // Persona editor state
-    const [_editingDirective, setEditingDirective] = useState<string | null>(null);
     const [newDirective, setNewDirective] = useState("");
     const [directiveCategory, setDirectiveCategory] = useState<'core' | 'tone' | 'behavior' | 'context'>('core');
 

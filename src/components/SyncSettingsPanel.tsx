@@ -23,10 +23,6 @@ interface SyncSettingsPanelProps {
 export function SyncSettingsPanel({ accent, isPremium = false }: SyncSettingsPanelProps) {
     const [state, setState] = useState<SyncState>(syncService.getState());
     const [config, setConfig] = useState<SyncConfig>(syncService.getConfig());
-    const [_isAuthenticating, setIsAuthenticating] = useState(false);
-    const [_email, setEmail] = useState("");
-    const [_password, setPassword] = useState("");
-    const [_authError, setAuthError] = useState("");
 
     useEffect(() => {
         const unsubscribe = syncService.subscribe(setState);
