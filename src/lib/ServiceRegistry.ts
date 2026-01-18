@@ -88,10 +88,16 @@ export const services = {
 
 /**
  * For backwards compatibility during migration
+ * DEPRECATED: Use async service access via ServiceContainer.get() directly
+ * These exports are commented out because they cause eager service initialization
+ * before registerServices() completes, leading to "Service 'ai' not registered" errors.
+ *
+ * Migration path: Update imports to use async service access:
+ * - const aiService = await ServiceContainer.get('ai');
  */
-export const aiService = services.ai;
-export const coachService = services.coach;
-export const databaseService = services.database;
-export const journalService = services.journal;
-export const sessionNotesService = services.sessionNotes;
-export const spotifyService = services.spotify;
+// export const aiService = services.ai;
+// export const coachService = services.coach;
+// export const databaseService = services.database;
+// export const journalService = services.journal;
+// export const sessionNotesService = services.sessionNotes;
+// export const spotifyService = services.spotify;

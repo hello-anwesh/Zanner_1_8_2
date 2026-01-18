@@ -99,9 +99,9 @@ class MigrationService {
                 const mode = session.mode || 'productivity';
                 const title = session.title || 'Untitled Chat';
 
-                // Insert conversation
+                // Insert conversation (use OR IGNORE to skip if already exists)
                 await db.execute(
-                    `INSERT INTO conversations (id, user_id, title, created_at, updated_at, mode, message_count, total_tokens)
+                    `INSERT OR IGNORE INTO conversations (id, user_id, title, created_at, updated_at, mode, message_count, total_tokens)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                     [conversationId, this.DEFAULT_USER_ID, title, createdAt, updatedAt, mode, session.messages?.length || 0, 0]
                 );
@@ -115,7 +115,7 @@ class MigrationService {
                         const content = msg.content || '';
 
                         await db.execute(
-                            `INSERT INTO messages (id, conversation_id, role, content, timestamp, tokens_used)
+                            `INSERT OR IGNORE INTO messages (id, conversation_id, role, content, timestamp, tokens_used)
                              VALUES (?, ?, ?, ?, ?, ?)`,
                             [messageId, conversationId, role, content, timestamp, null]
                         );
@@ -148,7 +148,7 @@ class MigrationService {
                     const createdAt = item.lastUpdated || Date.now();
 
                     await db.execute(
-                        `INSERT INTO memory_items (id, user_id, category, content, created_at, last_accessed, access_count)
+                        `INSERT OR IGNORE INTO memory_items (id, user_id, category, content, created_at, last_accessed, access_count)
                          VALUES (?, ?, ?, ?, ?, ?, ?)`,
                         [id, this.DEFAULT_USER_ID, category, content, createdAt, null, 0]
                     );
@@ -166,7 +166,7 @@ class MigrationService {
                     const timestamp = exp.timestamp || Date.now();
 
                     await db.execute(
-                        `INSERT INTO experiences (id, user_id, summary, sentiment, key_learnings, timestamp)
+                        `INSERT OR IGNORE INTO experiences (id, user_id, summary, sentiment, key_learnings, timestamp)
                          VALUES (?, ?, ?, ?, ?, ?)`,
                         [id, this.DEFAULT_USER_ID, summary, sentiment, keyLearnings, timestamp]
                     );
@@ -184,7 +184,7 @@ class MigrationService {
                     const createdAt = Date.now();
 
                     await db.execute(
-                        `INSERT INTO rules (id, user_id, rule, trigger_context, is_active, created_at)
+                        `INSERT OR IGNORE INTO rules (id, user_id, rule, trigger_context, is_active, created_at)
                          VALUES (?, ?, ?, ?, ?, ?)`,
                         [id, this.DEFAULT_USER_ID, ruleText, triggerContext, isActive ? 1 : 0, createdAt]
                     );
@@ -213,7 +213,7 @@ class MigrationService {
                 const now = Date.now();
 
                 await db.execute(
-                    `INSERT INTO rag_documents (id, content, embedding, metadata, doc_type, created_at, updated_at)
+                    `INSERT OR IGNORE INTO rag_documents (id, content, embedding, metadata, doc_type, created_at, updated_at)
                      VALUES (?, ?, ?, ?, ?, ?, ?)`,
                     [id, content, embedding, metadata, docType, now, now]
                 );
