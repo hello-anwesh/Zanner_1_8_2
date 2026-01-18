@@ -59,6 +59,7 @@ import { accountabilityService } from "./services/accountability/AccountabilityS
 import { useSessionLogger } from "./hooks/useSessionLogger";
 import { BackupSettingsView } from "./components/settings/BackupSettingsView";
 import { getLocalDateString } from "./utils/dateUtils";
+import { voiceService } from "./services/voice/VoiceService";
 
 
 
@@ -92,6 +93,18 @@ function App() {
       console.error('[App] Failed to register services:', error);
     });
   }, []); // Run once on mount
+
+  // Initialize Voice Service for timer announcements
+  useEffect(() => {
+    voiceService.initialize().then(() => {
+      console.log('[App] Voice service initialized');
+    }).catch((error) => {
+      console.error('[App] Failed to initialize voice service:', error);
+    });
+
+    // Cleanup on unmount
+    return () => voiceService.destroy();
+  }, []);
 
   // Theme Context
   const { currentTheme, themeName, setTheme, themes } = useTheme();
@@ -171,6 +184,7 @@ function App() {
   const [sessions, setSessions] = useState(0); // Synced from database via useAnalytics
   const prevSecondsRef = useRef(timeLeft);
   const endTimeRef = useRef<number | null>(null); // Absolute timestamp when timer should end
+  const remainingOnPauseRef = useRef<number | null>(null); // Captured remaining time when paused
 
   // Sync presets with manager
   useEffect(() => {
@@ -343,13 +357,20 @@ function App() {
   const toggleTimer = () => {
     const wasRunning = isRunning;
     setIsRunning(!isRunning);
+
     if (!wasRunning) {
-      // Starting timer - set the absolute end time
-      endTimeRef.current = Date.now() + (timeLeft * 1000);
+      // Resuming - use captured remaining time if available (from pause), otherwise use current timeLeft
+      const timeToUse = remainingOnPauseRef.current ?? timeLeft;
+      endTimeRef.current = Date.now() + (timeToUse * 1000);
+      remainingOnPauseRef.current = null; // Clear captured time
       eventBus.emit({ type: "SESSION_START", mode });
     } else {
-      // Pausing timer - clear the end time
-      endTimeRef.current = null;
+      // Pausing - capture exact remaining time from endTimeRef
+      if (endTimeRef.current) {
+        const remaining = Math.ceil((endTimeRef.current - Date.now()) / 1000);
+        remainingOnPauseRef.current = Math.max(0, remaining);
+      }
+      endTimeRef.current = null; // Clear absolute time
       eventBus.emit({ type: "SESSION_PAUSE", mode });
       // Track paused sessions for accountability (only during focus)
       if (mode === "focus") {
@@ -363,7 +384,9 @@ function App() {
 
     // If no endTime set (shouldn't happen but guard against it)
     if (!endTimeRef.current) {
-      endTimeRef.current = Date.now() + (timeLeft * 1000);
+      const timeToUse = remainingOnPauseRef.current ?? timeLeft;
+      endTimeRef.current = Date.now() + (timeToUse * 1000);
+      remainingOnPauseRef.current = null;
     }
 
     const interval = setInterval(() => {
