@@ -234,6 +234,7 @@ function App() {
           setTimeLeft(0);
           setIsRunning(false);
           endTimeRef.current = null;
+          remainingOnPauseRef.current = null; // Clear pause state
         }
       }
     };
@@ -349,6 +350,7 @@ function App() {
     } else {
       setTimeLeft(durations[newMode] * 60);
     }
+    remainingOnPauseRef.current = null; // Clear any stale pause state when mode changes
     setIsRunning(false);
   };
 
@@ -469,6 +471,7 @@ function App() {
   useEffect(() => {
     if (timeLeft === 0 && isRunning) {
       setIsRunning(false);
+      remainingOnPauseRef.current = null; // Clear any pause state on completion
       eventBus.emit({ type: "SESSION_END", mode });
 
       // Track session completion and show post-session journal for focus sessions
@@ -1151,7 +1154,7 @@ function App() {
                       isRunning={isRunning}
                       mode={mode}
                       sessions={sessions}
-                      onToggleTimer={() => setIsRunning(!isRunning)}
+                      onToggleTimer={toggleTimer}
                       onSkip={() => {
                         let nextMode: typeof mode = mode === "focus"
                           ? (sessions > 0 && (sessions + 1) % 4 === 0 ? "longBreak" : "shortBreak")
@@ -1162,6 +1165,7 @@ function App() {
                       onModeChange={(newMode) => {
                         setMode(newMode);
                         setTimeLeft(durations[newMode] * 60);
+                        remainingOnPauseRef.current = null; // Clear pause state on mode change
                         setIsRunning(false);
                       }}
                       accent={accent}
@@ -1564,6 +1568,7 @@ function App() {
                     setTimeLeft(updated.focus * 60); // Assuming in focus, or recalculate based on current mode
                     setMode("focus");
                   }
+                  remainingOnPauseRef.current = null; // Clear pause state on preset change
                   setIsRunning(false);
                 }}
                 colors={colors}
@@ -1605,7 +1610,7 @@ function App() {
             mode={mode}
             accent={colors.accent}
             sessions={sessions}
-            onToggleTimer={() => setIsRunning(!isRunning)}
+            onToggleTimer={toggleTimer}
             onExpand={() => {
               setIsCompactMode(false);
               setView('home');
