@@ -361,14 +361,14 @@ function App() {
    * Start the timer from paused/stopped state
    * Uses captured remaining time if resuming from pause, otherwise uses current timeLeft
    */
-  const startTimer = () => {
+  const startTimer = (durationOverride?: number, modeOverride?: TimerMode) => {
     if (isRunning) return; // Already running, no-op
 
-    const timeToUse = remainingOnPauseRef.current ?? timeLeft;
+    const timeToUse = durationOverride ?? remainingOnPauseRef.current ?? timeLeft;
     endTimeRef.current = Date.now() + (timeToUse * 1000);
     remainingOnPauseRef.current = null; // Clear any captured pause state
     setIsRunning(true);
-    eventBus.emit({ type: "SESSION_START", mode });
+    eventBus.emit({ type: "SESSION_START", mode: modeOverride ?? mode });
   };
 
   /**
@@ -510,6 +510,7 @@ function App() {
 
       setTimeout(() => {
         let nextMode: TimerMode = "focus";
+        let nextDuration = 25 * 60; // Default fallback
 
         if (activePreset.sequence) {
           // Sequence Logic
@@ -517,22 +518,27 @@ function App() {
           setSequenceIndex(nextIndex);
           const step = activePreset.sequence[nextIndex];
           nextMode = step.type;
-
-          setMode(nextMode);
-          setTimeLeft(step.duration * 60);
+          nextDuration = step.duration * 60;
         } else {
           // Standard Logic
-          nextMode = mode === "focus"
-            ? (sessions > 0 && (sessions + 1) % 4 === 0 ? "longBreak" : "shortBreak")
-            : "focus";
+          // Calculate usage based on completed sessions (using current session count + 1 for the just-finished one)
+          const completedSessions = sessions + 1;
 
-          setMode(nextMode);
-          setTimeLeft(durations[nextMode] * 60);
+          if (mode === "focus") {
+            nextMode = (completedSessions > 0 && completedSessions % 4 === 0) ? "longBreak" : "shortBreak";
+          } else {
+            nextMode = "focus";
+          }
+
+          nextDuration = durations[nextMode] * 60;
         }
 
-        // Auto-start next session after state updates
-        // Use setTimeout 0 to let React process state updates first
-        setTimeout(() => startTimer(), 0);
+        // Update state
+        setMode(nextMode);
+        setTimeLeft(nextDuration);
+
+        // Auto-start next session with EXPLICIT values to bypass stale closure state
+        setTimeout(() => startTimer(nextDuration, nextMode), 0);
         sessionStartTimeRef.current = new Date(); // Track session start
       }, 2000);
     }
