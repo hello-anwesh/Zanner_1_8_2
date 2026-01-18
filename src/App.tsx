@@ -354,28 +354,52 @@ function App() {
 
 
 
-  const toggleTimer = () => {
-    const wasRunning = isRunning;
-    setIsRunning(!isRunning);
+  // Timer Control Functions - Proper State Transitions
 
-    if (!wasRunning) {
-      // Resuming - use captured remaining time if available (from pause), otherwise use current timeLeft
-      const timeToUse = remainingOnPauseRef.current ?? timeLeft;
-      endTimeRef.current = Date.now() + (timeToUse * 1000);
-      remainingOnPauseRef.current = null; // Clear captured time
-      eventBus.emit({ type: "SESSION_START", mode });
+  /**
+   * Start the timer from paused/stopped state
+   * Uses captured remaining time if resuming from pause, otherwise uses current timeLeft
+   */
+  const startTimer = () => {
+    if (isRunning) return; // Already running, no-op
+
+    const timeToUse = remainingOnPauseRef.current ?? timeLeft;
+    endTimeRef.current = Date.now() + (timeToUse * 1000);
+    remainingOnPauseRef.current = null; // Clear any captured pause state
+    setIsRunning(true);
+    eventBus.emit({ type: "SESSION_START", mode });
+  };
+
+  /**
+   * Pause the timer and capture current remaining time
+   */
+  const pauseTimer = () => {
+    if (!isRunning) return; // Already paused, no-op
+
+    // Capture exact remaining time from absolute endTimeRef
+    if (endTimeRef.current) {
+      const remaining = Math.ceil((endTimeRef.current - Date.now()) / 1000);
+      remainingOnPauseRef.current = Math.max(0, remaining);
+    }
+
+    endTimeRef.current = null; // Clear absolute time
+    setIsRunning(false);
+    eventBus.emit({ type: "SESSION_PAUSE", mode });
+
+    // Track paused sessions for accountability (only during focus)
+    if (mode === "focus") {
+      accountabilityService.recordSessionPaused();
+    }
+  };
+
+  /**
+   * Toggle between running and paused states
+   */
+  const toggleTimer = () => {
+    if (isRunning) {
+      pauseTimer();
     } else {
-      // Pausing - capture exact remaining time from endTimeRef
-      if (endTimeRef.current) {
-        const remaining = Math.ceil((endTimeRef.current - Date.now()) / 1000);
-        remainingOnPauseRef.current = Math.max(0, remaining);
-      }
-      endTimeRef.current = null; // Clear absolute time
-      eventBus.emit({ type: "SESSION_PAUSE", mode });
-      // Track paused sessions for accountability (only during focus)
-      if (mode === "focus") {
-        accountabilityService.recordSessionPaused();
-      }
+      startTimer();
     }
   };
 
@@ -489,9 +513,10 @@ function App() {
           setTimeLeft(durations[nextMode] * 60);
         }
 
-        setIsRunning(true); // Auto-start the next session
+        // Auto-start next session after state updates
+        // Use setTimeout 0 to let React process state updates first
+        setTimeout(() => startTimer(), 0);
         sessionStartTimeRef.current = new Date(); // Track session start
-        eventBus.emit({ type: "SESSION_START", mode: nextMode });
       }, 2000);
     }
   }, [timeLeft, isRunning, mode, sessions, durations, activePreset, sequenceIndex]);
