@@ -7,6 +7,10 @@ export { AISection } from "./sections/AISection";
 export { SoundsSection } from "./sections/SoundsSection";
 export { AppearanceSection } from "./sections/AppearanceSection";
 
+// Full page views
+export { AISettingsView } from "./AISettingsView";
+export { BackupSettingsView } from "./BackupSettingsView";
+
 // UI Components
 export {
     SettingRow,
@@ -17,3 +21,4 @@ export {
     SettingInput,
     SettingCard
 } from "./ui/SettingComponents";
+

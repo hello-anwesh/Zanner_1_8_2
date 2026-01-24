@@ -3,6 +3,11 @@ import { OllamaProvider } from "./providers/OllamaProvider";
 import { OpenAIProvider } from "./providers/OpenAIProvider";
 import { ClaudeProvider } from "./providers/ClaudeProvider";
 import { GeminiProvider } from "./providers/GeminiProvider";
+import { byokService } from "./BYOKService";
+import { zennerApiClient } from "../api/ZennerApiClient";
+
+// AI routing mode
+export type AIRoutingMode = 'backend' | 'byok';
 
 /**
  * AI Service
@@ -15,6 +20,13 @@ class AIService {
     private providerStatus: Map<AIProviderType, ProviderStatus> = new Map();
     private listeners: Set<() => void> = new Set();
     private readonly STORAGE_KEY = 'ai-service-config';
+    private routingMode: AIRoutingMode = 'byok';
+    private routingModeInitialized = false;
+
+    // Server persona (fetched from Zenner backend)
+    private cachedPersona: any = null;
+    private personaLastFetched: number = 0;
+    private readonly PERSONA_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
     // Context window management
     private readonly MAX_HISTORY_TOKENS = 4000; // Max tokens for conversation history
@@ -113,6 +125,78 @@ class AIService {
 
         // Check availability of active provider
         await this.checkProvider(this.config.activeProvider);
+
+        // If in backend mode, fetch persona
+        if (this.routingMode === 'backend') {
+            await this.fetchServerPersona();
+        }
+    }
+
+    /**
+     * Fetch server persona and cache it
+     * Called when in backend mode to get the AI personality from the server
+     */
+    async fetchServerPersona(): Promise<any | null> {
+        const now = Date.now();
+
+        // Return cached if still valid
+        if (this.cachedPersona && (now - this.personaLastFetched) < this.PERSONA_CACHE_TTL) {
+            return this.cachedPersona;
+        }
+
+        try {
+            const personaData = await zennerApiClient.getPersona();
+            if (personaData?.active_persona) {
+                this.cachedPersona = personaData.active_persona;
+                this.personaLastFetched = now;
+                console.log('[AIService] Fetched server persona:', this.cachedPersona.display_name);
+                return this.cachedPersona;
+            }
+        } catch (error) {
+            console.error('[AIService] Failed to fetch server persona:', error);
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the effective system prompt
+     * Uses server persona when in backend mode, otherwise uses config
+     */
+    getEffectiveSystemPrompt(mode?: string): string {
+        // If we have a server persona, use its prompts
+        if (this.cachedPersona) {
+            // Check for mode-specific prompts
+            if (mode === 'productivity' && this.cachedPersona.prompt_productivity) {
+                return this.cachedPersona.prompt_productivity;
+            }
+            if (mode === 'venting' && this.cachedPersona.prompt_venting) {
+                return this.cachedPersona.prompt_venting;
+            }
+            if (mode === 'strategy' && this.cachedPersona.prompt_strategy) {
+                return this.cachedPersona.prompt_strategy;
+            }
+            // Fall back to main system prompt
+            return this.cachedPersona.system_prompt || this.config.systemPrompt;
+        }
+
+        // No server persona, use local config
+        return this.config.systemPrompt;
+    }
+
+    /**
+     * Get cached persona info
+     */
+    getCachedPersona(): any | null {
+        return this.cachedPersona;
+    }
+
+    /**
+     * Clear persona cache (call when logging out)
+     */
+    clearPersonaCache(): void {
+        this.cachedPersona = null;
+        this.personaLastFetched = 0;
     }
 
     updateConfig(updates: Partial<AIConfig>): void {
@@ -338,10 +422,147 @@ class AIService {
     }
 
     // ============================================================
+    // Routing Mode
+    // ============================================================
+
+    /**
+     * Initialize routing mode from stored settings
+     */
+    private async initRoutingMode(): Promise<void> {
+        if (this.routingModeInitialized) return;
+
+        try {
+            this.routingMode = await byokService.getMode();
+            this.routingModeInitialized = true;
+            console.log('[AIService] Routing mode:', this.routingMode);
+        } catch (e) {
+            console.warn('[AIService] Failed to get routing mode, defaulting to byok');
+            this.routingMode = 'byok';
+            this.routingModeInitialized = true;
+        }
+    }
+
+    /**
+     * Get current routing mode
+     */
+    getRoutingMode(): AIRoutingMode {
+        return this.routingMode;
+    }
+
+    /**
+     * Set routing mode
+     */
+    async setRoutingMode(mode: AIRoutingMode): Promise<void> {
+        this.routingMode = mode;
+        await byokService.setMode(mode);
+        console.log('[AIService] Routing mode changed to:', mode);
+        this.notifyListeners();
+    }
+
+    /**
+     * Check if backend mode is available (authenticated with Zenner)
+     */
+    async isBackendAvailable(): Promise<boolean> {
+        return zennerApiClient.isAuthenticated();
+    }
+
+    // ============================================================
     // Chat
     // ============================================================
 
     async chat(userMessage: string, context?: Record<string, any>): Promise<string> {
+        // Initialize routing mode on first call
+        await this.initRoutingMode();
+
+        // If backend mode and authenticated, route through Zenner
+        if (this.routingMode === 'backend') {
+            const backendAvailable = await zennerApiClient.isAuthenticated();
+            if (backendAvailable) {
+                try {
+                    return await this.chatViaBackend(userMessage, context);
+                } catch (error) {
+                    console.warn('[AIService] Backend failed, falling back to BYOK:', error);
+                    // Fall through to BYOK mode
+                }
+            } else {
+                console.log('[AIService] Backend mode but not authenticated, using BYOK');
+            }
+        }
+
+        // BYOK mode or backend fallback - use existing provider logic
+        return this.chatViaBYOK(userMessage, context);
+    }
+
+    /**
+     * Chat via Zenner backend (license server)
+     */
+    private async chatViaBackend(userMessage: string, context?: Record<string, any>): Promise<string> {
+        const skipHistory = context?.skipHistory === true;
+
+        // Build system prompt
+        let systemPrompt = this.config.systemPrompt;
+        if (context && typeof context.systemPrompt === 'string') {
+            systemPrompt = context.systemPrompt;
+        } else if (context && !context.skipHistory) {
+            systemPrompt += `\n\nCurrent context: ${JSON.stringify(context)}`;
+        }
+
+        // Build messages array
+        let messages: Message[];
+        if (skipHistory) {
+            messages = [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userMessage }
+            ];
+        } else {
+            this.conversationHistory.push({ role: "user", content: userMessage });
+            const trimmedHistory = this.trimHistoryToTokenBudget();
+            messages = [
+                { role: "system", content: systemPrompt },
+                ...trimmedHistory,
+            ];
+        }
+
+        // Determine which model to use (based on active provider setting)
+        const pConfig = this.config.providers[this.config.activeProvider];
+        const model = pConfig?.model || 'gpt-4o-mini';
+
+        try {
+            // Call Zenner backend
+            const response = await zennerApiClient.chat(
+                model,
+                messages.map(m => ({ role: m.role, content: m.content })),
+                {
+                    temperature: this.config.temperature,
+                    max_tokens: this.config.maxTokens || 32768,
+                }
+            );
+
+            const assistantContent = response.choices[0]?.message?.content || '';
+
+            // Add to history if not skipping
+            if (!skipHistory) {
+                this.conversationHistory.push({ role: "assistant", content: assistantContent });
+                if (this.conversationHistory.length > 20) {
+                    this.conversationHistory = this.conversationHistory.slice(-16);
+                }
+            }
+
+            console.log('[AIService] Backend response received, tokens used:', response.usage?.total_tokens);
+            return assistantContent;
+        } catch (error) {
+            // Remove the user message we added if request failed
+            if (!skipHistory) {
+                this.conversationHistory.pop();
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Chat via BYOK (direct to providers)
+     */
+    private async chatViaBYOK(userMessage: string, context?: Record<string, any>): Promise<string> {
         const errors: { provider: AIProviderType; error: string }[] = [];
 
         console.log('[AIService] Current config state:', {
@@ -448,7 +669,7 @@ class AIService {
         // All providers failed
         console.error('[AIService] All providers failed:', errors);
         const errorSummary = errors.map(e => `${e.provider}: ${e.error}`).join('\n');
-        throw new Error(`All AI providers failed:\n${errorSummary}\n\nCheck your API keys in Settings → AI Engine.`);
+        throw new Error(`All AI providers failed:\n${errorSummary}\n\nCheck your API keys in Settings → AI Settings.`);
     }
 
     async *streamChat(userMessage: string, context?: Record<string, any>): AsyncGenerator<string, void, unknown> {

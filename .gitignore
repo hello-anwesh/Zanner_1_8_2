@@ -1,28 +1,160 @@
-# Logs
-logs
-*.log
+# ============================================
+# ZENNER CLIENT APP - GITIGNORE
+# ============================================
+
+# ==================== NODE.JS ====================
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+.npm
+.yarn
 
-node_modules
-dist
-dist-ssr
-*.local
+# Build outputs
+dist/
+dist-ssr/
+build/
+.next/
+.turbo/
 
-# Editor directories and files
+# ==================== ENVIRONMENT ====================
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+*.env
+.env.backup
+
+# Supabase config (keep .env.example)
+!.env.example
+
+# ==================== DATABASES ====================
+# SQLite (local user data)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Database backups
+data_backup*/
+backups/
+user_data_backup_*
+
+# ==================== RUST/TAURI ====================
+src-tauri/target/
+Cargo.lock
+**/*.rs.bk
+
+# Tauri builds
+src-tauri/target/
+src-tauri/WixTools/
+
+# ==================== IDE / EDITORS ====================
+# VSCode
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+!.vscode/settings.json.example
 
-# Tauri
-src-tauri/target/
-data_backup*
+# JetBrains
+.idea/
+*.iml
+*.iws
+
+# Sublime
+*.sublime-workspace
+*.sublime-project
+
+# Vim
+*.swp
+*.swo
+*~
+
+# ==================== OS FILES ====================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.directory
+
+# ==================== TEMPORARY FILES ====================
+*.log
+*.tmp
+*.temp
+*.cache
+.cache/
+tmp/
+temp/
+
+# Testing
+coverage/
+.nyc_output/
+
+# ==================== LOCAL STORAGE ====================
+# Tauri secure storage
+*.dat
+.settings.dat
+.auth.dat
+.user-preferences.dat
+
+# LocalStorage exports
+localStorage_export_*
+
+# ==================== SECRETS & KEYS ====================
+# API keys and secrets
+api_keys.json
+secrets.json
+*.secret
+
+# User credentials
+credentials/
+
+# ==================== DEPLOYMENT ====================
+# Production builds for distribution
+*.dmg
+*.app
+*.exe
+*.msi
+*.deb
+*.rpm
+*.AppImage
+
+# Update bundles
+updates/
+releases/
+
+# ==================== MISC ====================
+# Archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Logs
+logs/
+*.log.*
+
+# Debug
+debug/
+.debug/
+
+# ==================== KEEP THESE ====================
+!.gitkeep
+!.env.example
+!README.md
+!.vscode/extensions.json

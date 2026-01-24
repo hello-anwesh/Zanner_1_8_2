@@ -196,6 +196,48 @@ class DatabaseService {
         `;
 
         await this.db.execute(memorySchema);
+
+        // AI System tables for BYOK and backend mode
+        const aiSystemSchema = `
+            -- BYOK (Bring Your Own Key) storage
+            CREATE TABLE IF NOT EXISTS byok_keys (
+                id TEXT PRIMARY KEY,
+                provider TEXT NOT NULL UNIQUE,
+                api_key_encrypted TEXT NOT NULL,
+                display_name TEXT,
+                is_valid INTEGER DEFAULT 0,
+                last_validated_at INTEGER,
+                created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000),
+                updated_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
+            );
+
+            -- AI Settings (mode preference, server connection, etc.)
+            CREATE TABLE IF NOT EXISTS ai_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
+            );
+
+            -- Zenner API credentials (for backend mode)
+            CREATE TABLE IF NOT EXISTS zenner_auth (
+                id TEXT PRIMARY KEY DEFAULT 'default',
+                api_key_encrypted TEXT,
+                user_id TEXT,
+                user_email TEXT,
+                user_plan TEXT DEFAULT 'free',
+                tokens_balance INTEGER DEFAULT 0,
+                tokens_used_today INTEGER DEFAULT 0,
+                expires_at INTEGER,
+                updated_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
+            );
+
+            -- Insert default AI settings
+            INSERT OR IGNORE INTO ai_settings (key, value) VALUES ('ai_mode', 'byok');
+            INSERT OR IGNORE INTO ai_settings (key, value) VALUES ('default_provider', 'ollama');
+            INSERT OR IGNORE INTO ai_settings (key, value) VALUES ('zenner_server_url', 'https://api.zenner.app');
+        `;
+
+        await this.db.execute(aiSystemSchema);
     }
 
     async seedMockData() {

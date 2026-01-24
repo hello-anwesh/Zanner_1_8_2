@@ -7,7 +7,7 @@
 class MetronomeService {
     private audioContext: AudioContext | null = null;
     private isRunning: boolean = false;
-    private intervalId: number | null = null;
+    private intervalId: ReturnType<typeof setInterval> | null = null;
     private bpm: number = 60;
     private volume: number = 0.3;
     private enabled: boolean = false;

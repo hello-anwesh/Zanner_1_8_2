@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { aiService } from "../services/ai/AIService";
+import { aiService, AIRoutingMode } from "../services/ai/AIService";
 import { AIProviderType, ModelInfo, AIConfig, Message } from "../services/ai/types";
 
 interface ProviderInfo {
@@ -22,12 +22,14 @@ export function useAI() {
     const [isStreaming, setIsStreaming] = useState(false);
     const [providerStatus, setProviderStatus] = useState<Map<AIProviderType, ProviderStatus>>(new Map());
     const [models, setModels] = useState<ModelInfo[]>([]);
+    const [routingMode, setRoutingModeState] = useState<AIRoutingMode>(aiService.getRoutingMode());
 
     // Subscribe to service changes
     useEffect(() => {
         const updateState = () => {
             setConfig(aiService.getConfig());
             setMessages(aiService.getHistory());
+            setRoutingModeState(aiService.getRoutingMode());
         };
 
         const unsubscribe = aiService.subscribe(updateState);
@@ -93,6 +95,17 @@ export function useAI() {
         setConfig(aiService.getConfig());
     }, []);
 
+    // Set routing mode
+    const setRoutingMode = useCallback(async (mode: AIRoutingMode): Promise<void> => {
+        await aiService.setRoutingMode(mode);
+        setRoutingModeState(mode);
+    }, []);
+
+    // Check if backend is available
+    const checkBackendAvailable = useCallback(async (): Promise<boolean> => {
+        return aiService.isBackendAvailable();
+    }, []);
+
     // Send message
     const sendMessage = useCallback(async (
         message: string,
@@ -144,6 +157,7 @@ export function useAI() {
         isStreaming,
         providerStatus,
         isAvailable: getActiveStatus()?.available || false,
+        routingMode,
 
         // Provider management
         getProviders,
@@ -157,6 +171,10 @@ export function useAI() {
         updateConfig,
         updateProviderConfig,
 
+        // Routing Mode
+        setRoutingMode,
+        checkBackendAvailable,
+
         // Chat
         sendMessage,
         streamMessage,
@@ -166,3 +184,4 @@ export function useAI() {
         checkAvailability: () => checkProvider(config.activeProvider),
     };
 }
+
