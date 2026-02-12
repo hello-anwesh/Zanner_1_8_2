@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
+use tauri::{Emitter, Manager}; // Added imports
 
 #[derive(Serialize, Deserialize)]
 pub struct SpotifyTrack {
@@ -508,6 +509,13 @@ fn spotify_get_state() -> Result<SpotifyState, String> {
     })
 }
 
+#[tauri::command]
+fn hide_spotlight(window: tauri::Window) {
+    if window.label() == "spotlight" {
+        let _ = window.hide();
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // MAIN APP ENTRY
 // ═══════════════════════════════════════════════════════════════
@@ -543,8 +551,10 @@ pub fn run() {
             spotify_get_volume,
             spotify_play_uri,
             spotify_open,
-            spotify_get_state
+            spotify_get_state,
+            hide_spotlight
         ])
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

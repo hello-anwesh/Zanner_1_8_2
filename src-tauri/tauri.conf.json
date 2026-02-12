@@ -21,6 +21,22 @@
         "transparent": true,
         "decorations": false,
         "devtools": true
+      },
+      {
+        "label": "spotlight",
+        "title": "Zenner Spotlight",
+        "width": 800,
+        "height": 60,
+        "x": 0,
+        "y": 200,
+        "center": true,
+        "resizable": false,
+        "transparent": true,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "visible": false,
+        "skipTaskbar": true,
+        "url": "index.html?mode=spotlight"
       }
     ],
     "security": {

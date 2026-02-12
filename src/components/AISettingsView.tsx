@@ -4,6 +4,8 @@ import { Brain, Check, AlertCircle, Loader2, RefreshCw, Cpu, Sparkles, Zap, Arro
 import { aiService } from '../services/ai/AIService';
 import type { AIProviderType, ProviderStatus, ModelInfo } from '../services/ai/types';
 import { ProviderPriorityManager } from './ProviderPriorityManager';
+import { APIKeyManager } from './APIKeyManager';
+import { WalletWidget } from './WalletWidget';
 
 interface AISettingsViewProps {
     accent: string;
@@ -219,44 +221,42 @@ export function AISettingsView({ accent, onBack }: AISettingsViewProps) {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* API Key / Base URL */}
-                            <div className="space-y-4">
-                                <label className="block text-xs font-bold text-white/40 uppercase tracking-widest pl-1">
-                                    {config.activeProvider === 'ollama' ? 'Base URL' : 'API Secret Key'}
-                                </label>
-                                <div className="relative group">
-                                    <input
-                                        type={config.activeProvider === 'ollama' ? 'text' : 'password'}
-                                        value={config.activeProvider === 'ollama'
-                                            ? config.providers.ollama?.baseUrl
-                                            : config.providers[config.activeProvider]?.apiKey || ''}
-                                        onChange={(e) => updateProviderConfig(
-                                            config.activeProvider,
-                                            config.activeProvider === 'ollama' ? 'baseUrl' : 'apiKey',
-                                            e.target.value
-                                        )}
-                                        onBlur={() => validateAndFetchModels(config.activeProvider)}
-                                        placeholder={config.activeProvider === 'ollama' ? 'http://localhost:11434' : 'sk-...'}
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-5 py-4 text-white text-sm font-mono focus:outline-none focus:border-white/30 focus:bg-black/30 transition-all placeholder:text-white/20"
-                                    />
-                                    {config.activeProvider !== 'ollama' && (
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            {providerStatuses.get(config.activeProvider)?.available ? (
-                                                <Check size={16} className="text-emerald-400" />
-                                            ) : (
-                                                <div className="w-2 h-2 rounded-full bg-white/20" />
-                                            )}
-                                        </div>
-                                    )}
+                        <div className="grid grid-cols-1 gap-8">
+                            {/* API Key Manager */}
+                            {config.activeProvider !== 'ollama' && (
+                                <APIKeyManager
+                                    provider={config.activeProvider}
+                                    providerName={providers.find(p => p.type === config.activeProvider)?.name || ''}
+                                    providerColor={providers.find(p => p.type === config.activeProvider)?.color || accent}
+                                    accent={accent}
+                                    onModelsLoaded={(models: ModelInfo[]) => {
+                                        setAvailableModels(prev => new Map(prev).set(config.activeProvider, models));
+                                        if (!config.providers[config.activeProvider]?.model && models.length > 0) {
+                                            updateProviderConfig(config.activeProvider, 'model', models[0].id);
+                                        }
+                                    }}
+                                />
+                            )}
+
+                            {/* Ollama Base URL */}
+                            {config.activeProvider === 'ollama' && (
+                                <div className="space-y-4">
+                                    <label className="block text-xs font-bold text-white/40 uppercase tracking-widest pl-1">
+                                        Base URL
+                                    </label>
+                                    <div className="relative group">
+                                        <input
+                                            type="text"
+                                            value={config.providers.ollama?.baseUrl || ''}
+                                            onChange={(e) => updateProviderConfig('ollama', 'baseUrl', e.target.value)}
+                                            onBlur={() => validateAndFetchModels('ollama')}
+                                            placeholder="http://localhost:11434"
+                                            className="w-full bg-black/20 border border-white/10 rounded-xl px-5 py-4 text-white text-sm font-mono focus:outline-none focus:border-white/30 focus:bg-black/30 transition-all placeholder:text-white/20"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-white/30 pl-1">Default: http://localhost:11434</p>
                                 </div>
-                                <p className="text-xs text-white/30 pl-1">
-                                    {config.activeProvider === 'openai' && 'Get key from platform.openai.com'}
-                                    {config.activeProvider === 'gemini' && 'Get key from makersuite.google.com'}
-                                    {config.activeProvider === 'claude' && 'Get key from console.anthropic.com'}
-                                    {config.activeProvider === 'ollama' && 'Default: http://localhost:11434'}
-                                </p>
-                            </div>
+                            )}
 
                             {/* Model Selection */}
                             <div className="space-y-4">
@@ -330,6 +330,86 @@ export function AISettingsView({ accent, onBack }: AISettingsViewProps) {
                         setTimeout(() => setSaveMessage(''), 3000);
                     }}
                 />
+            </motion.div>
+
+            {/* Token Wallet Section - Only show when using backend mode */}
+            <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+            >
+                <div className="p-8 rounded-3xl bg-white/[0.03] border border-white/5">
+                    <div className="mb-6">
+                        <h3 className="text-xl font-bold text-white mb-2">Token Wallet</h3>
+                        <p className="text-sm text-white/40">
+                            Your AI usage balance when using Zenner Cloud.
+                        </p>
+                    </div>
+                    <WalletWidget
+                        apiUrl={localStorage.getItem('zenner_api_url') || ''}
+                        apiKey={localStorage.getItem('zenner_api_key') || ''}
+                        accent={accent}
+                        onLowBalance={(balance) => {
+                            console.log('Low balance warning:', balance);
+                        }}
+                    />
+                </div>
+
+                <div className="p-8 rounded-3xl bg-white/[0.03] border border-white/5">
+                    <div className="mb-6">
+                        <h3 className="text-xl font-bold text-white mb-2">Usage Mode</h3>
+                        <p className="text-sm text-white/40">
+                            Choose how AI requests are processed.
+                        </p>
+                    </div>
+                    <div className="space-y-4">
+                        <button
+                            onClick={() => {
+                                localStorage.setItem('zenner_routing_mode', 'backend');
+                                setSaveMessage('✓ Using Zenner Cloud');
+                                setTimeout(() => setSaveMessage(''), 3000);
+                            }}
+                            className={`w-full p-4 rounded-xl border text-left transition-all ${localStorage.getItem('zenner_routing_mode') === 'backend'
+                                    ? 'bg-white/10 border-white/20'
+                                    : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06]'
+                                }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className={`w-3 h-3 rounded-full ${localStorage.getItem('zenner_routing_mode') === 'backend'
+                                        ? 'bg-emerald-400'
+                                        : 'bg-white/20'
+                                    }`} />
+                                <div>
+                                    <div className="font-bold text-white">Zenner Cloud</div>
+                                    <div className="text-xs text-white/40">Uses your wallet balance • Features RAG memory</div>
+                                </div>
+                            </div>
+                        </button>
+                        <button
+                            onClick={() => {
+                                localStorage.setItem('zenner_routing_mode', 'byok');
+                                setSaveMessage('✓ Using Your Own Keys');
+                                setTimeout(() => setSaveMessage(''), 3000);
+                            }}
+                            className={`w-full p-4 rounded-xl border text-left transition-all ${localStorage.getItem('zenner_routing_mode') === 'byok'
+                                    ? 'bg-white/10 border-white/20'
+                                    : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06]'
+                                }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className={`w-3 h-3 rounded-full ${localStorage.getItem('zenner_routing_mode') === 'byok'
+                                        ? 'bg-emerald-400'
+                                        : 'bg-white/20'
+                                    }`} />
+                                <div>
+                                    <div className="font-bold text-white">Your Own Keys (BYOK)</div>
+                                    <div className="text-xs text-white/40">Direct API calls • No wallet needed</div>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
             </motion.div>
         </div>
     );

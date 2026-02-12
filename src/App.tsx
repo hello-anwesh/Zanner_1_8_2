@@ -67,11 +67,15 @@ import { voiceService } from "./services/voice/VoiceService";
 // TYPES & CONSTANTS
 // ============================================================================
 
+import { SpotlightView } from "./components/SpotlightView";
+
+// ... existing imports
+
 type View = "home" | "dashboard" | "stats" | "integrations" | "frequencies" | "philosophy" | "journal" | "profile" | "settings" | "zeni" |
   "settings-ai" | "settings-theme" | "settings-spotify" | "settings-youtube" | "settings-timer" | "settings-voice" | "settings-brain" | "settings-backup" |
   "ai-identity" | "ai-cognition" | "ai-rhythms" | "ai-training" |
   "voice-speech" | "voice-tts";
-type TimerMode = "focus" | "shortBreak" | "longBreak";
+export type TimerMode = "focus" | "shortBreak" | "longBreak";
 type TimerStyle = "minimal" | "circular" | "analog" | "bar" | "3d";
 
 // Theme system moved to ThemeContext
@@ -109,6 +113,20 @@ function App() {
   // Theme Context
   const { currentTheme, themeName, setTheme, themes } = useTheme();
   const accent = currentTheme.colors.accent;
+
+  // Spotlight Mode Check
+  const [isSpotlight, setIsSpotlight] = useState(false);
+  useEffect(() => {
+    if (window.location.search.includes('mode=spotlight')) {
+      setIsSpotlight(true);
+      document.documentElement.style.background = 'transparent';
+      document.body.style.background = 'transparent';
+    }
+  }, []);
+
+  if (isSpotlight) {
+    return <SpotlightView />;
+  }
 
   // UI State
   const [view, setView] = useState<View>("home");
