@@ -3,7 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import {
     Settings2, Brain,
-    Home, BarChart2, Waves, Book, User, LayoutGrid
+    Home, BarChart2, Waves, Book, User, LayoutGrid, Info
 } from 'lucide-react';
 
 interface PremiumSidebarProps {
@@ -158,6 +158,9 @@ const PremiumSidebar = ({ collapsed, onCollapsedChange, view, onViewChange, acce
 
                 {/* Frequencies Button */}
                 <NavButton id="frequencies" icon={Waves} label="Frequencies" gradient="from-pink-500 to-rose-600" view={view} onClick={onFrequencyClick} collapsed={collapsed} accent={accent} />
+
+                {/* About & Help */}
+                <NavButton id="about" icon={Info} label="About" gradient="from-slate-500 to-zinc-600" view={view} onClick={() => onViewChange('about')} collapsed={collapsed} accent={accent} />
             </nav>
 
 

@@ -53,6 +53,7 @@ import { PostSessionJournal } from "./components/PostSessionJournal";
 import { CommandDashboard } from "./components/CommandDashboard";
 import { ProfileView } from "./components/profile/ProfileView";
 import { SettingsHub } from "./components/SettingsHub";
+import { AboutView } from "./components/AboutView";
 import { databaseService } from "./services/db/DatabaseService";
 import { migrationService } from "./services/db/MigrationService";
 import { accountabilityService } from "./services/accountability/AccountabilityService";
@@ -69,9 +70,7 @@ import { voiceService } from "./services/voice/VoiceService";
 
 import { SpotlightView } from "./components/SpotlightView";
 
-// ... existing imports
-
-type View = "home" | "dashboard" | "stats" | "integrations" | "frequencies" | "philosophy" | "journal" | "profile" | "settings" | "zeni" |
+type View = "home" | "dashboard" | "stats" | "integrations" | "frequencies" | "philosophy" | "journal" | "profile" | "settings" | "zeni" | "about" |
   "settings-ai" | "settings-theme" | "settings-spotify" | "settings-youtube" | "settings-timer" | "settings-voice" | "settings-brain" | "settings-backup" |
   "ai-identity" | "ai-cognition" | "ai-rhythms" | "ai-training" |
   "voice-speech" | "voice-tts";
@@ -376,7 +375,7 @@ function App() {
   // Timer Control Functions - Proper State Transitions
 
   /**
-   * Start the timer from paused/stopped state
+   * Start the timer from paused/stopped state (user-initiated)
    * Uses captured remaining time if resuming from pause, otherwise uses current timeLeft
    */
   const startTimer = () => {
@@ -528,6 +527,7 @@ function App() {
 
       setTimeout(() => {
         let nextMode: TimerMode = "focus";
+        let nextDuration = 25 * 60; // Default fallback
 
         if (activePreset.sequence) {
           // Sequence Logic
@@ -535,23 +535,29 @@ function App() {
           setSequenceIndex(nextIndex);
           const step = activePreset.sequence[nextIndex];
           nextMode = step.type;
-
-          setMode(nextMode);
-          setTimeLeft(step.duration * 60);
+          nextDuration = step.duration * 60;
         } else {
           // Standard Logic
-          nextMode = mode === "focus"
-            ? (sessions > 0 && (sessions + 1) % 4 === 0 ? "longBreak" : "shortBreak")
-            : "focus";
+          // Calculate usage based on completed sessions (using current session count + 1 for the just-finished one)
+          const completedSessions = sessions + 1;
 
-          setMode(nextMode);
-          setTimeLeft(durations[nextMode] * 60);
+          if (mode === "focus") {
+            nextMode = (completedSessions > 0 && completedSessions % 4 === 0) ? "longBreak" : "shortBreak";
+          } else {
+            nextMode = "focus";
+          }
+
+          nextDuration = durations[nextMode] * 60;
         }
 
-        // Auto-start next session after state updates
-        // Use setTimeout 0 to let React process state updates first
-        setTimeout(() => startTimer(), 0);
-        sessionStartTimeRef.current = new Date(); // Track session start
+        // Update state and auto-start next session
+        // Direct state setting avoids stale closure issues with startTimer()
+        setMode(nextMode);
+        setTimeLeft(nextDuration);
+        endTimeRef.current = Date.now() + (nextDuration * 1000);
+        setIsRunning(true);
+        sessionStartTimeRef.current = new Date();
+        eventBus.emit({ type: "SESSION_START", mode: nextMode });
       }, 2000);
     }
   }, [timeLeft, isRunning, mode, sessions, durations, activePreset, sequenceIndex]);
@@ -1248,6 +1254,11 @@ function App() {
                   {/* PROFILE */}
                   {view === "profile" && (
                     <ProfileView accent={accent} />
+                  )}
+
+                  {/* ABOUT */}
+                  {view === "about" && (
+                    <AboutView />
                   )}
 
                   {/* SETTINGS HUB */}

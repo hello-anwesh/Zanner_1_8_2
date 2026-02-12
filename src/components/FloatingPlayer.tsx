@@ -117,13 +117,43 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Subscribe to Spotify state
+    // Subscribe to Spotify state - ONLY when Spotify tab is active
+    // Also handles mutual exclusion: if Spotify starts playing, stop library track
+    const prevSpotifyPlayingRef = useRef(false);
+
     useEffect(() => {
+        if (!showLibrary || activeCategory !== 'spotify') {
+            return;
+        }
+
+        // Initial fetch
+        spotifyService.getState().then(setSpotifyState);
+
         const unsub = spotifyService.subscribe((state) => {
             setSpotifyState(state);
+
+            // Detect Spotify STARTING to play (was not playing, now is)
+            if (state.is_playing && !prevSpotifyPlayingRef.current && currentTrack) {
+                // Stop library playback (mutual exclusion)
+                const engine = getFrequencyEngine();
+                engine.stopAll();
+
+                if (audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current.currentTime = 0;
+                }
+                if (iframeRef.current) {
+                    iframeRef.current.src = "";
+                }
+
+                setCurrentTrack(null);
+                setIsPlaying(false);
+            }
+
+            prevSpotifyPlayingRef.current = state.is_playing;
         });
         return () => unsub();
-    }, []);
+    }, [showLibrary, activeCategory, currentTrack]);
 
     // MusicController integration for timer pause/resume
     const pausePlayback = useCallback(() => {
@@ -210,6 +240,12 @@ export function FloatingPlayer({ colors }: FloatingPlayerProps) {
     const play = useCallback(async (track: SoundTrack) => {
         setError(null);
         setIsLoading(true);
+
+        // STOP SPOTIFY if it's playing (mutual exclusion)
+        const spotifyState = spotifyService.getCurrentState();
+        if (spotifyState?.is_playing) {
+            await spotifyService.pause();
+        }
 
         // ALWAYS stop previous playback first to prevent overlap
         const engine = getFrequencyEngine();
